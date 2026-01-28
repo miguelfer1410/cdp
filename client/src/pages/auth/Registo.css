@@ -1,0 +1,382 @@
+.registo-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 40px 20px;
+}
+
+.registo-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Header */
+.registo-header {
+  margin-bottom: 40px;
+}
+
+.registo-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  text-decoration: none;
+  padding: 20px 30px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
+}
+
+.registo-logo:hover {
+  transform: translateY(-3px);
+}
+
+.registo-logo img {
+  width: 60px;
+  height: auto;
+}
+
+.registo-logo h1 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.registo-logo p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin: 0;
+}
+
+/* Content */
+.registo-content {
+  background: white;
+  border-radius: 20px;
+  padding: 50px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Progress Steps */
+.progress-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 50px;
+  position: relative;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.step-number {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  transition: all 0.3s;
+}
+
+.progress-step.active .step-number {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 0 0 4px rgba(0, 51, 128, 0.2);
+}
+
+.progress-step.completed .step-number {
+  background: #4caf50;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-align: center;
+}
+
+.progress-step.active .step-label {
+  color: var(--primary-color);
+}
+
+.progress-line {
+  height: 3px;
+  width: 100px;
+  background: #e0e0e0;
+  margin: 0 20px;
+}
+
+/* Form */
+.registo-form-wrapper {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.form-step h2 {
+  color: var(--primary-color);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.step-description {
+  color: var(--text-light);
+  font-size: 1rem;
+  margin-bottom: 35px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-bottom: 25px;
+}
+
+.form-row:has(.form-group:only-child) {
+  grid-template-columns: 1fr;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 18px;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  z-index: 1;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 15px 20px 15px 50px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.form-group input[type="date"],
+.form-group input[type="text"]:not(.input-wrapper input),
+.form-group input[type="tel"]:not(.input-wrapper input) {
+  padding: 15px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: #f8f9fa;
+}
+
+.form-group input::placeholder,
+.input-wrapper input::placeholder {
+  color: #aaa;
+}
+
+/* Terms Section */
+.terms-section {
+  margin-top: 35px;
+  padding: 25px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.checkbox-label span {
+  flex: 1;
+}
+
+.checkbox-label a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.checkbox-label a:hover {
+  color: var(--accent-color);
+}
+
+/* Navigation Buttons */
+.form-navigation {
+  display: flex;
+  gap: 15px;
+  margin-top: 40px;
+}
+
+.btn-prev,
+.btn-next,
+.btn-submit {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.btn-prev {
+  background: white;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btn-prev:hover {
+  background: #f8f9fa;
+}
+
+.btn-next,
+.btn-submit {
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-next:hover,
+.btn-submit:hover {
+  background: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 51, 128, 0.3);
+}
+
+/* Login Link */
+.login-link {
+  margin-top: 30px;
+  text-align: center;
+  padding-top: 25px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.login-link p {
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+.login-link a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.login-link a:hover {
+  color: var(--accent-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .registo-page {
+    padding: 20px 15px;
+  }
+
+  .registo-content {
+    padding: 30px 20px;
+  }
+
+  .progress-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .progress-line {
+    width: 3px;
+    height: 40px;
+    margin: 0;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .form-step h2 {
+    font-size: 1.6rem;
+  }
+
+  .form-navigation {
+    flex-direction: column;
+  }
+
+  .registo-logo {
+    padding: 15px 20px;
+  }
+
+  .registo-logo h1 {
+    font-size: 1.2rem;
+  }
+
+  .registo-logo p {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .step-label {
+    font-size: 0.8rem;
+  }
+
+  .step-number {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
+}
