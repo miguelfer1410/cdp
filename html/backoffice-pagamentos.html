@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Pagamentos - Backoffice CDP</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .backoffice-wrapper {
+            min-height: 100vh;
+            background: var(--bg-light);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .page-title h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .breadcrumb {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .notification-icon {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #f44336;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .athlete-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .athlete-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .athlete-details h4 {
+            color: var(--text-color);
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+        }
+
+        .athlete-details p {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .stat-icon.orange {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .stat-icon.red {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .stat-icon.blue {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .stat-trend {
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .trend-up {
+            color: #2e7d32;
+        }
+
+        .trend-down {
+            color: #c62828;
+        }
+
+        /* Filters */
+        .filters-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group {
+            flex: 1;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-add {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 23px;
+        }
+
+        .btn-add:hover {
+            background: var(--accent-color);
+        }
+
+        /* Grid Layout */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        /* Data Table */
+        .data-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h3 {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-icon:hover {
+            background: var(--bg-light);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--bg-light);
+        }
+
+        th {
+            text-align: left;
+            padding: 15px 25px;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 18px 25px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-paid {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-pending {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-overdue {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-view {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .btn-send {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar Widget */
+        .sidebar-widget {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .widget-header {
+            margin-bottom: 20px;
+        }
+
+        .widget-header h3 {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .widget-header p {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        .payment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .payment-info h4 {
+            color: var(--text-color);
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+        }
+
+        .payment-info p {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        .payment-amount {
+            text-align: right;
+        }
+
+        .payment-amount h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 3px;
+        }
+
+        .chart-placeholder {
+            background: var(--bg-light);
+            height: 250px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+        }
+
+        .pagination-info {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .page-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .page-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .page-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-row {
+                flex-direction: column;
+            }
+
+            .btn-add {
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <a href="index.html" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="CDP1943-PREMIUM.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </a>
+            </div>
+            <nav class="navbar">
+                <div class="nav-links">
+                    <a href="index.html">Início</a>
+                    <a href="sobre.html">Clube</a>
+                    <a href="equipas.html">Modalidades</a>
+                    <a href="noticias.html">Notícias</a>
+                    <a href="contactos.html">Contactos</a>
+                </div>
+                <a href="#" class="btn-login"><i class="fas fa-user"></i> Miguel Santos</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="backoffice-wrapper">
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="page-title">
+                    <h1>Gestão de Pagamentos</h1>
+                    <div class="breadcrumb">
+                        <i class="fas fa-home"></i> / Gestão / Pagamentos
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">€21,500</div>
+                            <div class="stat-label">Receita Este Mês</div>
+                            <div class="stat-trend trend-up">
+                                <i class="fas fa-arrow-up"></i> +12.5% vs mês anterior
+                            </div>
+                        </div>
+                        <div class="stat-icon green">
+                            <i class="fas fa-euro-sign"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">€8,750</div>
+                            <div class="stat-label">Pagamentos Pendentes</div>
+                            <div class="stat-trend trend-up">
+                                <i class="fas fa-arrow-up"></i> 127 quotas em atraso
+                            </div>
+                        </div>
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">€3,200</div>
+                            <div class="stat-label">Quotas em Atraso</div>
+                            <div class="stat-trend trend-down">
+                                <i class="fas fa-arrow-down"></i> 45 atletas/sócios
+                            </div>
+                        </div>
+                        <div class="stat-icon red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div>
+                            <div class="stat-value">92%</div>
+                            <div class="stat-label">Taxa de Pagamento</div>
+                            <div class="stat-trend trend-up">
+                                <i class="fas fa-arrow-up"></i> +3.5% vs mês anterior
+                            </div>
+                        </div>
+                        <div class="stat-icon blue">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label>Estado de Pagamento</label>
+                        <select>
+                            <option>Todos os Estados</option>
+                            <option>Pago</option>
+                            <option>Pendente</option>
+                            <option>Em Atraso</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Tipo</label>
+                        <select>
+                            <option>Todos os Tipos</option>
+                            <option>Quota Mensal</option>
+                            <option>Inscrição</option>
+                            <option>Material</option>
+                            <option>Evento</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Período</label>
+                        <select>
+                            <option>Este Mês</option>
+                            <option>Mês Passado</option>
+                            <option>Últimos 3 Meses</option>
+                            <option>Este Ano</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Pesquisar</label>
+                        <input type="text" placeholder="Nome ou nº sócio...">
+                    </div>
+
+                    <button class="btn-add">
+                        <i class="fas fa-file-export"></i>
+                        Exportar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="content-grid">
+                <!-- Main Table -->
+                <div class="data-table">
+                    <div class="table-header">
+                        <h3>Transações Recentes</h3>
+                        <div class="table-actions">
+                            <button class="btn-icon" title="Filtros">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                            <button class="btn-icon" title="Atualizar">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Tipo</th>
+                                <th>Valor</th>
+                                <th>Data</th>
+                                <th>Estado</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">JS</div>
+                                        <div class="athlete-details">
+                                            <h4>João Silva</h4>
+                                            <p>#2847 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Quota Janeiro</td>
+                                <td><strong>€25.00</strong></td>
+                                <td>01/01/2026</td>
+                                <td><span class="status-badge status-paid">Pago</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-view" title="Ver Recibo">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">MS</div>
+                                        <div class="athlete-details">
+                                            <h4>Maria Santos</h4>
+                                            <p>#1847 • Sócia</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Quota Janeiro</td>
+                                <td><strong>€25.00</strong></td>
+                                <td>01/01/2026</td>
+                                <td><span class="status-badge status-paid">Pago</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-view">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">PC</div>
+                                        <div class="athlete-details">
+                                            <h4>Pedro Costa</h4>
+                                            <p>#2751 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Quota Janeiro</td>
+                                <td><strong>€25.00</strong></td>
+                                <td>-</td>
+                                <td><span class="status-badge status-pending">Pendente</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-send" title="Enviar Lembrete">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">TS</div>
+                                        <div class="athlete-details">
+                                            <h4>Tiago Sousa</h4>
+                                            <p>#2803 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Quota Dezembro</td>
+                                <td><strong>€25.00</strong></td>
+                                <td>-</td>
+                                <td><span class="status-badge status-overdue">Em Atraso</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-send">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">AF</div>
+                                        <div class="athlete-details">
+                                            <h4>André Ferreira</h4>
+                                            <p>#2765 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Inscrição Época</td>
+                                <td><strong>€50.00</strong></td>
+                                <td>05/09/2025</td>
+                                <td><span class="status-badge status-paid">Pago</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-view">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">CA</div>
+                                        <div class="athlete-details">
+                                            <h4>Carolina Alves</h4>
+                                            <p>#2811 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Quota Janeiro</td>
+                                <td><strong>€25.00</strong></td>
+                                <td>03/01/2026</td>
+                                <td><span class="status-badge status-paid">Pago</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-view">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">BG</div>
+                                        <div class="athlete-details">
+                                            <h4>Beatriz Gomes</h4>
+                                            <p>#2835 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Material Treino</td>
+                                <td><strong>€35.00</strong></td>
+                                <td>-</td>
+                                <td><span class="status-badge status-pending">Pendente</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-send">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <div class="athlete-info">
+                                        <div class="athlete-avatar">RM</div>
+                                        <div class="athlete-details">
+                                            <h4>Ricardo Martins</h4>
+                                            <p>#2879 • Atleta</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Quota Janeiro</td>
+                                <td><strong>€25.00</strong></td>
+                                <td>01/01/2026</td>
+                                <td><span class="status-badge status-paid">Pago</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-view">
+                                            <i class="fas fa-receipt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="pagination">
+                        <div class="pagination-info">
+                            A mostrar 1-10 de 2,347 transações
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="page-btn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="page-btn active">1</button>
+                            <button class="page-btn">2</button>
+                            <button class="page-btn">3</button>
+                            <button class="page-btn">...</button>
+                            <button class="page-btn">235</button>
+                            <button class="page-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div>
+                    <!-- Pagamentos em Atraso -->
+                    <div class="sidebar-widget">
+                        <div class="widget-header">
+                            <h3>Atenção Requerida</h3>
+                            <p>Pagamentos em atraso que necessitam follow-up</p>
+                        </div>
+
+                        <div class="payment-item">
+                            <div class="payment-info">
+                                <h4>Tiago Sousa</h4>
+                                <p>Dezembro + Janeiro</p>
+                            </div>
+                            <div class="payment-amount">
+                                <h4>€50.00</h4>
+                                <span class="status-badge status-overdue">2 meses</span>
+                            </div>
+                        </div>
+
+                        <div class="payment-item">
+                            <div class="payment-info">
+                                <h4>Luís Pereira</h4>
+                                <p>Novembro + Dezembro + Janeiro</p>
+                            </div>
+                            <div class="payment-amount">
+                                <h4>€75.00</h4>
+                                <span class="status-badge status-overdue">3 meses</span>
+                            </div>
+                        </div>
+
+                        <div class="payment-item">
+                            <div class="payment-info">
+                                <h4>Ana Costa</h4>
+                                <p>Janeiro</p>
+                            </div>
+                            <div class="payment-amount">
+                                <h4>€25.00</h4>
+                                <span class="status-badge status-overdue">1 mês</span>
+                            </div>
+                        </div>
+
+                        <button class="btn-add" style="width: 100%; justify-content: center; margin-top: 15px;">
+                            <i class="fas fa-envelope-open-text"></i>
+                            Enviar Lembretes
+                        </button>
+                    </div>
+
+                    <!-- Gráfico de Receitas -->
+                    <div class="sidebar-widget">
+                        <div class="widget-header">
+                            <h3>Receitas Mensais</h3>
+                            <p>Evolução dos últimos 6 meses</p>
+                        </div>
+                        <div class="chart-placeholder">
+                            <i class="fas fa-chart-area" style="font-size: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo footer-logo">
+                    <img src="CDP1943-PREMIUM.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </div>
+                <p>Promovendo o desporto e a comunidade há mais de 80 anos.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com/cdpovoa" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://instagram.com/cdpovoa" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://linkedin.com/company/clube-desportivo-da-póvoa" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Links Rápidos</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="sobre.html">Clube</a></li>
+                    <li><a href="equipas.html">Modalidades</a></li>
+                    <li><a href="noticias.html">Notícias</a></li>
+                    <li><a href="contactos.html">Contactos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Contactos</h4>
+                <ul class="footer-contact">
+                    <li><i class="fas fa-map-marker-alt"></i> Largo Dr. José Pontes, 4490-556 Póvoa de Varzim</li>
+                    <li><i class="fas fa-phone"></i> +351 252 682 109</li>
+                    <li><i class="fas fa-envelope"></i> geral@cdpovoa.pt</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Clube Desportivo Da Póvoa. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

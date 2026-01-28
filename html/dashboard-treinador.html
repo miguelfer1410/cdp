@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Treinador - Clube Desportivo Da Póvoa</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Dashboard Specific Styles */
+        .dashboard-wrapper {
+            background: var(--bg-light);
+            min-height: 100vh;
+            padding-top: 0;
+        }
+
+        /* Profile Header */
+        .profile-header {
+            background: linear-gradient(135deg, #003380 0%, #001f4d 100%);
+            color: white;
+            padding: 40px 0 60px;
+        }
+
+        .profile-content {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 5px solid white;
+            object-fit: cover;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .profile-info h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 25px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .profile-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            opacity: 0.95;
+        }
+
+        .profile-meta-item i {
+            font-size: 1.1rem;
+        }
+
+        /* Quick Stats Cards */
+        .quick-stats {
+            margin-top: -40px;
+            position: relative;
+            z-index: 10;
+            padding-bottom: 40px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.8rem;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .stat-card p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Main Dashboard Content */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            padding-bottom: 60px;
+        }
+
+        /* Dashboard Card */
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg-light);
+        }
+
+        .dashboard-card-header h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dashboard-card-header h2 i {
+            font-size: 1.3rem;
+        }
+
+        .view-all-link {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .view-all-link:hover {
+            color: var(--accent-color);
+        }
+
+        /* Training Session */
+        .training-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: var(--bg-light);
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .training-item:hover {
+            background: #e8f0fe;
+            transform: translateX(5px);
+        }
+
+        .training-date {
+            text-align: center;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            min-width: 70px;
+        }
+
+        .training-date .day {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1;
+        }
+
+        .training-date .month {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .training-details {
+            flex: 1;
+        }
+
+        .training-details h3 {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .training-details p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+
+        .attendance-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .badge-complete {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-partial {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-upcoming {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        /* Athletes List */
+        .athletes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .athlete-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .athlete-item:hover {
+            background: #e8f0fe;
+            transform: translateX(5px);
+        }
+
+        .athlete-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .athlete-info h4 {
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .athlete-info p {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        /* Statistics Table */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stats-table th {
+            background: var(--bg-light);
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .stats-table td {
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+
+        .stats-table tr:hover {
+            background: var(--bg-light);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .action-btn {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .action-btn i {
+            font-size: 1.2rem;
+        }
+
+        .action-btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .action-btn-primary:hover {
+            background: var(--accent-color);
+        }
+
+        /* Match Result Card */
+        .match-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .match-team {
+            text-align: center;
+            flex: 1;
+        }
+
+        .match-team h4 {
+            color: var(--primary-color);
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .match-score {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .match-vs {
+            padding: 0 20px;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .match-info {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        .match-info p {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin: 3px 0;
+        }
+
+        /* Notifications */
+        .notification-item {
+            display: flex;
+            gap: 15px;
+            padding: 18px;
+            border-left: 4px solid var(--primary-color);
+            background: var(--bg-light);
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 15px;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-content h4 {
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .notification-content p {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .notification-time {
+            color: #999;
+            font-size: 0.75rem;
+            margin-top: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-meta {
+                justify-content: center;
+            }
+
+            .athletes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <a href="index.html" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="CDP1943-PREMIUM.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </a>
+            </div>
+            <nav class="navbar">
+                <div class="nav-links">
+                    <a href="index.html">Início</a>
+                    <a href="sobre.html">Clube</a>
+                    <a href="equipas.html">Modalidades</a>
+                    <a href="noticias.html">Notícias</a>
+                    <a href="contactos.html">Contactos</a>
+                </div>
+                <a href="#" class="btn-login"><i class="fas fa-user"></i> Miguel Santos</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-wrapper">
+        <!-- Profile Header -->
+        <section class="profile-header">
+            <div class="container">
+                <div class="profile-content">
+                    <img src="https://images.unsplash.com/vector-1742875355318-00d715aec3e8?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Miguel Santos" class="profile-avatar">
+                    <div class="profile-info">
+                        <h1>Miguel Santos</h1>
+                        <div class="profile-meta">
+                            <div class="profile-meta-item">
+                                <i class="fas fa-basketball-ball"></i>
+                                <span>Basquetebol</span>
+                            </div>
+                            <div class="profile-meta-item">
+                                <i class="fas fa-users"></i>
+                                <span>Sub-16 Masculino</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Stats -->
+        <section class="quick-stats">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>18</h3>
+                        <p>Atletas na Equipa</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>92%</h3>
+                        <p>Taxa de Presença</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>8-4</h3>
+                        <p>Vitórias-Derrotas</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Dashboard Content -->
+        <section>
+            <div class="container">
+                <div class="dashboard-content">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- Próximos Treinos/Jogos -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="far fa-calendar"></i> Próximos Treinos e Jogos</h2>
+                                <a href="#" class="view-all-link">Ver Calendário <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="training-item">
+                                <div class="training-date">
+                                    <span class="day">22</span>
+                                    <span class="month">JAN</span>
+                                </div>
+                                <div class="training-details">
+                                    <h3>Treino - Sub-16 Masculino</h3>
+                                    <p><i class="far fa-clock"></i> 18:00 - 20:00</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> Pavilhão Fernando Linhares</p>
+                                    <p><i class="fas fa-users"></i> Presenças Esperadas: 18/18</p>
+                                    <span class="attendance-badge badge-upcoming">Próximo</span>
+                                </div>
+                            </div>
+
+                            <div class="training-item">
+                                <div class="training-date">
+                                    <span class="day">25</span>
+                                    <span class="month">JAN</span>
+                                </div>
+                                <div class="training-details">
+                                    <h3>CDP vs SC Braga - Jogo Oficial</h3>
+                                    <p><i class="far fa-clock"></i> 15:30</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> Pavilhão Fernando Linhares</p>
+                                    <p><i class="fas fa-users"></i> Convocados: 12</p>
+                                    <span class="attendance-badge badge-upcoming">Jogo em Casa</span>
+                                </div>
+                            </div>
+                    </div>
+
+                    <!-- Atletas da Equipa Selecionada -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-users"></i> Atletas - Sub-16 Masculino</h2>
+                                <a href="#" class="view-all-link">Ver Todos <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="athletes-grid">
+                                <div class="athlete-item">
+                                    <div class="athlete-avatar">23</div>
+                                    <div class="athlete-info">
+                                        <h4>João Silva</h4>
+                                        <p>Base • 95% Presença</p>
+                                    </div>
+                                </div>
+
+                                <div class="athlete-item">
+                                    <div class="athlete-avatar">10</div>
+                                    <div class="athlete-info">
+                                        <h4>Pedro Costa</h4>
+                                        <p>Ala • 92% Presença</p>
+                                    </div>
+                                </div>
+
+                                <div class="athlete-item">
+                                    <div class="athlete-avatar">7</div>
+                                    <div class="athlete-info">
+                                        <h4>Tiago Sousa</h4>
+                                        <p>Poste • 88% Presença</p>
+                                    </div>
+                                </div>
+
+                                <div class="athlete-item">
+                                    <div class="athlete-avatar">15</div>
+                                    <div class="athlete-info">
+                                        <h4>André Ferreira</h4>
+                                        <p>Base • 90% Presença</p>
+                                    </div>
+                                </div>
+
+                                <div class="athlete-item">
+                                    <div class="athlete-avatar">11</div>
+                                    <div class="athlete-info">
+                                        <h4>Ricardo Alves</h4>
+                                        <p>Ala • 85% Presença</p>
+                                    </div>
+                                </div>
+
+                                <div class="athlete-item">
+                                    <div class="athlete-avatar">8</div>
+                                    <div class="athlete-info">
+                                        <h4>Bruno Martins</h4>
+                                        <p>Poste • 93% Presença</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estatísticas da Equipa -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-chart-bar"></i> Estatísticas - Época 2025/26</h2>
+                            </div>
+
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Métrica</th>
+                                        <th>Valor</th>
+                                        <th>Média por Jogo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><i class="fas fa-trophy"></i> Vitórias/Derrotas</td>
+                                        <td>8-4</td>
+                                        <td>66.7% Taxa de Vitória</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-basketball-ball"></i> Pontos Marcados</td>
+                                        <td>876</td>
+                                        <td>73.0 ppg</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-shield-alt"></i> Pontos Sofridos</td>
+                                        <td>804</td>
+                                        <td>67.0 ppg</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-hands-helping"></i> Assistências</td>
+                                        <td>192</td>
+                                        <td>16.0 apg</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-hand-paper"></i> Ressaltos</td>
+                                        <td>456</td>
+                                        <td>38.0 rpg</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Últimos Resultados -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-clipboard-list"></i> Últimos Resultados</h2>
+                                <a href="#" class="view-all-link">Ver Todos <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="match-result">
+                                <div class="match-team">
+                                    <h4>CDP</h4>
+                                    <div class="match-score">78</div>
+                                </div>
+                                <div class="match-vs">VS</div>
+                                <div class="match-team">
+                                    <h4>FC Porto</h4>
+                                    <div class="match-score">72</div>
+                                </div>
+                            </div>
+                            <div class="match-info">
+                                <p><i class="fas fa-calendar-alt"></i> 18 Janeiro 2026</p>
+                                <p><i class="fas fa-map-marker-alt"></i> Pavilhão Fernando Linhares</p>
+                            </div>
+
+                            <div class="match-result">
+                                <div class="match-team">
+                                    <h4>SC Braga</h4>
+                                    <div class="match-score">65</div>
+                                </div>
+                                <div class="match-vs">VS</div>
+                                <div class="match-team">
+                                    <h4>CDP</h4>
+                                    <div class="match-score">70</div>
+                                </div>
+                            </div>
+                            <div class="match-info">
+                                <p><i class="fas fa-calendar-alt"></i> 11 Janeiro 2026</p>
+                                <p><i class="fas fa-map-marker-alt"></i> Pavilhão Municipal de Braga</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Vencimento -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-money-bill-wave"></i> Vencimento</h2>
+                                <a href="#" class="view-all-link">Ver Histórico <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                                <div style="padding: 20px; background: #e8f5e9; border-radius: 10px; text-align: center;">
+                                    <p style="color: #2e7d32; font-size: 0.9rem; margin-bottom: 8px;">Vencimento Mensal</p>
+                                    <h3 style="color: #2e7d32; font-size: 2rem; font-weight: 700; margin: 0;">€1,250</h3>
+                                </div>
+                                <div style="padding: 20px; background: #e3f2fd; border-radius: 10px; text-align: center;">
+                                    <p style="color: #1976d2; font-size: 0.9rem; margin-bottom: 8px;">Próximo Pagamento</p>
+                                    <h3 style="color: #1976d2; font-size: 1.2rem; font-weight: 700; margin: 0;">28/01/2026</h3>
+                                </div>
+                            </div>
+
+                            <div style="padding: 18px; background: var(--bg-light); border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 45px; height: 45px; background: #2e7d32; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="color: var(--primary-color); font-size: 0.95rem; margin-bottom: 3px; font-weight: 600;">Janeiro 2026</h4>
+                                        <p style="color: var(--text-light); font-size: 0.8rem; margin: 0;">Pago em 28 Dez 2025</p>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <h4 style="color: var(--text-color); font-size: 1.1rem; font-weight: 700; margin-bottom: 3px;">€1,250</h4>
+                                    <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 600;">Pago</span>
+                                </div>
+                            </div>
+
+                            <div style="padding: 18px; background: var(--bg-light); border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 45px; height: 45px; background: #2e7d32; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="color: var(--primary-color); font-size: 0.95rem; margin-bottom: 3px; font-weight: 600;">Dezembro 2025</h4>
+                                        <p style="color: var(--text-light); font-size: 0.8rem; margin: 0;">Pago em 28 Nov 2025</p>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <h4 style="color: var(--text-color); font-size: 1.1rem; font-weight: 700; margin-bottom: 3px;">€1,250</h4>
+                                    <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 600;">Pago</span>
+                                </div>
+                            </div>
+
+                            <div style="padding: 18px; background: var(--bg-light); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 45px; height: 45px; background: #2e7d32; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div>
+                                        <h4 style="color: var(--primary-color); font-size: 0.95rem; margin-bottom: 3px; font-weight: 600;">Novembro 2025</h4>
+                                        <p style="color: var(--text-light); font-size: 0.8rem; margin: 0;">Pago em 28 Out 2025</p>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <h4 style="color: var(--text-color); font-size: 1.1rem; font-weight: 700; margin-bottom: 3px;">€1,250</h4>
+                                    <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 600;">Pago</span>
+                                </div>
+                            </div>
+
+                            <a href="#" class="action-btn" style="width: 100%; margin-top: 15px;">
+                                <i class="fas fa-file-invoice"></i>
+                                Descarregar Recibos
+                            </a>
+                        </div>
+
+                        <!-- Ações Rápidas -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-bolt"></i> Ações Rápidas</h2>
+                            </div>
+
+                            <div class="action-buttons">
+                                <a href="#" class="action-btn action-btn-primary">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    Marcar Treino
+                                </a>
+                                <a href="#" class="action-btn action-btn-primary">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    Convocar Atletas
+                                </a>
+                                <a href="#" class="action-btn">
+                                    <i class="fas fa-chart-line"></i>
+                                    Ver Estatísticas
+                                </a>
+                                <a href="#" class="action-btn">
+                                    <i class="fas fa-envelope"></i>
+                                    Mensagens
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Notificações -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-bell"></i> Notificações</h2>
+                                <a href="#" class="view-all-link">Ver Todas <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-exclamation"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Pavilhão Reservado</h4>
+                                    <p>O pavilhão foi reservado para o treino de amanhã às 18h00.</p>
+                                    <div class="notification-time">Há 1 hora</div>
+                                </div>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-user-injured"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Lesão Reportada</h4>
+                                    <p>Pedro Costa reportou uma lesão no joelho. Consultar fisioterapeuta.</p>
+                                    <div class="notification-time">Há 3 horas</div>
+                                </div>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Presenças Confirmadas</h4>
+                                    <p>Todos os atletas confirmaram presença no jogo de sábado.</p>
+                                    <div class="notification-time">Ontem</div>
+                                </div>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Relatório de Jogo</h4>
+                                    <p>Relatório do último jogo disponível para análise.</p>
+                                    <div class="notification-time">Há 2 dias</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Presenças nos Treinos -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-check-circle"></i> Presenças - Último Treino</h2>
+                            </div>
+
+                            <div style="padding: 20px; background: #e8f5e9; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                                <h3 style="color: #2e7d32; font-size: 2rem; margin-bottom: 5px;">17/18</h3>
+                                <p style="color: #2e7d32; font-size: 0.9rem;">atletas presentes</p>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <h4 style="color: var(--text-color); font-size: 0.95rem; margin-bottom: 10px; font-weight: 600;">Ausente:</h4>
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #ffebee; border-radius: 8px; border-left: 4px solid #c62828;">
+                                    <div style="width: 40px; height: 40px; background: #c62828; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">7</div>
+                                    <div>
+                                        <p style="color: #c62828; font-weight: 600; margin: 0;">Tiago Sousa</p>
+                                        <p style="color: #999; font-size: 0.8rem; margin: 0;">Justificado - Doença</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <a href="#" class="action-btn" style="width: 100%; margin-top: 15px;">
+                                <i class="fas fa-clipboard-list"></i>
+                                Ver Histórico Completo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo footer-logo">
+                    <img src="CDP1943-PREMIUM.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </div>
+                <p>Promovendo o desporto e a comunidade há mais de 80 anos.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com/cdpovoa" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://instagram.com/cdpovoa" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://linkedin.com/company/clube-desportivo-da-póvoa" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Links Rápidos</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="sobre.html">Clube</a></li>
+                    <li><a href="equipas.html">Modalidades</a></li>
+                    <li><a href="noticias.html">Notícias</a></li>
+                    <li><a href="contactos.html">Contactos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Contactos</h4>
+                <ul class="footer-contact">
+                    <li><i class="fas fa-map-marker-alt"></i> Largo Dr. José Pontes, 4490-556 Póvoa de Varzim</li>
+                    <li><i class="fas fa-phone"></i> +351 252 682 109</li>
+                    <li><i class="fas fa-envelope"></i> geral@cdpovoa.pt</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Clube Desportivo Da Póvoa. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

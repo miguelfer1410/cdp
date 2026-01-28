@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modalidades - Clube Desportivo Da Póvoa</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #003380 0%, #001f4d 100%);
+            color: white;
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Team Section */
+        .team-section {
+            padding: 80px 0;
+        }
+
+        .team-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-bottom: 100px;
+        }
+
+        .team-card.reverse {
+            direction: rtl;
+        }
+
+        .team-card.reverse > * {
+            direction: ltr;
+        }
+
+        .team-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .team-info h2 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .team-info > p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            font-size: 1.05rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-item i {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-top: 3px;
+        }
+
+        .info-item-content h4 {
+            color: var(--text-color);
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .info-item-content p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .conquistas-box {
+            background: var(--bg-light);
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+
+        .conquistas-box h4 {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .conquistas-box ul {
+            list-style: none;
+        }
+
+        .conquistas-box li {
+            color: var(--text-color);
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            font-size: 0.95rem;
+        }
+
+        .conquistas-box li::before {
+            content: "•";
+            color: var(--primary-color);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .btn-inscrever {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--primary-color);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-inscrever:hover {
+            background: var(--accent-color);
+        }
+
+        /* Programas Section */
+        .programas-section {
+            background: var(--bg-light);
+            padding: 80px 0;
+        }
+
+        .programas-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .programa-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .programa-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .programa-badge {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        .programa-card h3 {
+            color: var(--primary-color);
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .programa-card > p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+
+        .programa-card h4 {
+            color: var(--text-color);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .modalidades-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modalidades-list span {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #003380 0%, #001f4d 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .cta-section p {
+            font-size: 1.15rem;
+            margin-bottom: 35px;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .btn-white-solid {
+            background: white;
+            color: var(--primary-color);
+            padding: 14px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background 0.3s;
+        }
+
+        .btn-white-solid:hover {
+            background: #f0f0f0;
+        }
+
+        .btn-outline-white {
+            background: transparent;
+            color: white;
+            padding: 14px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 2px solid white;
+            transition: all 0.3s;
+        }
+
+        .btn-outline-white:hover {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .team-card {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .programas-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .team-info h2 {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <a href="index.html" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="CDP_logo.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </a>
+            </div>
+            <nav class="navbar">
+                <div class="nav-links">
+                    <a href="index.html">Início</a>
+                    <a href="sobre.html">Clube</a>
+                    <a href="equipas.html" class="active">Modalidades</a>
+                    <a href="index.html#noticias">Notícias</a>
+                    <a href="index.html#contactos">Contactos</a>
+                </div>
+                <a href="#" class="btn-login"><i class="fa-regular fa-user"></i> Login</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="page-header">
+        <div class="container">
+            <h1>As Nossas Modalidades</h1>
+            <p>Modalidades diversificadas com programas de formação e competição para todas as idades</p>
+        </div>
+    </section>
+
+    <!-- Teams Section -->
+    <section class="team-section">
+        <div class="container">
+
+            <div class="team-card">
+                <img src="https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&h=600&fit=crop" alt="Atletismo" class="team-image">
+                <div class="team-info">
+                    <h2>Atletismo</h2>
+                    <p>Formação completa em pista e estrada. Programa de alta competição em divisões nacionais.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Escalões</h4>
+                            <p>Benjamins a Veteranos (9 escalões)</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Nível Competitivo</h4>
+                            <p>Apuramento Divisão Nacional</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-running"></i>
+                        <div class="info-item-content">
+                            <h4>Instalações</h4>
+                            <p>Estádio Municipal (uma das melhores pistas do país)</p>
+                        </div>
+                    </div>
+
+                    <div class="conquistas-box">
+                        <h4>Conquistas Principais</h4>
+                        <ul>
+                            <li>Bicampeão Nacional II Divisão Feminina (1999/00, 2000/01)</li>
+                            <li>Fátima Silva: 7× Campeã Nacional de Maratona (1999-2006)</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <div class="team-card reverse">
+                <img src="https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&h=600&fit=crop" alt="Badminton" class="team-image">
+                <div class="team-info">
+                    <h2>Badminton</h2>
+                    <p>Modalidade em crescimento com programa de formação técnica e competição distrital.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Programa</h4>
+                            <p>Formação e Competição</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Nível Competitivo</h4>
+                            <p>Competição Distrital</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Local de Treino</h4>
+                            <p>Pavilhão Gimnodesportivo Fernando Linhares</p>
+                        </div>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <!-- Basquetebol -->
+            <div class="team-card">
+                <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=600&fit=crop" alt="Basquetebol" class="team-image">
+                <div class="team-info">
+                    <h2>Basquetebol</h2>
+                    <p>Programa de formação completo e equipas competitivas em várias categorias.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Escalões</h4>
+                            <p>Baby-Basket a Seniores</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Horários</h4>
+                            <p>Treinos: Segunda, Quarta e Sexta</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-user-tie"></i>
+                        <div class="info-item-content">
+                            <h4>Treinador Principal</h4>
+                            <p>Maria Santos</p>
+                        </div>
+                    </div>
+
+                    <div class="conquistas-box">
+                        <h4>Conquistas Recentes</h4>
+                        <ul>
+                            <li>Campeão Nacional I Divisão Feminina (1999/2000)</li>
+                            <li>Clube do Ano ABP (2004, 2007)</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <!-- Futevólei -->
+            <div class="team-card reverse">
+                <img src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&h=600&fit=crop" alt="Futevólei" class="team-image">
+                <div class="team-info">
+                    <h2>Futevólei</h2>
+                    <p>Tricampeões Nacionais e maior clube do país em número de atletas da modalidade.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Escalões</h4>
+                            <p>Sub-18, Seniores, Masters</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Nível Competitivo</h4>
+                            <p>Campeonato Nacional</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-medal"></i>
+                        <div class="info-item-content">
+                            <h4>Estatuto</h4>
+                            <p>Maior clube nacional em número de duplas</p>
+                        </div>
+                    </div>
+
+                    <div class="conquistas-box">
+                        <h4>Palmarés</h4>
+                        <ul>
+                            <li>Tricampeão Nacional (2013, 2014, 2015)</li>
+                            <li>Vice-Campeão Europeu</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <!-- Futsal -->
+            <div class="team-card">
+                <img src="https://images.unsplash.com/photo-1587384474964-3a06ce1ce699?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Futsal" class="team-image">
+                <div class="team-info">
+                    <h2>Futsal</h2>
+                    <p>Equipa sénior masculina e formação juvenil com tradição competitiva.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Escalões</h4>
+                            <p>Sub-7 a Sub-19, Seniores</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Horários</h4>
+                            <p>Treinos: Terça, Quinta e Sábado</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-user-tie"></i>
+                        <div class="info-item-content">
+                            <h4>Treinador Principal</h4>
+                            <p>Manuel Costa</p>
+                        </div>
+                    </div>
+
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hóquei em Patins -->
+            <div class="team-card reverse">
+                <img src="https://plus.unsplash.com/premium_photo-1719318342777-808082b05b24?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Hóquei em Patins" class="team-image">
+                <div class="team-info">
+                    <h2>Hóquei em Patins</h2>
+                    <p>Competem na 1ª Divisão Nacional. Recentemente promovidos após 10 anos fora da elite.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Escalões</h4>
+                            <p>Sub-9 a Sub-23, Seniores A e B</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Nível Competitivo</h4>
+                            <p>1ª Divisão Nacional</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-trophy"></i>
+                        <div class="info-item-content">
+                            <h4>Coordenador</h4>
+                            <p>Nuno Carrão (Campeão Mundial Sub-20)</p>
+                        </div>
+                    </div>
+
+                    <div class="conquistas-box">
+                        <h4>Conquista Recente</h4>
+                        <ul>
+                            <li>Campeão 2ª Divisão Zona Norte (2024/25)</li>
+                            <li>Promoção à 1ª Divisão Nacional</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ténis de Mesa -->
+            <div class="team-card">
+                <img src="https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=800&h=600&fit=crop" alt="Ténis de Mesa" class="team-image">
+                <div class="team-info">
+                    <h2>Ténis de Mesa</h2>
+                    <p>Programa de formação técnica e desenvolvimento de jovens atletas a nível distrital.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Programa</h4>
+                            <p>Formação e Competição</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Nível Competitivo</h4>
+                            <p>Competição Distrital</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Local de Treino</h4>
+                            <p>Pavilhão Gimnodesportivo Fernando Linhares</p>
+                        </div>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+
+            <!-- Voleibol -->
+            <div class="team-card reverse">
+                <img src="https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&h=600&fit=crop" alt="Voleibol" class="team-image">
+                <div class="team-info">
+                    <h2>Voleibol</h2>
+                    <p>Modalidades femininas e masculinas com grande participação da comunidade.</p>
+
+                    <div class="info-item">
+                        <i class="fas fa-layer-group"></i>
+                        <div class="info-item-content">
+                            <h4>Escalões</h4>
+                            <p>Mini a Seniores</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="far fa-calendar-alt"></i>
+                        <div class="info-item-content">
+                            <h4>Horários</h4>
+                            <p>Treinos: Terça, Quinta e Domingo</p>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fas fa-user-tie"></i>
+                        <div class="info-item-content">
+                            <h4>Treinador Principal</h4>
+                            <p>Pedro Costa</p>
+                        </div>
+                    </div>
+
+                    <div class="conquistas-box">
+                        <h4>Conquistas Recentes</h4>
+                        <ul>
+                            <li>Bicampeão Nacional Masters Femininos (2024, 2025)</li>
+                            <li>Campeão Nacional Masters Masculinos (2025)</li>
+                        </ul>
+                    </div>
+
+                    <button class="btn-inscrever">
+                        <i class="far fa-envelope"></i>
+                        Inscrever-se
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Pronto para Fazer Parte da Nossa Família?</h2>
+            <p>Junte-se a nós e descubra o seu potencial desportivo</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn-white-solid">Inscrever-se Agora</a>
+                <a href="sobre.html" class="btn-outline-white">Conhecer o Clube</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo footer-logo">
+                    <img src="CDP_logo.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </div>
+                <p>Promovendo o desporto e a comunidade há mais de 80 anos.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com/cdpovoa" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://instagram.com/cdpovoa" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://linkedin.com/company/clube-desportivo-da-póvoa" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Links Rápidos</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="sobre.html">Clube</a></li>
+                    <li><a href="equipas.html">Modalidades</a></li>
+                    <li><a href="index.html#noticias">Notícias</a></li>
+                    <li><a href="index.html#contactos">Contactos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Contactos</h4>
+                <ul class="footer-contact">
+                    <li><i class="fas fa-map-marker-alt"></i> Largo Dr. José Pontes, 4490-556 Póvoa de Varzim</li>
+                    <li><i class="fas fa-phone"></i> +351 252 682 109</li>
+                    <li><i class="fas fa-envelope"></i> geral@cdpovoa.pt</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Clube Desportivo Da Póvoa. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

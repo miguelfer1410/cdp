@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Atleta - Clube Desportivo Da Póvoa</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Dashboard Specific Styles */
+        .dashboard-wrapper {
+            background: var(--bg-light);
+            min-height: 100vh;
+            padding-top: 0;
+        }
+
+        /* Profile Header */
+        .profile-header {
+            background: linear-gradient(135deg, #003380 0%, #001f4d 100%);
+            color: white;
+            padding: 40px 0 60px;
+        }
+
+        .profile-content {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 5px solid white;
+            object-fit: cover;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .profile-info h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 25px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .profile-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            opacity: 0.95;
+        }
+
+        .profile-meta-item i {
+            font-size: 1.1rem;
+        }
+
+        /* Quick Stats Cards */
+        .quick-stats {
+            margin-top: -40px;
+            position: relative;
+            z-index: 10;
+            padding-bottom: 40px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.8rem;
+        }
+
+        .stat-card h3 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .stat-card p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Main Dashboard Content */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            padding-bottom: 60px;
+        }
+
+        /* Dashboard Card */
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--bg-light);
+        }
+
+        .dashboard-card-header h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dashboard-card-header h2 i {
+            font-size: 1.3rem;
+        }
+
+        .view-all-link {
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .view-all-link:hover {
+            color: var(--accent-color);
+        }
+
+        /* Events List */
+        .event-item {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            background: var(--bg-light);
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .event-item:hover {
+            background: #e8f0fe;
+            transform: translateX(5px);
+        }
+
+        .event-date {
+            text-align: center;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            padding: 10px 15px;
+            min-width: 70px;
+        }
+
+        .event-date .day {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: block;
+            line-height: 1;
+        }
+
+        .event-date .month {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .event-details {
+            flex: 1;
+        }
+
+        .event-details h3 {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .event-details p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+
+        .event-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .badge-treino {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-jogo {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .badge-importante {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Notifications */
+        .notification-item {
+            display: flex;
+            gap: 15px;
+            padding: 18px;
+            border-left: 4px solid var(--primary-color);
+            background: var(--bg-light);
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 15px;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notification-content h4 {
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .notification-content p {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .notification-time {
+            color: #999;
+            font-size: 0.75rem;
+            margin-top: 5px;
+        }
+
+        /* Team Members */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .team-member {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .team-member:hover {
+            background: #e8f0fe;
+            transform: translateX(5px);
+        }
+
+        .team-member-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .team-member-info h4 {
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .team-member-info p {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        /* Statistics Table */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stats-table th {
+            background: var(--bg-light);
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .stats-table td {
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+
+        .stats-table tr:hover {
+            background: var(--bg-light);
+        }
+
+        /* Progress Bars */
+        .progress-item {
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-header span {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        /* Documents List */
+        .document-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .document-item:hover {
+            background: #e8f0fe;
+        }
+
+        .document-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .document-icon {
+            width: 45px;
+            height: 45px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .document-details h4 {
+            color: var(--primary-color);
+            font-size: 0.95rem;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .document-details p {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        .download-btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-color);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .action-btn {
+            background: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .action-btn i {
+            font-size: 1.2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .profile-meta {
+                justify-content: center;
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">
+                <a href="index.html" style="display: flex; align-items: center; gap: 10px;">
+                    <img src="CDP_logo.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </a>
+            </div>
+            <nav class="navbar">
+                <div class="nav-links">
+                    <a href="index.html">Início</a>
+                    <a href="sobre.html">Clube</a>
+                    <a href="equipas.html">Modalidades</a>
+                    <a href="noticias.html">Notícias</a>
+                    <a href="contactos.html">Contactos</a>
+                </div>
+                <a href="#" class="btn-login"><i class="fas fa-user"></i> João Silva</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="dashboard-wrapper">
+        <!-- Profile Header -->
+        <section class="profile-header">
+            <div class="container">
+                <div class="profile-content">
+                    <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?w=200&h=200&fit=crop&crop=faces" alt="João Silva" class="profile-avatar">
+                    <div class="profile-info">
+                        <h1>João Silva</h1>
+                        <div class="profile-meta">
+                            <div class="profile-meta-item">
+                                <i class="fas fa-basketball-ball"></i>
+                                <span>Basquetebol</span>
+                            </div>
+                            <div class="profile-meta-item">
+                                <i class="fas fa-users"></i>
+                                <span>Sub-16 Masculino</span>
+                            </div>
+                            <div class="profile-meta-item">
+                                <i class="fas fa-hashtag"></i>
+                                <span>Número 23</span>
+                            </div>
+                            <div class="profile-meta-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Base</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Stats -->
+        <section class="quick-stats">
+            <div class="container">
+                <!-- Alerta de Pagamento -->
+                <div style="background: #fff3cd; border-left: 5px solid #ffc107; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #ff9800;"></i>
+                    <div style="flex: 1;">
+                        <h3 style="color: #ff9800; margin-bottom: 5px; font-size: 1.1rem;">Atenção: Quotas em Atraso</h3>
+                        <p style="color: #666; font-size: 0.95rem; margin: 0;">Tem quotas em atraso. Por favor, regularize a sua situação para continuar a participar nas atividades do clube.</p>
+                    </div>
+                    <a href="#" style="background: #ff9800; color: white; padding: 10px 25px; border-radius: 6px; text-decoration: none; font-weight: 600; white-space: nowrap;">Pagar Agora</a>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>12</h3>
+                        <p>Jogos Realizados</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>95%</h3>
+                        <p>Presença em Treinos</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>18.5</h3>
+                        <p>Pontos por Jogo</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3>3</h3>
+                        <p>Próximos Eventos</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Dashboard Content -->
+        <section>
+            <div class="container">
+                <div class="dashboard-content">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- Próximos Eventos -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="far fa-calendar"></i> Próximos Eventos</h2>
+                                <a href="#" class="view-all-link">Ver Calendário <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="event-item">
+                                <div class="event-date">
+                                    <span class="day">22</span>
+                                    <span class="month">JAN</span>
+                                </div>
+                                <div class="event-details">
+                                    <h3>Treino de Equipa</h3>
+                                    <p><i class="far fa-clock"></i> 18:00 - 20:00</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> Pavilhão Fernando Linhares</p>
+                                    <span class="event-badge badge-treino">Treino</span>
+                                </div>
+                            </div>
+
+                            <div class="event-item">
+                                <div class="event-date">
+                                    <span class="day">25</span>
+                                    <span class="month">JAN</span>
+                                </div>
+                                <div class="event-details">
+                                    <h3>CDP vs SC Braga</h3>
+                                    <p><i class="far fa-clock"></i> 15:30</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> Pavilhão Fernando Linhares</p>
+                                    <span class="event-badge badge-jogo">Jogo Oficial</span>
+                                </div>
+                            </div>
+
+                            <div class="event-item">
+                                <div class="event-date">
+                                    <span class="day">27</span>
+                                    <span class="month">JAN</span>
+                                </div>
+                                <div class="event-details">
+                                    <h3>Treino de Preparação Física</h3>
+                                    <p><i class="far fa-clock"></i> 17:00 - 18:30</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> Ginásio Municipal</p>
+                                    <span class="event-badge badge-treino">Treino</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estatísticas Pessoais -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-chart-bar"></i> Estatísticas da Época 2025/26</h2>
+                                <a href="#" class="view-all-link">Ver Todas <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Estatística</th>
+                                        <th>Total</th>
+                                        <th>Média</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><i class="fas fa-basketball-ball"></i> Pontos</td>
+                                        <td>222</td>
+                                        <td>18.5</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-hand-paper"></i> Ressaltos</td>
+                                        <td>84</td>
+                                        <td>7.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-hands-helping"></i> Assistências</td>
+                                        <td>48</td>
+                                        <td>4.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fas fa-shield-alt"></i> Roubos de Bola</td>
+                                        <td>36</td>
+                                        <td>3.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="far fa-clock"></i> Minutos</td>
+                                        <td>360</td>
+                                        <td>30.0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Dados Pessoais -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-user"></i> Dados Pessoais</h2>
+                                <a href="#" class="view-all-link">Editar <i class="fas fa-edit"></i></a>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Data de Nascimento</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">15/03/2009</p>
+                                </div>
+
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Idade</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">16 anos</p>
+                                </div>
+
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Número de Sócio</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">#2847</p>
+                                </div>
+
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Data de Inscrição</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">01/09/2020</p>
+                                </div>
+
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px; grid-column: 1 / -1;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Email</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">joao.silva@email.com</p>
+                                </div>
+
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px; grid-column: 1 / -1;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Telemóvel</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">+351 912 345 678</p>
+                                </div>
+
+                                <div style="padding: 15px; background: var(--bg-light); border-radius: 8px; grid-column: 1 / -1;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 5px;">Morada</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem;">Rua das Flores, 123 - 4490-500 Póvoa de Varzim</p>
+                                </div>
+
+                                <div style="padding: 15px; background: #e3f2fd; border-radius: 8px; grid-column: 1 / -1; border-left: 4px solid var(--primary-color);">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 8px;">Encarregado de Educação</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem; margin-bottom: 5px;">Maria Silva</p>
+                                    <p style="color: var(--text-light); font-size: 0.9rem;">Contacto: +351 918 765 432</p>
+                                </div>
+
+                                <div style="padding: 15px; background: #fff3e0; border-radius: 8px; grid-column: 1 / -1; border-left: 4px solid #ff9800;">
+                                    <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 8px;">Contacto de Emergência</p>
+                                    <p style="color: var(--text-color); font-weight: 600; font-size: 1rem; margin-bottom: 5px;">António Silva (Pai)</p>
+                                    <p style="color: var(--text-light); font-size: 0.9rem;">Contacto: +351 917 654 321</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Equipa -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-users"></i> A Minha Equipa</h2>
+                                <a href="#" class="view-all-link">Ver Todos <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="team-grid">
+                                <div class="team-member">
+                                    <div class="team-member-avatar">MS</div>
+                                    <div class="team-member-info">
+                                        <h4>Miguel Santos</h4>
+                                        <p>Treinador Principal</p>
+                                    </div>
+                                </div>
+
+                                <div class="team-member">
+                                    <div class="team-member-avatar">10</div>
+                                    <div class="team-member-info">
+                                        <h4>Pedro Costa</h4>
+                                        <p>Ala • Capitão</p>
+                                    </div>
+                                </div>
+
+                                <div class="team-member">
+                                    <div class="team-member-avatar">7</div>
+                                    <div class="team-member-info">
+                                        <h4>Tiago Sousa</h4>
+                                        <p>Poste</p>
+                                    </div>
+                                </div>
+
+                                <div class="team-member">
+                                    <div class="team-member-avatar">15</div>
+                                    <div class="team-member-info">
+                                        <h4>André Ferreira</h4>
+                                        <p>Base</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Notificações -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-bell"></i> Notificações</h2>
+                                <a href="#" class="view-all-link">Ver Todas <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-exclamation"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Alteração de Horário</h4>
+                                    <p>O treino de quarta-feira foi alterado para as 19h00.</p>
+                                    <div class="notification-time">Há 2 horas</div>
+                                </div>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Convocatória</h4>
+                                    <p>Foste convocado para o jogo de sábado contra o SC Braga.</p>
+                                    <div class="notification-time">Ontem</div>
+                                </div>
+                            </div>
+
+                            <div class="notification-item">
+                                <div class="notification-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>Documento Disponível</h4>
+                                    <p>O plano de treinos do mês de fevereiro já está disponível.</p>
+                                    <div class="notification-time">Há 2 dias</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ações Rápidas -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-bolt"></i> Ações Rápidas</h2>
+                            </div>
+
+                            <div class="quick-actions">
+                                <a href="#" class="action-btn">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Ver Calendário
+                                </a>
+                                <a href="#" class="action-btn">
+                                    <i class="fas fa-user-edit"></i>
+                                    Editar Perfil
+                                </a>
+                                <a href="#" class="action-btn">
+                                    <i class="fas fa-file-medical"></i>
+                                    Ficha Médica
+                                </a>
+                                <a href="#" class="action-btn">
+                                    <i class="fas fa-envelope"></i>
+                                    Mensagens
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Documentos -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-folder"></i> Documentos</h2>
+                                <a href="#" class="view-all-link">Ver Todos <i class="fas fa-arrow-right"></i></a>
+                            </div>
+
+                            <div class="document-item">
+                                <div class="document-info">
+                                    <div class="document-icon">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+                                    <div class="document-details">
+                                        <h4>Ficha de Inscrição</h4>
+                                        <p>Adicionado em 15 Set 2025</p>
+                                    </div>
+                                </div>
+                                <a href="#" class="download-btn">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+
+                            <div class="document-item">
+                                <div class="document-info">
+                                    <div class="document-icon">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+                                    <div class="document-details">
+                                        <h4>Seguro Desportivo</h4>
+                                        <p>Válido até 30 Jun 2026</p>
+                                    </div>
+                                </div>
+                                <a href="#" class="download-btn">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+
+                            <div class="document-item">
+                                <div class="document-info">
+                                    <div class="document-icon">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </div>
+                                    <div class="document-details">
+                                        <h4>Plano de Treinos</h4>
+                                        <p>Janeiro 2026</p>
+                                    </div>
+                                </div>
+                                <a href="#" class="download-btn">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Informações de Pagamento -->
+                        <div class="dashboard-card">
+                            <div class="dashboard-card-header">
+                                <h2><i class="fas fa-credit-card"></i> Estado de Pagamento</h2>
+                            </div>
+
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="width: 80px; height: 80px; background: #f44336; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 2.5rem;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <h3 style="color: #f44336; margin-bottom: 10px;">Quotas em Atraso</h3>
+                                <p style="color: var(--text-light); font-size: 0.9rem;">Última quota paga: Novembro 2025</p>
+                                <p style="color: #f44336; font-size: 0.95rem; font-weight: 600; margin-bottom: 15px;">Quotas em atraso: Dezembro 2025, Janeiro 2026</p>
+                                <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 20px;">Por favor, regularize a sua situação para continuar a participar nas atividades do clube.</p>
+                                <a href="#" class="action-btn" style="display: inline-flex; background: #f44336; color: white; border-color: #f44336; margin-bottom: 10px;">
+                                    <i class="fas fa-credit-card"></i>
+                                    Pagar Agora
+                                </a>
+                                <a href="#" class="action-btn" style="display: inline-flex;">
+                                    <i class="fas fa-receipt"></i>
+                                    Ver Detalhes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="logo footer-logo">
+                    <img src="CDP_logo.png" alt="Logo CDP" class="logo-img">
+                    <div class="logo-text">
+                        <h1>Clube Desportivo</h1>
+                        <span>Da Póvoa</span>
+                    </div>
+                </div>
+                <p>Promovendo o desporto e a comunidade há mais de 80 anos.</p>
+                <div class="social-links">
+                    <a href="https://facebook.com/cdpovoa" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://instagram.com/cdpovoa" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://linkedin.com/company/clube-desportivo-da-póvoa" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h4>Links Rápidos</h4>
+                <ul class="footer-links">
+                    <li><a href="index.html">Início</a></li>
+                    <li><a href="sobre.html">Clube</a></li>
+                    <li><a href="equipas.html">Modalidades</a></li>
+                    <li><a href="noticias.html">Notícias</a></li>
+                    <li><a href="contactos.html">Contactos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Contactos</h4>
+                <ul class="footer-contact">
+                    <li><i class="fas fa-map-marker-alt"></i> Largo Dr. José Pontes, 4490-556 Póvoa de Varzim</li>
+                    <li><i class="fas fa-phone"></i> +351 252 682 109</li>
+                    <li><i class="fas fa-envelope"></i> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d5a584f5c517d5e594d524b525c134d49">[email&#160;protected]</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>
