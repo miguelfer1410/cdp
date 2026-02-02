@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  FaMapMarkerAlt, 
-  FaPhone, 
-  FaEnvelope, 
-  FaClock, 
+import {
+  FaMapMarkerAlt,
+  FaPhone,
+  FaEnvelope,
+  FaClock,
   FaPaperPlane,
   FaFacebookF,
   FaInstagram,
@@ -45,45 +45,6 @@ const Contactos = () => {
         </div>
       </section>
 
-      {/* Info Cards */}
-      <section className="info-cards-section">
-        <div className="container">
-          <div className="info-cards-grid">
-            <div className="info-card">
-              <div className="info-icon-circle">
-                <FaMapMarkerAlt />
-              </div>
-              <h3>Morada</h3>
-              <p>Largo Dr. José Pontes<br/>4490-556 Póvoa de Varzim<br/>Portugal</p>
-            </div>
-
-            <div className="info-card">
-              <div className="info-icon-circle">
-                <FaPhone />
-              </div>
-              <h3>Telefone</h3>
-              <p>+351 252 682 109<br/>+351 252 684 400</p>
-            </div>
-
-            <div className="info-card">
-              <div className="info-icon-circle">
-                <FaEnvelope />
-              </div>
-              <h3>Email</h3>
-              <p>geral@cdpovoa.pt<br/>atendimento@cdpovoa.pt</p>
-            </div>
-
-            <div className="info-card">
-              <div className="info-icon-circle">
-                <FaClock />
-              </div>
-              <h3>Horário</h3>
-              <p>Segunda a Sexta: 14h30 - 19h30<br/>Sábados: 9h30 - 12h30<br/>Domingos: Encerrado</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Contact Form */}
       <section className="contact-section">
         <div className="container">
@@ -102,7 +63,7 @@ const Contactos = () => {
                 </div>
                 <div className="contact-detail-text">
                   <h4>Morada</h4>
-                  <p>Largo Dr. José Pontes<br/>4490-556 Póvoa de Varzim<br/>Portugal</p>
+                  <p>Largo Dr. José Pontes<br />4490-556 Póvoa de Varzim<br />Portugal</p>
                 </div>
               </div>
 
@@ -148,31 +109,31 @@ const Contactos = () => {
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Nome Completo *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="O seu nome" 
-                    required 
+                    placeholder="O seu nome"
+                    required
                   />
                 </div>
 
                 <div className="form-group">
                   <label>Email *</label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="seu.email@exemplo.com" 
-                    required 
+                    placeholder="seu.email@exemplo.com"
+                    required
                   />
                 </div>
 
                 <div className="form-group">
                   <label>Assunto *</label>
-                  <select 
+                  <select
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
@@ -189,11 +150,11 @@ const Contactos = () => {
 
                 <div className="form-group">
                   <label>Mensagem *</label>
-                  <textarea 
+                  <textarea
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    placeholder="A sua mensagem..." 
+                    placeholder="A sua mensagem..."
                     required
                   ></textarea>
                 </div>
@@ -212,13 +173,13 @@ const Contactos = () => {
         <div className="container">
           <h2>Como Chegar</h2>
           <div className="map-container">
-            <iframe 
+            <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3001.2947916089544!2d-8.764427323863657!3d41.2394285711952!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xd24fd3eb4c5c5e5%3A0x8b5e5e5e5e5e5e5e!2sLargo%20Dr.%20Jos%C3%A9%20Pontes%2C%204490-556%20P%C3%B3voa%20de%20Varzim!5e0!3m2!1spt-PT!2spt!4v1234567890123!5m2!1spt-PT!2spt"
-              width="100%" 
-              height="450" 
+              width="100%"
+              height="450"
               style={{ border: 0, borderRadius: '12px' }}
-              allowFullScreen="" 
-              loading="lazy" 
+              allowFullScreen=""
+              loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Localização do Clube Desportivo Da Póvoa"
             ></iframe>

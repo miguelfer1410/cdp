@@ -65,7 +65,6 @@ const Header = () => {
   const getMenuOptions = () => {
     const commonOptions = [
       { icon: <FaTachometerAlt />, label: 'Dashboard', link: getDashboardLink() },
-      { icon: <FaUserCircle />, label: 'Perfil', link: '/perfil' },
     ];
 
     if (userType.toLowerCase() === 'admin') {

@@ -91,6 +91,12 @@ public class AuthService : IAuthService
             PasswordHash = _passwordService.HashPassword(request.Password),
             FirstName = request.FirstName,
             LastName = request.LastName,
+            Phone = request.Phone,
+            BirthDate = request.BirthDate,
+            Nif = request.Nif,
+            Address = request.Address,
+            PostalCode = request.PostalCode,
+            City = request.City,
             UserType = UserType.Socio, // Registration is only for members
             CreatedAt = DateTime.UtcNow,
             IsActive = true

@@ -83,7 +83,13 @@ const Registo = () => {
           password: formData.password,
           confirmPassword: formData.confirmPassword,
           firstName: formData.firstName,
-          lastName: formData.lastName
+          lastName: formData.lastName,
+          phone: formData.telefone,
+          birthDate: formData.dataNascimento || null,
+          nif: formData.nif,
+          address: formData.morada,
+          postalCode: formData.codigoPostal,
+          city: formData.localidade
         })
       });
 

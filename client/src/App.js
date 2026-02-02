@@ -12,6 +12,7 @@ import Contactos from './pages/Contactos';
 import Login from './pages/auth/Login';
 import Registo from './pages/auth/Registo';
 import RegistoSucesso from './pages/auth/RegistoSucesso';
+import DashboardSocio from './pages/dashboards/DashboardSocio';
 
 function App() {
   return (
@@ -24,10 +25,11 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/registo" element={<Registo />} />
             <Route path="/registo-sucesso" element={<RegistoSucesso />} />
+            <Route path="/dashboard-socio" element={<DashboardSocio />} />
             <Route path="/clube" element={<Clube />} />
             <Route path="/modalidades" element={<Modalidades />} />
-            <Route path="/noticias" /*element={<Noticias />}*/ />
-            <Route path="/contactos" /*element={<Contactos />}*/ />
+            <Route path="/noticias" element={<Noticias />} />
+            <Route path="/contactos" element={<Contactos />} />
           </Routes>
         </main>
         <Footer />
