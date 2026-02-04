@@ -10,6 +10,9 @@ const Contact = () => {
     mensagem: ''
   });
 
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -17,10 +20,44 @@ const Contact = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Aqui adicionar lógica de envio
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await fetch('http://localhost:5285/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.nome,
+          email: formData.email,
+          subject: formData.assunto,
+          message: formData.mensagem
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Mensagem enviada com sucesso! Entraremos em contacto em breve.' });
+        setFormData({
+          nome: '',
+          email: '',
+          assunto: '',
+          mensagem: ''
+        });
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Erro ao enviar mensagem. Tente novamente.' });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage({ type: 'error', text: 'Erro ao enviar mensagem. Verifique sua conexão e tente novamente.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,14 +71,14 @@ const Contact = () => {
         <div className="contact-grid">
           <div className="contact-info-wrapper">
             <h3>Informações de Contacto</h3>
-            
+
             <div className="contact-item">
               <div className="icon-circle">
                 <FaMapMarkerAlt />
               </div>
               <div>
                 <h4>Morada</h4>
-                <p>Largo Dr. José Pontes<br/>4490-556 Póvoa de Varzim<br/>Portugal</p>
+                <p>Largo Dr. José Pontes<br />4490-556 Póvoa de Varzim<br />Portugal</p>
               </div>
             </div>
 
@@ -84,38 +121,55 @@ const Contact = () => {
 
           <div className="contact-form-wrapper">
             <h3>Envie-nos uma Mensagem</h3>
+
+            {message.text && (
+              <div className={`alert alert-${message.type}`} style={{
+                padding: '12px 16px',
+                marginBottom: '20px',
+                borderRadius: '8px',
+                backgroundColor: message.type === 'success' ? '#d4edda' : '#f8d7da',
+                color: message.type === 'success' ? '#155724' : '#721c24',
+                border: `1px solid ${message.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`
+              }}>
+                {message.text}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>Nome Completo *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   name="nome"
                   placeholder="O seu nome"
                   value={formData.nome}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
 
               <div className="form-group">
                 <label>Email *</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   name="email"
                   placeholder="seu.email@exemplo.com"
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
 
               <div className="form-group">
                 <label>Assunto *</label>
-                <select 
+                <select
                   name="assunto"
                   value={formData.assunto}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 >
                   <option value="">Selecione um assunto</option>
                   <option value="inscricoes">Inscrições</option>
@@ -126,18 +180,19 @@ const Contact = () => {
 
               <div className="form-group">
                 <label>Mensagem *</label>
-                <textarea 
+                <textarea
                   name="mensagem"
-                  rows="4" 
+                  rows="4"
                   placeholder="A sua mensagem..."
                   value={formData.mensagem}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 ></textarea>
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block">
-                Enviar Mensagem <FaPaperPlane />
+              <button type="submit" className="contact-btn contact-btn-primary contact-btn-block" disabled={loading}>
+                {loading ? 'Enviando...' : 'Enviar Mensagem'} <FaPaperPlane />
               </button>
             </form>
           </div>

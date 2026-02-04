@@ -54,4 +54,39 @@ public class AuthController : ControllerBase
                 new { message = "An error occurred during login" });
         }
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        try
+        {
+            await _authService.ForgotPasswordAsync(request.Email);
+            // We always return Ok to prevent email enumeration
+            return Ok(new { message = "Se o email existir, receberá instruções para recuperar a password." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in forgot password");
+            return StatusCode(500, new { message = "Ocorreu um erro ao processar o pedido." });
+        }
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        try
+        {
+            var result = await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+            if (!result)
+            {
+                return BadRequest(new { message = "Link inválido ou expirado." });
+            }
+            return Ok(new { message = "Password alterada com sucesso." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in reset password");
+            return StatusCode(500, new { message = "Ocorreu um erro ao alterar a password." });
+        }
+    }
 }

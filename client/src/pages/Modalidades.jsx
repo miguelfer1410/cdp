@@ -1,15 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaLayerGroup, FaCalendarAlt, FaTrophy, FaMapMarkerAlt, FaClipboardList, FaUserTie, FaClock, FaMedal } from 'react-icons/fa';
 import { MdEmail } from 'react-icons/md';
 import './Modalidades.css';
 
 const Modalidades = () => {
-  const modalidades = [
-    {
-      id: 'atletismo',
-      nome: 'Atletismo',
-      descricao: 'Formação completa em pista e estrada. Programa de alta competição em divisões nacionais.',
-      imagem: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&h=600&fit=crop',
+  const [modalidades, setModalidades] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchModalidades();
+  }, []);
+
+  const fetchModalidades = async () => {
+    try {
+      const response = await fetch('http://localhost:5285/api/sports');
+      if (response.ok) {
+        const data = await response.json();
+        setModalidades(data);
+      }
+    } catch (error) {
+      console.error('Error fetching sports:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop';
+    if (imageUrl.startsWith('http')) return imageUrl;
+    return `http://localhost:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+  };
+
+  // Informações detalhadas estáticas para cada modalidade
+  const modalidadesDetalhes = {
+    'Atletismo': {
       detalhes: [
         { icon: <FaLayerGroup />, label: 'Escalões', value: 'Benjamins a Veteranos (9 escalões)' },
         { icon: <FaTrophy />, label: 'Nível Competitivo', value: 'Apuramento Divisão Nacional' },
@@ -20,22 +44,14 @@ const Modalidades = () => {
         'Fátima Silva: 7× Campeã Nacional de Maratona (1999-2006)'
       ]
     },
-    {
-      id: 'badminton',
-      nome: 'Badminton',
-      descricao: 'Modalidade em crescimento com programa de formação técnica e competição distrital.',
-      imagem: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&h=600&fit=crop',
+    'Badminton': {
       detalhes: [
         { icon: <FaClipboardList />, label: 'Programa', value: 'Formação e Competição' },
         { icon: <FaTrophy />, label: 'Nível Competitivo', value: 'Competição Distrital' },
         { icon: <FaMapMarkerAlt />, label: 'Local de Treino', value: 'Pavilhão Gimnodesportivo Fernando Linhares' }
       ]
     },
-    {
-      id: 'basquetebol',
-      nome: 'Basquetebol',
-      descricao: 'Programa de formação completo e equipas competitivas em várias categorias.',
-      imagem: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=600&fit=crop',
+    'Basquetebol': {
       detalhes: [
         { icon: <FaLayerGroup />, label: 'Escalões', value: 'Baby-Basket a Seniores' },
         { icon: <FaClock />, label: 'Horários', value: 'Treinos: Segunda, Quarta e Sexta' },
@@ -46,11 +62,7 @@ const Modalidades = () => {
         'Clube do Ano ABP (2004, 2007)'
       ]
     },
-    {
-      id: 'futevolei',
-      nome: 'Futevólei',
-      descricao: 'Tricampeões Nacionais e maior clube do país em número de atletas da modalidade.',
-      imagem: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&h=600&fit=crop',
+    'Futevólei': {
       detalhes: [
         { icon: <FaLayerGroup />, label: 'Escalões', value: 'Sub-18, Seniores, Masters' },
         { icon: <FaTrophy />, label: 'Nível Competitivo', value: 'Campeonato Nacional' },
@@ -61,22 +73,14 @@ const Modalidades = () => {
         'Vice-Campeão Europeu'
       ]
     },
-    {
-      id: 'futsal',
-      nome: 'Futsal',
-      descricao: 'Equipa sénior masculina e formação juvenil com tradição competitiva.',
-      imagem: 'https://images.unsplash.com/photo-1587384474964-3a06ce1ce699?w=800&h=600&fit=crop',
+    'Futsal': {
       detalhes: [
         { icon: <FaLayerGroup />, label: 'Escalões', value: 'Sub-7 a Sub-19, Seniores' },
         { icon: <FaClock />, label: 'Horários', value: 'Treinos: Terça, Quinta e Sábado' },
         { icon: <FaUserTie />, label: 'Treinador Principal', value: 'Manuel Costa' }
       ]
     },
-    {
-      id: 'hoquei',
-      nome: 'Hóquei em Patins',
-      descricao: 'Competem na 1ª Divisão Nacional. Recentemente promovidos após 10 anos fora da elite.',
-      imagem: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=600&fit=crop',
+    'Hóquei em Patins': {
       detalhes: [
         { icon: <FaLayerGroup />, label: 'Escalões', value: 'Sub-9 a Sub-23, Seniores A e B' },
         { icon: <FaTrophy />, label: 'Nível Competitivo', value: '1ª Divisão Nacional' },
@@ -87,22 +91,14 @@ const Modalidades = () => {
         'Promoção à 1ª Divisão Nacional'
       ]
     },
-    {
-      id: 'tenis-mesa',
-      nome: 'Ténis de Mesa',
-      descricao: 'Programa de formação técnica e desenvolvimento de jovens atletas a nível distrital.',
-      imagem: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=800&h=600&fit=crop',
+    'Ténis de Mesa': {
       detalhes: [
         { icon: <FaClipboardList />, label: 'Programa', value: 'Formação e Competição' },
         { icon: <FaTrophy />, label: 'Nível Competitivo', value: 'Competição Distrital' },
         { icon: <FaMapMarkerAlt />, label: 'Local de Treino', value: 'Pavilhão Gimnodesportivo Fernando Linhares' }
       ]
     },
-    {
-      id: 'voleibol',
-      nome: 'Voleibol',
-      descricao: 'Modalidades femininas e masculinas com grande participação da comunidade.',
-      imagem: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&h=600&fit=crop',
+    'Voleibol': {
       detalhes: [
         { icon: <FaLayerGroup />, label: 'Escalões', value: 'Mini a Seniores' },
         { icon: <FaClock />, label: 'Horários', value: 'Treinos: Terça, Quinta e Domingo' },
@@ -113,7 +109,22 @@ const Modalidades = () => {
         'Campeão Nacional Masters Masculinos (2025)'
       ]
     }
-  ];
+  };
+
+  if (loading) {
+    return (
+      <div className="modalidades-page">
+        <section className="modalidades-hero">
+          <div className="container">
+            <div className="modalidades-hero-content">
+              <h1>As Nossas Modalidades</h1>
+              <p>A carregar modalidades...</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="modalidades-page">
@@ -130,77 +141,83 @@ const Modalidades = () => {
       {/* Modalidades List */}
       <section className="modalidades-list">
         <div className="container">
-          {modalidades.map((modalidade, index) => (
-            <div key={modalidade.id} className={`modalidade-item ${index % 2 === 0 ? 'reverse' : ''}`}>
-              <div className="modalidade-image">
-                <img src={modalidade.imagem} alt={modalidade.nome} />
-              </div>
-              <div className="modalidade-content">
-                <h2>{modalidade.nome}</h2>
-                <p className="modalidade-descricao">{modalidade.descricao}</p>
-                
-                <div className="modalidade-detalhes">
-                  {modalidade.detalhes.map((detalhe, idx) => (
-                    <div key={idx} className="detalhe-item">
-                      <span className="detalhe-icon">{detalhe.icon}</span>
-                      <div className="detalhe-text">
-                        <strong>{detalhe.label}</strong>
-                        <span>{detalhe.value}</span>
-                      </div>
-                    </div>
-                  ))}
+          {modalidades.map((modalidade, index) => {
+            const detalhesInfo = modalidadesDetalhes[modalidade.name] || { detalhes: [] };
+
+            return (
+              <div key={modalidade.id} className={`modalidade-item ${index % 2 === 0 ? 'reverse' : ''}`}>
+                <div className="modalidade-image">
+                  <img src={getImageUrl(modalidade.imageUrl)} alt={modalidade.name} />
                 </div>
+                <div className="modalidade-content">
+                  <h2>{modalidade.name}</h2>
+                  <p className="modalidade-descricao">{modalidade.description}</p>
 
-                {modalidade.conquistas && (
-                  <div className="conquistas-section">
-                    <h4>Conquistas Principais</h4>
-                    <ul>
-                      {modalidade.conquistas.map((conquista, idx) => (
-                        <li key={idx}>{conquista}</li>
+                  {detalhesInfo.detalhes && detalhesInfo.detalhes.length > 0 && (
+                    <div className="modalidade-detalhes">
+                      {detalhesInfo.detalhes.map((detalhe, idx) => (
+                        <div key={idx} className="detalhe-item">
+                          <span className="detalhe-icon">{detalhe.icon}</span>
+                          <div className="detalhe-text">
+                            <strong>{detalhe.label}</strong>
+                            <span>{detalhe.value}</span>
+                          </div>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
-                )}
+                    </div>
+                  )}
 
-                {modalidade.conquistasRecentes && (
-                  <div className="conquistas-section">
-                    <h4>Conquistas Recentes</h4>
-                    <ul>
-                      {modalidade.conquistasRecentes.map((conquista, idx) => (
-                        <li key={idx}>{conquista}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {detalhesInfo.conquistas && (
+                    <div className="conquistas-section">
+                      <h4>Conquistas Principais</h4>
+                      <ul>
+                        {detalhesInfo.conquistas.map((conquista, idx) => (
+                          <li key={idx}>{conquista}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                {modalidade.palmares && (
-                  <div className="conquistas-section">
-                    <h4>Palmarés</h4>
-                    <ul>
-                      {modalidade.palmares.map((item, idx) => (
-                        <li key={idx}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {detalhesInfo.conquistasRecentes && (
+                    <div className="conquistas-section">
+                      <h4>Conquistas Recentes</h4>
+                      <ul>
+                        {detalhesInfo.conquistasRecentes.map((conquista, idx) => (
+                          <li key={idx}>{conquista}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                {modalidade.conquistaRecente && (
-                  <div className="conquistas-section">
-                    <h4>Conquista Recente</h4>
-                    <ul>
-                      {modalidade.conquistaRecente.map((item, idx) => (
-                        <li key={idx}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                  {detalhesInfo.palmares && (
+                    <div className="conquistas-section">
+                      <h4>Palmarés</h4>
+                      <ul>
+                        {detalhesInfo.palmares.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                <button className="btn-inscrever">
-                  <MdEmail /> Inscrever-se
-                </button>
+                  {detalhesInfo.conquistaRecente && (
+                    <div className="conquistas-section">
+                      <h4>Conquista Recente</h4>
+                      <ul>
+                        {detalhesInfo.conquistaRecente.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <button className="btn-inscrever">
+                    <MdEmail /> Inscrever-se
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

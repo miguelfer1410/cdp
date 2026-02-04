@@ -13,7 +13,6 @@ const Header = () => {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    // Check if user is logged in
     const token = localStorage.getItem('token');
     const name = localStorage.getItem('userName');
     const type = localStorage.getItem('userType');
@@ -26,7 +25,6 @@ const Header = () => {
   }, [location]);
 
   useEffect(() => {
-    // Close dropdown when clicking outside
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
@@ -50,7 +48,7 @@ const Header = () => {
   const getDashboardLink = () => {
     switch (userType.toLowerCase()) {
       case 'admin':
-        return '/backoffice';
+        return '/dashboard-admin';
       case 'atleta':
         return '/dashboard-atleta';
       case 'treinador':
@@ -66,10 +64,6 @@ const Header = () => {
     const commonOptions = [
       { icon: <FaTachometerAlt />, label: 'Dashboard', link: getDashboardLink() },
     ];
-
-    if (userType.toLowerCase() === 'admin') {
-      commonOptions.push({ icon: <FaCog />, label: 'Administração', link: '/backoffice' });
-    }
 
     return commonOptions;
   };

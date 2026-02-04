@@ -1,9 +1,7 @@
-/* Modalidades Page Styles */
 .modalidades-page {
   min-height: 100vh;
 }
 
-/* Hero Section */
 .modalidades-hero {
   background: #003d82;
   padding: 80px 0;
@@ -39,7 +37,6 @@
   width: 100%;
 }
 
-/* Modalidades List */
 .modalidades-list {
   padding: 80px 0;
   background: #f8f9fa;
@@ -78,14 +75,18 @@
 
 .modalidade-image {
   width: 100%;
-  height: 100%;
-  min-height: 500px;
+  height: 400px;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modalidade-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -216,7 +217,6 @@
   font-size: 1.2rem;
 }
 
-/* CTA Section */
 .cta-section {
   background: linear-gradient(135deg, #003d82 0%, #0052a8 100%);
   padding: 80px 0;
@@ -281,12 +281,11 @@
   transform: translateY(-3px);
 }
 
-/* Responsive Design */
 @media (max-width: 1200px) {
   .modalidade-item {
     gap: 40px;
   }
-  
+
   .modalidade-content {
     padding: 40px;
   }
@@ -296,38 +295,38 @@
   .hero-content h1 {
     font-size: 2.5rem;
   }
-  
+
   .hero-content p {
     font-size: 1.05rem;
   }
-  
+
   .modalidade-item,
   .modalidade-item.reverse {
     grid-template-columns: 1fr;
     gap: 0;
   }
-  
+
   .modalidade-item.reverse .modalidade-image,
   .modalidade-item.reverse .modalidade-content {
     order: initial;
   }
-  
+
   .modalidade-image {
-    min-height: 350px;
+    height: 350px;
   }
-  
+
   .modalidade-content {
     padding: 35px;
   }
-  
+
   .modalidade-content h2 {
     font-size: 1.9rem;
   }
-  
+
   .cta-section h2 {
     font-size: 2rem;
   }
-  
+
   .cta-section p {
     font-size: 1.1rem;
   }
@@ -337,48 +336,52 @@
   .modalidades-hero {
     padding: 60px 0;
   }
-  
+
   .hero-content h1 {
     font-size: 2rem;
   }
-  
+
   .hero-content p {
     font-size: 1rem;
   }
-  
+
   .modalidades-list {
     padding: 50px 0;
   }
-  
+
   .modalidade-item {
     margin-bottom: 50px;
   }
-  
+
   .modalidade-image {
     min-height: 300px;
   }
-  
+
   .modalidade-content {
     padding: 30px 25px;
   }
-  
+
   .modalidade-content h2 {
     font-size: 1.7rem;
   }
-  
+
   .cta-section {
     padding: 60px 0;
   }
-  
+
   .cta-section h2 {
     font-size: 1.8rem;
   }
-  
+
   .cta-buttons {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
+  .modalidade-image {
+    height: 300px;
+  }
+
   .btn-primary,
   .btn-secondary {
     width: 100%;
@@ -389,16 +392,20 @@
   .hero-content h1 {
     font-size: 1.6rem;
   }
-  
+
   .modalidade-content h2 {
     font-size: 1.5rem;
   }
-  
+
   .detalhe-item {
     padding: 12px;
   }
-  
+
   .modalidade-content {
     padding: 25px 20px;
+  }
+
+  .modalidade-image {
+    height: 250px;
   }
 }

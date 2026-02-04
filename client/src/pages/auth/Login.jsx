@@ -26,7 +26,6 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    // Clear error when user starts typing
     if (error) setError('');
   };
 
@@ -36,7 +35,6 @@ const Login = () => {
     setError('');
 
     try {
-      // Call backend API
       const response = await fetch('http://localhost:5285/api/auth/login', {
         method: 'POST',
         headers: {
@@ -54,13 +52,11 @@ const Login = () => {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store token and user info
       localStorage.setItem('token', data.token);
       localStorage.setItem('userType', data.userType);
       localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
       localStorage.setItem('userEmail', data.email);
 
-      // Navigate to home page
       navigate('/');
     } catch (err) {
       console.error('Login error:', err);
@@ -97,7 +93,6 @@ const Login = () => {
               <div className="form-group">
                 <label>Email</label>
                 <div className="input-wrapper">
-                  <FaUser className="input-icon" />
                   <input
                     type="email"
                     name="email"
@@ -113,7 +108,6 @@ const Login = () => {
               <div className="form-group">
                 <label>Password</label>
                 <div className="input-wrapper">
-                  <FaLock className="input-icon" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
@@ -134,15 +128,13 @@ const Login = () => {
                 </div>
               </div>
 
-              <div className="form-options">
-                <label className="remember-me">
-                  <input type="checkbox" disabled={loading} />
-                  <span>Lembrar-me</span>
-                </label>
-                <a href="#" className="forgot-password">Esqueceu a password?</a>
+              <div className="auth-links" style={{ marginBottom: '20px', textAlign: 'right' }}>
+                <Link to="/recuperar-password" style={{ color: '#003380', fontSize: '0.9rem', textDecoration: 'none' }}>
+                  Esqueceu-se da password?
+                </Link>
               </div>
 
-              <button type="submit" className="btn-login" disabled={loading}>
+              <button type="submit" className="auth-button" disabled={loading}>
                 {loading ? 'A entrar...' : 'Entrar'}
               </button>
 

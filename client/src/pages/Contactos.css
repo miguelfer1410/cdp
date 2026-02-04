@@ -18,7 +18,6 @@
     margin: 0 auto;
 }
 
-/* Info Cards Section */
 .info-cards-section {
     padding: 80px 0;
     background: white;
@@ -64,7 +63,6 @@
     font-size: 0.95rem;
 }
 
-/* Contact Form Section */
 .contact-section {
     background: var(--bg-light);
     padding: 80px 0;
@@ -154,7 +152,7 @@
     display: flex;
     justify-content: space-between;
     padding: 12px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     font-size: 1rem;
 }
 
@@ -166,12 +164,11 @@
     font-weight: 600;
 }
 
-/* Form Side */
 .contact-form-side {
     background: white;
     padding: 45px;
     border-radius: 12px;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
 }
 
 .contact-form-side h3 {
@@ -222,9 +219,9 @@
     min-height: 120px;
 }
 
-.btn-submit {
+.contacts-btn-submit-home {
     width: 100%;
-    background: var(--primary-color);
+    background: #003380;
     color: white;
     padding: 16px;
     border: none;
@@ -239,11 +236,10 @@
     transition: background 0.3s;
 }
 
-.btn-submit:hover {
+.contacts-btn-submit-home:hover {
     background: var(--accent-color);
 }
 
-/* Map Section */
 .map-section {
     padding: 80px 0;
 }
@@ -288,7 +284,6 @@
     font-size: 0.95rem;
 }
 
-/* Departments Section */
 .departments-section {
     padding: 80px 0;
     background: white;
@@ -337,7 +332,6 @@
     flex-shrink: 0;
 }
 
-/* Social Section */
 .social-cta-section {
     background: var(--primary-color);
     color: white;
@@ -366,7 +360,7 @@
 .social-icon-large {
     width: 80px;
     height: 80px;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -383,7 +377,6 @@
     transform: translateY(-5px);
 }
 
-/* FAQ Section */
 .faq-section {
     padding: 80px 0;
     background: var(--bg-light);
@@ -407,7 +400,7 @@
     padding: 35px 40px;
     border-radius: 12px;
     margin-bottom: 20px;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
 }
 
 .faq-item h3 {
@@ -423,7 +416,6 @@
     font-size: 0.95rem;
 }
 
-/* Responsive */
 @media (max-width: 992px) {
     .info-cards-grid {
         grid-template-columns: repeat(2, 1fr);

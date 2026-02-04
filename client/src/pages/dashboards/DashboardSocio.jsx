@@ -24,17 +24,21 @@ import {
     FaArrowRight
 } from 'react-icons/fa';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
+import BecomeMember from '../../components/BecomeMember/BecomeMember';
 import './DashboardSocio.css';
 
 const DashboardSocio = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
+    const [paymentData, setPaymentData] = useState(null);
+    const [paymentHistory, setPaymentHistory] = useState([]);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+
     useEffect(() => {
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             try {
                 const token = localStorage.getItem('token');
 
@@ -43,7 +47,8 @@ const DashboardSocio = () => {
                     return;
                 }
 
-                const response = await fetch('http://localhost:5285/api/user/profile', {
+                // Fetch user profile
+                const userResponse = await fetch('http://localhost:5285/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -51,8 +56,8 @@ const DashboardSocio = () => {
                     }
                 });
 
-                if (!response.ok) {
-                    if (response.status === 401) {
+                if (!userResponse.ok) {
+                    if (userResponse.status === 401) {
                         localStorage.removeItem('token');
                         navigate('/login');
                         return;
@@ -60,17 +65,55 @@ const DashboardSocio = () => {
                     throw new Error('Failed to fetch user data');
                 }
 
-                const data = await response.json();
-                setUserData(data);
+                const userData = await userResponse.json();
+                setUserData(userData);
+
+                console.log(userData);
+
+                if (userData.membershipStatus === 'Active') {
+                    // Fetch payment summary
+                    const paymentResponse = await fetch('http://localhost:5285/api/payment/summary', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (paymentResponse.ok) {
+                        const paymentData = await paymentResponse.json();
+                        setPaymentData(paymentData);
+                        console.log(paymentData);
+                    }
+
+                    // Fetch payment history
+                    const historyResponse = await fetch('http://localhost:5285/api/payment/history', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (historyResponse.ok) {
+                        const historyData = await historyResponse.json();
+                        setPaymentHistory(historyData);
+                        console.log('Payment History:', historyData);
+                        console.log('User ID:', userData.id);
+                    } else {
+                        console.error('Failed to fetch payment history:', historyResponse.status);
+                    }
+                }
+
                 setLoading(false);
             } catch (err) {
-                console.error('Error fetching user data:', err);
+                console.error('Error fetching data:', err);
                 setError(err.message);
                 setLoading(false);
             }
         };
 
-        fetchUserData();
+        fetchData();
     }, [navigate]);
 
     const handleEditProfile = () => {
@@ -101,16 +144,36 @@ const DashboardSocio = () => {
         );
     }
 
-    // Calculate years as member
-    const memberSinceYear = new Date(userData.createdAt).getFullYear();
+    // Check if user is pending membership (hasn't paid first quota)
+    if (userData.membershipStatus === 'Pending') {
+        return (
+            <div className="dashboard-wrapper">
+                <BecomeMember userData={userData} />
+            </div>
+        );
+    }
+
+    // Calculate member data for active members
+    const memberSinceDate = userData.memberSince ? new Date(userData.memberSince) : new Date(userData.createdAt);
+    const memberSinceYear = memberSinceDate.getFullYear();
     const currentYear = new Date().getFullYear();
     const yearsAsMember = currentYear - memberSinceYear;
 
-    // Format registration date as dd/mm/yyyy
     const registrationDate = new Date(userData.createdAt);
     const formattedDate = `${registrationDate.getDate().toString().padStart(2, '0')}/${(registrationDate.getMonth() + 1).toString().padStart(2, '0')}/${registrationDate.getFullYear()}`;
 
-    // Format user data
+    // Format payment dates
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Não disponível';
+        const date = new Date(dateString);
+        return `${date.getDate().toString().padStart(2, '0')} ${getMonthAbbreviation(date.getMonth())} ${date.getFullYear()}`;
+    };
+
+    const getMonthAbbreviation = (monthIndex) => {
+        const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        return months[monthIndex];
+    };
+
     const memberData = {
         name: `${userData.firstName} ${userData.lastName}`,
         memberNumber: userData.id.toString().padStart(4, '0'),
@@ -124,17 +187,11 @@ const DashboardSocio = () => {
         address: userData.address || 'Não definido',
         postalCode: userData.postalCode && userData.city ? `${userData.postalCode} ${userData.city}` : 'Não definido',
         nif: userData.nif || 'Não definido',
-        monthlyFee: 25.00,
-        nextPayment: '01/02/2026',
+        monthlyFee: paymentData?.monthlyFee || 3.00,
+        nextPayment: paymentData?.nextPaymentDue ? formatDate(paymentData.nextPaymentDue) : 'Não disponível',
         validity: '31/12/2026',
-        status: userData.isActive ? 'Ativo' : 'Inativo'
+        status: paymentData?.paymentStatus || (userData.isActive ? 'Ativo' : 'Inativo')
     };
-
-    const payments = [
-        { month: 'Janeiro 2026', date: '01 Jan 2026', amount: 25.00, status: 'paid' },
-        { month: 'Dezembro 2025', date: '01 Dez 2025', amount: 25.00, status: 'paid' },
-        { month: 'Novembro 2025', date: '01 Nov 2025', amount: 25.00, status: 'paid' }
-    ];
 
     const benefits = [
         {
@@ -306,25 +363,31 @@ const DashboardSocio = () => {
                                     </div>
                                 </div>
 
-                                {payments.map((payment, index) => (
-                                    <div key={index} className="payment-item">
-                                        <div className="payment-details">
-                                            <div className="payment-icon">
-                                                <FaCheck />
+                                {paymentHistory.length > 0 ? (
+                                    paymentHistory.map((payment) => (
+                                        <div key={payment.id} className="payment-item">
+                                            <div className="payment-details">
+                                                <div className="payment-icon">
+                                                    {payment.status === 'Completed' ? <FaCheck /> : <FaClock />}
+                                                </div>
+                                                <div className="payment-info">
+                                                    <h4>Quota {payment.month}</h4>
+                                                    <p>Pago em {formatDate(payment.paymentDate)}</p>
+                                                </div>
                                             </div>
-                                            <div className="payment-info">
-                                                <h4>Quota {payment.month}</h4>
-                                                <p>Pago em {payment.date}</p>
+                                            <div className="payment-amount">
+                                                <h4>€{payment.amount.toFixed(2)}</h4>
+                                                <span className={`payment-status status-${payment.status.toLowerCase()}`}>
+                                                    {payment.status === 'Completed' ? 'Pago' : payment.status}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="payment-amount">
-                                            <h4>€{payment.amount.toFixed(2)}</h4>
-                                            <span className={`payment-status status-${payment.status}`}>
-                                                Pago
-                                            </span>
-                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                                        <p>Nenhum pagamento registado ainda.</p>
                                     </div>
-                                ))}
+                                )}
                             </div>
 
                             {/* Benefits */}

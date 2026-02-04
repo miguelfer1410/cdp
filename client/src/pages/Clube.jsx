@@ -5,7 +5,6 @@ import './Clube.css';
 const Clube = () => {
   return (
     <div className="clube-page">
-      {/* Page Header */}
       <section className="page-header-clube">
         <div className="container">
           <h1>Sobre o Clube</h1>
@@ -13,18 +12,17 @@ const Clube = () => {
         </div>
       </section>
 
-      {/* História Section */}
       <section className="historia-section">
         <div className="container">
           <div className="historia-grid">
             <div className="historia-text">
               <h2>A Nossa História</h2>
               <p>
-                O Clube Desportivo Da Póvoa foi fundado em 1943 com o objetivo de promover o desporto e os valores de fair play na comunidade local. 
+                O Clube Desportivo Da Póvoa foi fundado em 1943 com o objetivo de promover o desporto e os valores de fair play na comunidade local.
                 Desde então, temos sido um pilar fundamental no desenvolvimento desportivo da região.
               </p>
               <p>
-                Ao longo de mais de cinco décadas, formámos milhares de atletas, conquistámos títulos importantes e, acima de tudo, 
+                Ao longo de mais de cinco décadas, formámos milhares de atletas, conquistámos títulos importantes e, acima de tudo,
                 criámos uma família unida pela paixão ao desporto.
               </p>
               <p>
@@ -58,7 +56,6 @@ const Clube = () => {
         </div>
       </section>
 
-      {/* Valores Section */}
       <section className="valores-section">
         <div className="container">
           <div className="section-title-center">
@@ -102,7 +99,6 @@ const Clube = () => {
         </div>
       </section>
 
-      {/* Timeline Section */}
       <section className="timeline-section">
         <div className="container">
           <div className="section-title-center">
@@ -150,7 +146,6 @@ const Clube = () => {
         </div>
       </section>
 
-      {/* Instalações Section */}
       <section className="instalacoes-section">
         <div className="container">
           <div className="instalacoes-icon">

@@ -1,4 +1,3 @@
-/* Modal Overlay */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -24,7 +23,6 @@
     }
 }
 
-/* Modal Content */
 .modal-content {
     background: white;
     border-radius: 16px;
@@ -48,7 +46,6 @@
     }
 }
 
-/* Modal Header */
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -90,7 +87,6 @@
     cursor: not-allowed;
 }
 
-/* Form Styles */
 .modal-content form {
     padding: 30px;
 }
@@ -160,7 +156,6 @@
     gap: 15px;
 }
 
-/* Error Message */
 .modal-content .error-message {
     background: #ffebee;
     color: #c62828;
@@ -171,7 +166,6 @@
     border-left: 4px solid #c62828;
 }
 
-/* Modal Actions */
 .modal-content .modal-actions {
     display: flex;
     gap: 15px;
@@ -222,7 +216,6 @@
     transform: none;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .modal-content {
         width: 95%;

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using CdpApi.Data;
 using CdpApi.Models;
 using CdpApi.DTOs;
+using server.Services;
 
 namespace CdpApi.Services;
 
@@ -13,6 +14,8 @@ public interface IAuthService
 {
     Task<LoginResponse?> LoginAsync(LoginRequest request);
     Task<RegisterResponse?> RegisterAsync(RegisterRequest request);
+    Task ForgotPasswordAsync(string email);
+    Task<bool> ResetPasswordAsync(string token, string newPassword);
 }
 
 public class AuthService : IAuthService
@@ -20,45 +23,43 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly IPasswordService _passwordService;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
 
     public AuthService(
         ApplicationDbContext context,
         IPasswordService passwordService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IEmailService emailService)
     {
         _context = context;
         _passwordService = passwordService;
         _configuration = configuration;
+        _emailService = emailService;
     }
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
-        // Find user by email
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
 
         if (user == null)
         {
-            return null; // Invalid credentials
+            return null; 
         }
 
-        // Verify password
         if (!_passwordService.VerifyPassword(request.Password, user.PasswordHash))
         {
-            return null; // Invalid credentials
+            return null; 
         }
 
-        // Check if account is active
         if (!user.IsActive)
         {
             throw new UnauthorizedAccessException("Account is inactive");
         }
 
-        // Update last login
         user.LastLogin = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        // Generate JWT token
         var token = GenerateJwtToken(user);
         var expirationHours = _configuration.GetValue<int>("JwtSettings:ExpirationHours", 24);
 
@@ -75,7 +76,6 @@ public class AuthService : IAuthService
 
     public async Task<RegisterResponse?> RegisterAsync(RegisterRequest request)
     {
-        // Check if email already exists
         var existingUser = await _context.Users
             .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
 
@@ -84,7 +84,6 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Email already registered");
         }
 
-        // Create new user (always as Socio)
         var user = new User
         {
             Email = request.Email,
@@ -97,7 +96,7 @@ public class AuthService : IAuthService
             Address = request.Address,
             PostalCode = request.PostalCode,
             City = request.City,
-            UserType = UserType.Socio, // Registration is only for members
+            UserType = UserType.Socio, 
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
@@ -113,6 +112,53 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task ForgotPasswordAsync(string email)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
+
+        // We do not reveal if the email exists or not for security reasons
+        if (user == null)
+        {
+            return;
+        }
+
+        // Generate token
+        var token = Guid.NewGuid().ToString();
+        
+        // Save token to user
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(1); // Token valid for 1 hour
+        await _context.SaveChangesAsync();
+
+        // Create reset link
+        // Use IConfiguration to get the base URL if possible or hardcode for now based on user context
+        // Ideally this should be in appsettings
+        var clientUrl = "http://localhost:3000"; // Assuming default React port
+        var resetLink = $"{clientUrl}/reset-password?token={token}";
+
+        // Send Email
+        await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink);
+    }
+
+    public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+    {
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.PasswordResetToken == token);
+
+        if (user == null || user.PasswordResetTokenExpires < DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        user.PasswordHash = _passwordService.HashPassword(newPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpires = null;
+        
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private string GenerateJwtToken(User user)
     {
         var securityKey = new SymmetricSecurityKey(
@@ -124,6 +170,7 @@ public class AuthService : IAuthService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.Role, user.UserType.ToString()),
+            new Claim("Role", user.Role), // Add Role claim for admin authorization
             new Claim("FirstName", user.FirstName),
             new Claim("LastName", user.LastName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

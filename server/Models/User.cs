@@ -43,9 +43,23 @@ public class User
     [Required]
     public UserType UserType { get; set; }
 
+    [Required]
+    [MaxLength(20)]
+    public string Role { get; set; } = "User"; // "User" or "Admin"
+
+    [Required]
+    public MembershipStatus MembershipStatus { get; set; } = MembershipStatus.Pending;
+
+    public DateTime? MemberSince { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? LastLogin { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    [MaxLength(100)]
+    public string? PasswordResetToken { get; set; }
+
+    public DateTime? PasswordResetTokenExpires { get; set; }
 }

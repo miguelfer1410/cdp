@@ -1,0 +1,294 @@
+/* Container */
+.become-member-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+/* Welcome Section */
+.welcome-section {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    border-radius: 20px;
+    color: white;
+    margin-bottom: 50px;
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+.welcome-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.welcome-text {
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+    opacity: 0.95;
+}
+
+/* Benefits Section */
+.benefits-section {
+    margin-bottom: 50px;
+}
+
+.benefits-section h2 {
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 40px;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.benefit-card {
+    background: white;
+    padding: 35px 25px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.benefit-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.benefit-icon {
+    font-size: 3.5rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.benefit-icon svg {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+.benefit-card h3 {
+    color: var(--text-color);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.benefit-card p {
+    color: var(--text-light);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Payment Section */
+.payment-section {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+.payment-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.payment-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.payment-header svg {
+    font-size: 2rem;
+}
+
+.payment-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.payment-content {
+    padding: 40px;
+}
+
+.price-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 30px;
+}
+
+.price-label {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.price-value {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.payment-info {
+    margin-bottom: 30px;
+}
+
+.info-text {
+    color: var(--text-light);
+    font-size: 1rem;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.payment-button {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 51, 128, 0.3);
+}
+
+.payment-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 51, 128, 0.4);
+}
+
+.payment-button svg {
+    font-size: 1.3rem;
+}
+
+.payment-note {
+    margin-top: 25px;
+    padding: 15px;
+    background: #e3f2fd;
+    border-left: 4px solid var(--primary-color);
+    border-radius: 8px;
+}
+
+.payment-note p {
+    margin: 0;
+    color: #1565c0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Contact Section */
+.contact-section {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.contact-section h3 {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.contact-section>p {
+    color: var(--text-light);
+    margin-bottom: 20px;
+}
+
+.contact-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.contact-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.contact-item strong {
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.contact-item a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.contact-item a:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+    .payment-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .welcome-section {
+        padding: 40px 20px;
+    }
+
+    .welcome-section h1 {
+        font-size: 2rem;
+    }
+
+    .welcome-text {
+        font-size: 1rem;
+    }
+
+    .benefits-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-content {
+        padding: 25px;
+    }
+
+    .price-display {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}

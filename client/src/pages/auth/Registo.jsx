@@ -9,24 +9,17 @@ const Registo = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    // Dados Pessoais
     firstName: '',
     lastName: '',
     email: '',
     telefone: '',
     dataNascimento: '',
     nif: '',
-
-    // Morada
     morada: '',
     codigoPostal: '',
     localidade: '',
-
-    // Credenciais
     password: '',
     confirmPassword: '',
-
-    // Termos
     aceitaTermos: false,
     aceitaPrivacidade: false,
     aceitaComunicacoes: false
@@ -38,7 +31,6 @@ const Registo = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
-    // Clear error when user types
     if (error) setError('');
   };
 
@@ -72,7 +64,6 @@ const Registo = () => {
     setLoading(true);
 
     try {
-      // Call backend API
       const response = await fetch('http://localhost:5285/api/register', {
         method: 'POST',
         headers: {
@@ -99,7 +90,6 @@ const Registo = () => {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Success - redirect to success page or login
       navigate('/registo-sucesso');
     } catch (err) {
       console.error('Registration error:', err);
@@ -114,7 +104,6 @@ const Registo = () => {
       <div className="registo-container">
 
         <div className="registo-content">
-          {/* Progress Steps */}
           <div className="progress-steps">
             <div className={`progress-step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
               <div className="step-number">1</div>
@@ -134,7 +123,6 @@ const Registo = () => {
 
           <div className="registo-form-wrapper">
             <form onSubmit={step === 3 ? handleSubmit : handleNextStep}>
-              {/* Step 1: Dados Pessoais */}
               {step === 1 && (
                 <div className="form-step">
                   <h2>Dados Pessoais</h2>
@@ -144,7 +132,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Primeiro Nome *</label>
                       <div className="input-wrapper">
-                        <FaUser className="input-icon" />
                         <input
                           type="text"
                           name="firstName"
@@ -160,7 +147,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Último Nome *</label>
                       <div className="input-wrapper">
-                        <FaUser className="input-icon" />
                         <input
                           type="text"
                           name="lastName"
@@ -178,7 +164,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Email *</label>
                       <div className="input-wrapper">
-                        <FaEnvelope className="input-icon" />
                         <input
                           type="email"
                           name="email"
@@ -194,7 +179,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Telefone *</label>
                       <div className="input-wrapper">
-                        <FaPhone className="input-icon" />
                         <input
                           type="tel"
                           name="telefone"
@@ -224,7 +208,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>NIF *</label>
                       <div className="input-wrapper">
-                        <FaIdCard className="input-icon" />
                         <input
                           type="text"
                           name="nif"
@@ -251,7 +234,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Morada *</label>
                       <div className="input-wrapper">
-                        <FaMapMarkerAlt className="input-icon" />
                         <input
                           type="text"
                           name="morada"
@@ -308,7 +290,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Password *</label>
                       <div className="input-wrapper">
-                        <FaLock className="input-icon" />
                         <input
                           type="password"
                           name="password"
@@ -328,7 +309,6 @@ const Registo = () => {
                     <div className="form-group">
                       <label>Confirmar Password *</label>
                       <div className="input-wrapper">
-                        <FaLock className="input-icon" />
                         <input
                           type="password"
                           name="confirmPassword"
@@ -396,7 +376,7 @@ const Registo = () => {
                   </button>
                 ) : (
                   <button type="submit" className="btn-submit" disabled={loading}>
-                    <FaCheckCircle /> {loading ? 'A criar conta...' : 'Criar Conta'}
+                    Registar
                   </button>
                 )}
               </div>

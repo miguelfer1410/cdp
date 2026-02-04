@@ -74,7 +74,6 @@
     transform: scale(1.05);
 }
 
-/* User Menu Styles */
 .user-menu {
     position: relative;
 }
@@ -119,7 +118,6 @@
     transform: rotate(180deg);
 }
 
-/* Dropdown Menu */
 .user-dropdown {
     position: absolute;
     top: calc(100% + 10px);

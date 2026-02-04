@@ -98,7 +98,7 @@
   align-items: center;
 }
 
-.input-icon {
+.login-input-icon {
   position: absolute;
   left: 14px;
   color: var(--text-light, #666666);

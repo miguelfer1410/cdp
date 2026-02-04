@@ -13,6 +13,8 @@ public class UserProfileResponse
     public string? PostalCode { get; set; }
     public string? City { get; set; }
     public string UserType { get; set; } = string.Empty;
+    public string MembershipStatus { get; set; } = string.Empty;
+    public DateTime? MemberSince { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }
 }

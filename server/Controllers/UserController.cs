@@ -32,7 +32,6 @@ public class UserController : ControllerBase
     {
         try
         {
-            // Get user ID from JWT token claims
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
@@ -41,7 +40,6 @@ public class UserController : ControllerBase
 
             var userId = int.Parse(userIdClaim.Value);
 
-            // Get user from database
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null)
@@ -49,7 +47,6 @@ public class UserController : ControllerBase
                 return NotFound(new { message = "User not found" });
             }
 
-            // Map to response DTO
             var response = new UserProfileResponse
             {
                 Id = user.Id,
@@ -63,6 +60,8 @@ public class UserController : ControllerBase
                 PostalCode = user.PostalCode,
                 City = user.City,
                 UserType = user.UserType.ToString(),
+                MembershipStatus = user.MembershipStatus.ToString(),
+                MemberSince = user.MemberSince,
                 CreatedAt = user.CreatedAt,
                 IsActive = user.IsActive
             };
@@ -89,7 +88,6 @@ public class UserController : ControllerBase
     {
         try
         {
-            // Get user ID from JWT token claims
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
@@ -98,7 +96,6 @@ public class UserController : ControllerBase
 
             var userId = int.Parse(userIdClaim.Value);
 
-            // Get user from database
             var user = await _context.Users.FindAsync(userId);
 
             if (user == null)
@@ -106,7 +103,6 @@ public class UserController : ControllerBase
                 return NotFound(new { message = "User not found" });
             }
 
-            // Update user fields
             user.Phone = request.Phone;
             user.Nif = request.Nif;
             user.Address = request.Address;
@@ -115,7 +111,6 @@ public class UserController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            // Return updated profile
             var response = new UserProfileResponse
             {
                 Id = user.Id,
@@ -129,6 +124,8 @@ public class UserController : ControllerBase
                 PostalCode = user.PostalCode,
                 City = user.City,
                 UserType = user.UserType.ToString(),
+                MembershipStatus = user.MembershipStatus.ToString(),
+                MemberSince = user.MemberSince,
                 CreatedAt = user.CreatedAt,
                 IsActive = user.IsActive
             };

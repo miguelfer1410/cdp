@@ -21,7 +21,6 @@ public class PasswordService : IPasswordService
 
     public bool ValidatePasswordStrength(string password)
     {
-        // Minimum 8 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special character
         if (password.Length < 8) return false;
         if (!password.Any(char.IsUpper)) return false;
         if (!password.Any(char.IsLower)) return false;

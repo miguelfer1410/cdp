@@ -22,10 +22,42 @@ const Contactos = () => {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Adicionar lógica de envio aqui
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await fetch('http://localhost:5285/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Mensagem enviada com sucesso! Entraremos em contacto em breve.' });
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Erro ao enviar mensagem. Tente novamente.' });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage({ type: 'error', text: 'Erro ao enviar mensagem. Verifique sua conexão e tente novamente.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -37,7 +69,6 @@ const Contactos = () => {
 
   return (
     <div className="contact-page">
-      {/* Hero */}
       <section className="page-header">
         <div className="container">
           <h1>Contacte-nos</h1>
@@ -45,7 +76,6 @@ const Contactos = () => {
         </div>
       </section>
 
-      {/* Contact Form */}
       <section className="contact-section">
         <div className="container">
           <div className="section-title-center">
@@ -106,6 +136,20 @@ const Contactos = () => {
 
             <div className="contact-form-side">
               <h3>Envie-nos uma Mensagem</h3>
+
+              {message.text && (
+                <div className={`alert alert-${message.type}`} style={{
+                  padding: '12px 16px',
+                  marginBottom: '20px',
+                  borderRadius: '8px',
+                  backgroundColor: message.type === 'success' ? '#d4edda' : '#f8d7da',
+                  color: message.type === 'success' ? '#155724' : '#721c24',
+                  border: `1px solid ${message.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`
+                }}>
+                  {message.text}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Nome Completo *</label>
@@ -116,6 +160,7 @@ const Contactos = () => {
                     onChange={handleChange}
                     placeholder="O seu nome"
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -128,6 +173,7 @@ const Contactos = () => {
                     onChange={handleChange}
                     placeholder="seu.email@exemplo.com"
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -138,6 +184,7 @@ const Contactos = () => {
                     value={formData.subject}
                     onChange={handleChange}
                     required
+                    disabled={loading}
                   >
                     <option value="">Selecione um assunto</option>
                     <option value="inscricoes">Inscrições</option>
@@ -156,11 +203,12 @@ const Contactos = () => {
                     onChange={handleChange}
                     placeholder="A sua mensagem..."
                     required
+                    disabled={loading}
                   ></textarea>
                 </div>
 
-                <button type="submit" className="btn-submit">
-                  Enviar Mensagem <FaPaperPlane />
+                <button type="submit" className="contacts-btn-submit-home" disabled={loading}>
+                  {loading ? 'Enviando...' : 'Enviar Mensagem'} <FaPaperPlane />
                 </button>
               </form>
             </div>
@@ -168,7 +216,6 @@ const Contactos = () => {
         </div>
       </section>
 
-      {/* Map */}
       <section className="map-section">
         <div className="container">
           <h2>Como Chegar</h2>
@@ -187,7 +234,6 @@ const Contactos = () => {
         </div>
       </section>
 
-      {/* Departments */}
       <section className="departments-section">
         <div className="container">
           <h2>Departamentos</h2>
@@ -243,7 +289,6 @@ const Contactos = () => {
         </div>
       </section>
 
-      {/* Social CTA */}
       <section className="social-cta-section">
         <div className="container">
           <h2>Siga-nos nas Redes Sociais</h2>
@@ -262,7 +307,6 @@ const Contactos = () => {
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="faq-section">
         <div className="container">
           <h2>Perguntas Frequentes</h2>
