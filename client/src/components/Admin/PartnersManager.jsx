@@ -5,6 +5,7 @@ import './PartnersManager.css';
 const PartnersManager = () => {
     const [partners, setPartners] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [editingPartner, setEditingPartner] = useState(null);
     const [formData, setFormData] = useState({
@@ -43,6 +44,7 @@ const PartnersManager = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
 
         const token = localStorage.getItem('token');
         const formDataToSend = new FormData();
@@ -82,6 +84,8 @@ const PartnersManager = () => {
         } catch (error) {
             console.error('Error saving partner:', error);
             alert('Erro ao guardar parceiro');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -336,8 +340,15 @@ const PartnersManager = () => {
                                 >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-submit">
-                                    {editingPartner ? 'Atualizar Parceiro' : 'Adicionar Parceiro'}
+                                <button type="submit" className="btn-submit" disabled={submitting}>
+                                    {submitting ? (
+                                        <>
+                                            <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                                            A guardar...
+                                        </>
+                                    ) : (
+                                        editingPartner ? 'Atualizar Parceiro' : 'Adicionar Parceiro'
+                                    )}
                                 </button>
                             </div>
                         </form>

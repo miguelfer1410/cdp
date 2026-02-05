@@ -5,6 +5,7 @@ import './HeroBannerManager.css';
 const HeroBannerManager = () => {
     const [banners, setBanners] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [editingBanner, setEditingBanner] = useState(null);
     const [formData, setFormData] = useState({
@@ -40,6 +41,7 @@ const HeroBannerManager = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
 
         const token = localStorage.getItem('token');
         const formDataToSend = new FormData();
@@ -75,6 +77,8 @@ const HeroBannerManager = () => {
         } catch (error) {
             console.error('Error saving banner:', error);
             alert('Erro ao guardar banner');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -301,8 +305,15 @@ const HeroBannerManager = () => {
                                 >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-submit">
-                                    {editingBanner ? 'Atualizar Banner' : 'Criar Banner'}
+                                <button type="submit" className="btn-submit" disabled={submitting}>
+                                    {submitting ? (
+                                        <>
+                                            <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                                            A guardar...
+                                        </>
+                                    ) : (
+                                        editingBanner ? 'Atualizar Banner' : 'Criar Banner'
+                                    )}
                                 </button>
                             </div>
                         </form>

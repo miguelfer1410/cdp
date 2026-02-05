@@ -5,6 +5,7 @@ import './NewsManager.css';
 const NewsManager = () => {
     const [news, setNews] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [editingNews, setEditingNews] = useState(null);
     const [formData, setFormData] = useState({
@@ -55,6 +56,7 @@ const NewsManager = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
 
         const token = localStorage.getItem('token');
         const formDataToSend = new FormData();
@@ -94,6 +96,8 @@ const NewsManager = () => {
         } catch (error) {
             console.error('Error saving news:', error);
             alert('Erro ao guardar notícia');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -383,8 +387,15 @@ const NewsManager = () => {
                                 >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-submit">
-                                    {editingNews ? 'Atualizar Notícia' : 'Criar Notícia'}
+                                <button type="submit" className="btn-submit" disabled={submitting}>
+                                    {submitting ? (
+                                        <>
+                                            <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                                            A guardar...
+                                        </>
+                                    ) : (
+                                        editingNews ? 'Atualizar Notícia' : 'Criar Notícia'
+                                    )}
                                 </button>
                             </div>
                         </form>
