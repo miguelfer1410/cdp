@@ -52,8 +52,14 @@ const Login = () => {
         throw new Error(data.message || 'Login failed');
       }
 
+      // Backend now returns roles array instead of userType
+      const roles = data.roles || ['User'];
+      const primaryRole = roles.includes('Admin') ? 'Admin' : (roles[0] || 'User');
+
       localStorage.setItem('token', data.token);
-      localStorage.setItem('userType', data.userType);
+      localStorage.setItem('roles', JSON.stringify(roles));
+      console.log(primaryRole);
+      localStorage.setItem('userType', primaryRole); // For backwards compatibility
       localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
       localStorage.setItem('userEmail', data.email);
 

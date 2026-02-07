@@ -16,11 +16,24 @@ const Header = () => {
     const token = localStorage.getItem('token');
     const name = localStorage.getItem('userName');
     const type = localStorage.getItem('userType');
+    const rolesStr = localStorage.getItem('roles');
 
-    if (token && name && type) {
+    if (token && name) {
       setIsLoggedIn(true);
       setUserName(name);
-      setUserType(type);
+
+      // If we have roles, use them to determine userType
+      if (rolesStr) {
+        try {
+          const roles = JSON.parse(rolesStr);
+          const primaryRole = roles.includes('Admin') ? 'Admin' : (roles[0] || 'User');
+          setUserType(primaryRole);
+        } catch (e) {
+          setUserType(type || 'User');
+        }
+      } else {
+        setUserType(type || 'User');
+      }
     }
   }, [location]);
 
@@ -40,12 +53,14 @@ const Header = () => {
     localStorage.removeItem('userName');
     localStorage.removeItem('userType');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('roles');
     setIsLoggedIn(false);
     setDropdownOpen(false);
     navigate('/');
   };
 
   const getDashboardLink = () => {
+    console.log(userType);
     switch (userType.toLowerCase()) {
       case 'admin':
         return '/dashboard-admin';
@@ -54,6 +69,7 @@ const Header = () => {
       case 'treinador':
         return '/dashboard-treinador';
       case 'socio':
+      case 'user':  // Users with 'User' role are members (sócios)
         return '/dashboard-socio';
       default:
         return '/';
@@ -113,7 +129,11 @@ const Header = () => {
               {dropdownOpen && (
                 <div className="user-dropdown">
                   <div className="dropdown-header">
-                    <span className="user-type-badge">{userType}</span>
+                    <img src="/CDP_logo.png" alt="Logo CDP" className="logo-img" />
+                    <div className="logo-text">
+                      <h1>Clube Desportivo</h1>
+                      <span>Da Póvoa</span>
+                    </div>
                   </div>
                   {getMenuOptions().map((option, index) => (
                     <Link

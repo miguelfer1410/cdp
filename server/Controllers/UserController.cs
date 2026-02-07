@@ -40,7 +40,11 @@ public class UserController : ControllerBase
 
             var userId = int.Parse(userIdClaim.Value);
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users
+                .Include(u => u.MemberProfile)
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
             {
@@ -59,9 +63,9 @@ public class UserController : ControllerBase
                 Address = user.Address,
                 PostalCode = user.PostalCode,
                 City = user.City,
-                UserType = user.UserType.ToString(),
-                MembershipStatus = user.MembershipStatus.ToString(),
-                MemberSince = user.MemberSince,
+                Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(),
+                MembershipStatus = user.MemberProfile?.MembershipStatus.ToString(),
+                MemberSince = user.MemberProfile?.MemberSince,
                 CreatedAt = user.CreatedAt,
                 IsActive = user.IsActive
             };
@@ -96,7 +100,11 @@ public class UserController : ControllerBase
 
             var userId = int.Parse(userIdClaim.Value);
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users
+                .Include(u => u.MemberProfile)
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
             {
@@ -123,9 +131,9 @@ public class UserController : ControllerBase
                 Address = user.Address,
                 PostalCode = user.PostalCode,
                 City = user.City,
-                UserType = user.UserType.ToString(),
-                MembershipStatus = user.MembershipStatus.ToString(),
-                MemberSince = user.MemberSince,
+                Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(),
+                MembershipStatus = user.MemberProfile?.MembershipStatus.ToString(),
+                MemberSince = user.MemberProfile?.MemberSince,
                 CreatedAt = user.CreatedAt,
                 IsActive = user.IsActive
             };

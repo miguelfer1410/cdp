@@ -40,6 +40,8 @@ public class AuthService : IAuthService
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
         var user = await _context.Users
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
 
         if (user == null)
@@ -66,7 +68,7 @@ public class AuthService : IAuthService
         return new LoginResponse
         {
             Token = token,
-            UserType = user.UserType.ToString(),
+            Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(),
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
@@ -96,12 +98,36 @@ public class AuthService : IAuthService
             Address = request.Address,
             PostalCode = request.PostalCode,
             City = request.City,
-            UserType = UserType.Socio, 
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
 
         _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        // Assign "User" role by default
+        var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+        if (userRole != null)
+        {
+            var userRoleAssignment = new UserRole
+            {
+                UserId = user.Id,
+                RoleId = userRole.Id,
+                AssignedAt = DateTime.UtcNow
+            };
+            _context.UserRoles.Add(userRoleAssignment);
+        }
+
+        // Create MemberProfile (all new registrations are members)
+        var memberProfile = new MemberProfile
+        {
+            UserId = user.Id,
+            MembershipNumber = GenerateMembershipNumber(),
+            MembershipStatus = MembershipStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.MemberProfiles.Add(memberProfile);
+
         await _context.SaveChangesAsync();
 
         return new RegisterResponse
@@ -165,16 +191,20 @@ public class AuthService : IAuthService
             Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key not configured")));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.UserType.ToString()),
-            new Claim("Role", user.Role), // Add Role claim for admin authorization
             new Claim("FirstName", user.FirstName),
             new Claim("LastName", user.LastName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        // Add role claims from UserRoles
+        foreach (var userRole in user.UserRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+        }
 
         var expirationHours = _configuration.GetValue<int>("JwtSettings:ExpirationHours", 24);
 
@@ -188,4 +218,13 @@ public class AuthService : IAuthService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    private string GenerateMembershipNumber()
+    {
+        // Generate membership number based on current count + 1
+        // Format: CDP-XXXXXX (e.g., CDP-000001, CDP-000002)
+        var memberCount = _context.MemberProfiles.Count();
+        var memberNumber = (memberCount + 1).ToString("D6");
+        return $"CDP-{memberNumber}";
+    }
 }
+

@@ -1,0 +1,14 @@
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 137
+Invalid column name 'UserType'.
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 137
+Invalid column name 'UserType'.
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 137
+Invalid column name 'UserType'.
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 133
+Invalid column name 'MembershipStatus'.
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 134
+Invalid column name 'MemberSince'.
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 144
+Invalid column name 'Role'.
+Msg 207, Level 16, State 1, Server DESKTOP-KU8TIMC\MSSQLSERVERS, Line 153
+Invalid column name 'UserType'.

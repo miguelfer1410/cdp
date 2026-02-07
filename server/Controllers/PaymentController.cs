@@ -32,15 +32,23 @@ public class PaymentController : ControllerBase
                 return Unauthorized(new { message = "Invalid user token" });
             }
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users
+                .Include(u => u.MemberProfile)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            // Get all completed payments for this user
+            if (user.MemberProfile == null)
+            {
+                return BadRequest(new { message = "User does not have a member profile" });
+            }
+
+            // Get all completed payments for this member profile
             var payments = await _context.Payments
-                .Where(p => p.UserId == userId && p.Status == "Completed")
+                .Where(p => p.MemberProfileId == user.MemberProfile.Id && p.Status == "Completed")
                 .OrderByDescending(p => p.PaymentDate)
                 .ToListAsync();
 
@@ -67,10 +75,10 @@ public class PaymentController : ControllerBase
                     paymentStatus = "Em Dia";
                 }
             }
-            else if (user.MemberSince.HasValue)
+            else if (user.MemberProfile.MemberSince.HasValue)
             {
                 // Member but no payments - calculate from member since date
-                nextPaymentDue = user.MemberSince.Value.AddMonths(1);
+                nextPaymentDue = user.MemberProfile.MemberSince.Value.AddMonths(1);
                 paymentStatus = nextPaymentDue < DateTime.UtcNow ? "Atrasado" : "Pendente";
             }
 
@@ -106,15 +114,23 @@ public class PaymentController : ControllerBase
                 return Unauthorized(new { message = "Invalid user token" });
             }
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users
+                .Include(u => u.MemberProfile)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            
             if (user == null)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            // Get last 12 payments for this user
+            if (user.MemberProfile == null)
+            {
+                return BadRequest(new { message = "User does not have a member profile" });
+            }
+
+            // Get last 12 payments for this member profile
             var payments = await _context.Payments
-                .Where(p => p.UserId == userId)
+                .Where(p => p.MemberProfileId == user.MemberProfile.Id)
                 .OrderByDescending(p => p.PaymentDate)
                 .Take(12)
                 .ToListAsync();

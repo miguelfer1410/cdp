@@ -8,7 +8,7 @@ public class Payment
     public int Id { get; set; }
 
     [Required]
-    public int UserId { get; set; }
+    public int MemberProfileId { get; set; }
 
     [Required]
     public decimal Amount { get; set; }
@@ -33,5 +33,5 @@ public class Payment
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation property
-    public User? User { get; set; }
+    public MemberProfile? MemberProfile { get; set; }
 }

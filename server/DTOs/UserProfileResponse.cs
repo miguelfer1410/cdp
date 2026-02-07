@@ -12,8 +12,8 @@ public class UserProfileResponse
     public string? Address { get; set; }
     public string? PostalCode { get; set; }
     public string? City { get; set; }
-    public string UserType { get; set; } = string.Empty;
-    public string MembershipStatus { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+    public string? MembershipStatus { get; set; }
     public DateTime? MemberSince { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsActive { get; set; }

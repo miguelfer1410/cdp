@@ -40,17 +40,11 @@ public class User
     [MaxLength(100)]
     public string? City { get; set; }
 
-    [Required]
-    public UserType UserType { get; set; }
-
-    [Required]
-    [MaxLength(20)]
-    public string Role { get; set; } = "User"; // "User" or "Admin"
-
-    [Required]
-    public MembershipStatus MembershipStatus { get; set; } = MembershipStatus.Pending;
-
-    public DateTime? MemberSince { get; set; }
+    // Navigation properties for profiles
+    public MemberProfile? MemberProfile { get; set; }
+    public AthleteProfile? AthleteProfile { get; set; }
+    public CoachProfile? CoachProfile { get; set; }
+    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
