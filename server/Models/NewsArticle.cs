@@ -41,4 +41,7 @@ public class NewsArticle
 
     // Navigation property
     public User? Author { get; set; }
+
+    // Gallery images collection
+    public ICollection<NewsImage> GalleryImages { get; set; } = new List<NewsImage>();
 }

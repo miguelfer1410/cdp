@@ -14,9 +14,11 @@ const NewsManager = () => {
         content: '',
         category: '',
         isPublished: false,
-        image: null
+        image: null,
+        galleryImages: []
     });
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [galleryPreviews, setGalleryPreviews] = useState([]);
 
     const categories = [
         'Clube',
@@ -69,6 +71,17 @@ const NewsManager = () => {
 
         if (formData.image) {
             formDataToSend.append('image', formData.image);
+        }
+
+        // Append gallery images
+        if (formData.galleryImages && formData.galleryImages.length > 0) {
+            console.log(`Adding ${formData.galleryImages.length} gallery images to FormData`);
+            formData.galleryImages.forEach((image, index) => {
+                console.log(`Gallery image ${index}:`, image.name, image.size);
+                formDataToSend.append('galleryImages', image);
+            });
+        } else {
+            console.log('No gallery images to send');
         }
 
         try {
@@ -124,6 +137,8 @@ const NewsManager = () => {
     };
 
     const handleEdit = (article) => {
+        console.log('Editing article:', article);
+        console.log('Has gallery images?', article.galleryImages?.length || 0);
         setEditingNews(article);
         setFormData({
             title: article.title,
@@ -131,11 +146,25 @@ const NewsManager = () => {
             content: article.content,
             category: article.category,
             isPublished: article.isPublished,
-            image: null
+            image: null,
+            galleryImages: [] // Initialize empty array for new gallery images
         });
+
+        // Set featured image preview
         if (article.imageUrl) {
             setPreviewUrl(getImageUrl(article.imageUrl));
         }
+
+        // Load existing gallery images for preview
+        if (article.galleryImages && article.galleryImages.length > 0) {
+            console.log('Loading gallery previews:', article.galleryImages);
+            const existingGalleryUrls = article.galleryImages.map(img => getImageUrl(img.imageUrl));
+            console.log('Preview URLs:', existingGalleryUrls);
+            setGalleryPreviews(existingGalleryUrls);
+        } else {
+            setGalleryPreviews([]);
+        }
+
         setShowModal(true);
     };
 
@@ -146,10 +175,12 @@ const NewsManager = () => {
             content: '',
             category: '',
             isPublished: false,
-            image: null
+            image: null,
+            galleryImages: []
         });
         setEditingNews(null);
         setPreviewUrl(null);
+        setGalleryPreviews([]);
     };
 
     const handleImageChange = (e) => {
@@ -163,6 +194,33 @@ const NewsManager = () => {
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleGalleryImagesChange = (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            setFormData({ ...formData, galleryImages: [...formData.galleryImages, ...files] });
+
+            // Create previews
+            const newPreviews = [];
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    newPreviews.push(reader.result);
+                    if (newPreviews.length === files.length) {
+                        setGalleryPreviews([...galleryPreviews, ...newPreviews]);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    };
+
+    const removeGalleryImage = (index) => {
+        const newGalleryImages = formData.galleryImages.filter((_, i) => i !== index);
+        const newPreviews = galleryPreviews.filter((_, i) => i !== index);
+        setFormData({ ...formData, galleryImages: newGalleryImages });
+        setGalleryPreviews(newPreviews);
     };
 
     const getImageUrl = (imageUrl) => {
@@ -365,6 +423,78 @@ const NewsManager = () => {
                                         style={{ display: 'none' }}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-section">
+                                <label className="form-label">Galeria de Imagens (Opcional)</label>
+                                <small className="form-hint" style={{ display: 'block', marginBottom: '12px', color: '#666' }}>
+                                    Adicione mais imagens que aparecerão num carrossel na página da notícia
+                                </small>
+
+                                {galleryPreviews.length > 0 && (
+                                    <div className="gallery-preview-grid" style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                                        gap: '12px',
+                                        marginBottom: '15px'
+                                    }}>
+                                        {galleryPreviews.map((preview, index) => (
+                                            <div key={index} style={{
+                                                position: 'relative',
+                                                aspectRatio: '16/9',
+                                                borderRadius: '8px',
+                                                overflow: 'hidden',
+                                                border: '2px solid #e0e0e0'
+                                            }}>
+                                                <img
+                                                    src={preview}
+                                                    alt={`Gallery ${index + 1}`}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeGalleryImage(index)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '4px',
+                                                        right: '4px',
+                                                        background: 'rgba(255, 0, 0, 0.8)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '24px',
+                                                        height: '24px',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '14px'
+                                                    }}
+                                                    title="Remover"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <input
+                                    type="file"
+                                    id="galleryInput"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleGalleryImagesChange}
+                                    style={{ display: 'none' }}
+                                />
+                                <button
+                                    type="button"
+                                    className="btn-add"
+                                    onClick={() => document.getElementById('galleryInput').click()}
+                                    style={{ width: '100%' }}
+                                >
+                                    <FaImage /> Adicionar Imagens à Galeria
+                                </button>
                             </div>
 
                             <div className="form-section">

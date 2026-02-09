@@ -218,7 +218,7 @@
 }
 
 .cta-section {
-  background: linear-gradient(135deg, #003d82 0%, #0052a8 100%);
+  background: #003380;
   padding: 80px 0;
   text-align: center;
   color: white;
@@ -249,8 +249,8 @@
   flex-wrap: wrap;
 }
 
-.btn-primary,
-.btn-secondary {
+.cta-section .btn-primary,
+.cta-section .btn-secondary {
   padding: 16px 40px;
   font-size: 1.1rem;
   font-weight: 600;
@@ -260,24 +260,25 @@
   border: 2px solid white;
 }
 
-.btn-primary {
-  background: white;
-  color: #003d82;
+.cta-section .btn-primary {
+  background: white !important;
+  color: #003380 !important;
+  justify-content: center;
 }
 
-.btn-primary:hover {
-  background: #f8f9fa;
+.cta-section .btn-primary:hover {
+  background: #f8f9fa !important;
   transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
 }
 
-.btn-secondary {
-  background: transparent;
-  color: white;
+.cta-section .btn-secondary {
+  background: transparent !important;
+  color: white !important;
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+.cta-section .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
   transform: translateY(-3px);
 }
 
@@ -382,8 +383,8 @@
     height: 300px;
   }
 
-  .btn-primary,
-  .btn-secondary {
+  .cta-section .btn-primary,
+  .cta-section .btn-secondary {
     width: 100%;
   }
 }

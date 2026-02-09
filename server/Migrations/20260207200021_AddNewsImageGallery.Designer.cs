@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260207165340_CreateRolesAndProfiles")]
-    partial class CreateRolesAndProfiles
+    [Migration("20260207200021_AddNewsImageGallery")]
+    partial class AddNewsImageGallery
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -328,6 +328,37 @@ namespace CdpApi.Migrations
                     b.ToTable("NewsArticles");
                 });
 
+            modelBuilder.Entity("CdpApi.Models.NewsImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("NewsArticleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NewsArticleId");
+
+                    b.ToTable("NewsImages");
+                });
+
             modelBuilder.Entity("CdpApi.Models.Payment", b =>
                 {
                     b.Property<int>("Id")
@@ -406,14 +437,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 7, 16, 53, 40, 287, DateTimeKind.Utc).AddTicks(2232),
+                            CreatedAt = new DateTime(2026, 2, 7, 20, 0, 20, 667, DateTimeKind.Utc).AddTicks(1768),
                             Description = "Standard user access",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 7, 16, 53, 40, 287, DateTimeKind.Utc).AddTicks(2234),
+                            CreatedAt = new DateTime(2026, 2, 7, 20, 0, 20, 667, DateTimeKind.Utc).AddTicks(1771),
                             Description = "Administrator with full access",
                             Name = "Admin"
                         });
@@ -575,12 +606,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 7, 16, 53, 40, 409, DateTimeKind.Utc).AddTicks(2260),
+                            CreatedAt = new DateTime(2026, 2, 7, 20, 0, 20, 866, DateTimeKind.Utc).AddTicks(2183),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$tJu6ljQZ4j6WKFD/BSKtne94cw4DE0JQiyhSezcIF58QZv6AfVg3e"
+                            PasswordHash = "$2a$11$/.Yw9Q72ctHk.s85BVUJaui2fFAExSqo8xfVneTD7iELOrLfnw/Hq"
                         });
                 });
 
@@ -614,7 +645,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 7, 16, 53, 40, 409, DateTimeKind.Utc).AddTicks(2656),
+                            AssignedAt = new DateTime(2026, 2, 7, 20, 0, 20, 866, DateTimeKind.Utc).AddTicks(2775),
                             RoleId = 2,
                             UserId = 1
                         });
@@ -698,6 +729,17 @@ namespace CdpApi.Migrations
                     b.Navigation("Author");
                 });
 
+            modelBuilder.Entity("CdpApi.Models.NewsImage", b =>
+                {
+                    b.HasOne("CdpApi.Models.NewsArticle", "NewsArticle")
+                        .WithMany("GalleryImages")
+                        .HasForeignKey("NewsArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NewsArticle");
+                });
+
             modelBuilder.Entity("CdpApi.Models.Payment", b =>
                 {
                     b.HasOne("CdpApi.Models.MemberProfile", "MemberProfile")
@@ -747,6 +789,11 @@ namespace CdpApi.Migrations
             modelBuilder.Entity("CdpApi.Models.MemberProfile", b =>
                 {
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("CdpApi.Models.NewsArticle", b =>
+                {
+                    b.Navigation("GalleryImages");
                 });
 
             modelBuilder.Entity("CdpApi.Models.Role", b =>

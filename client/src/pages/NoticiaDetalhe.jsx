@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaCalendarAlt, FaUser, FaArrowLeft } from 'react-icons/fa';
+import ImageGallery from '../components/ImageGallery/ImageGallery';
 import './NoticiaDetalhe.css';
 
 const NoticiaDetalhe = () => {
@@ -83,13 +84,35 @@ const NoticiaDetalhe = () => {
 
             <div className="noticia-container">
                 <div className="noticia-content-wrapper">
-                    {news.imageUrl && (
-                        <img
-                            src={getImageUrl(news.imageUrl)}
-                            alt={news.title}
-                            className="noticia-featured-image"
-                        />
-                    )}
+                    {/* Combined Image Gallery: Featured image + Gallery images */}
+                    {(() => {
+                        const allImages = [];
+
+                        // Add featured image as first image
+                        if (news.imageUrl) {
+                            allImages.push(getImageUrl(news.imageUrl));
+                        }
+
+                        // Add gallery images
+                        if (news.galleryImages && news.galleryImages.length > 0) {
+                            const galleryUrls = news.galleryImages.map(img => getImageUrl(img.imageUrl));
+                            allImages.push(...galleryUrls);
+                        }
+
+                        console.log('All carousel images:', allImages);
+
+                        // Show carousel if there are any images
+                        if (allImages.length > 0) {
+                            return (
+                                <ImageGallery
+                                    images={allImages}
+                                    alt={news.title}
+                                />
+                            );
+                        }
+
+                        return null;
+                    })()}
 
                     <div className="noticia-body">
                         {/* We use white-space: pre-wrap in CSS to handle newlines from textarea */}

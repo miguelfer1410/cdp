@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaImages, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt } from 'react-icons/fa';
+import { FaImages, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends } from 'react-icons/fa';
 import HeroBannerManager from '../../components/Admin/HeroBannerManager';
 import NewsManager from '../../components/Admin/NewsManager';
 import SportsManager from '../../components/Admin/SportsManager';
 import PartnersManager from '../../components/Admin/PartnersManager';
+import TeamsManager from '../../components/Admin/TeamsManager';
 import './DashboardAdmin.css';
+import PeopleManager from '../../components/Admin/PeopleManager';
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
@@ -63,7 +65,7 @@ const DashboardAdmin = () => {
                         className={`admin-nav-item ${activeTab === 'hero' ? 'active' : ''}`}
                         onClick={() => setActiveTab('hero')}
                     >
-                        <FaImages /> Hero Banner
+                        <FaImages /> Banner
                     </button>
                     <button
                         className={`admin-nav-item ${activeTab === 'news' ? 'active' : ''}`}
@@ -83,6 +85,18 @@ const DashboardAdmin = () => {
                     >
                         <FaHandshake /> Parceiros
                     </button>
+                    <button
+                        className={`admin-nav-item ${activeTab === 'teams' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('teams')}
+                    >
+                        <FaUsers /> Equipas
+                    </button>
+                    <button
+                        className={`admin-nav-item ${activeTab === 'people' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('people')}
+                    >
+                        <FaUserFriends /> Pessoas
+                    </button>
                 </nav>
 
                 <button className="admin-logout" onClick={handleLogout}>
@@ -95,6 +109,8 @@ const DashboardAdmin = () => {
                 {activeTab === 'news' && <NewsManager />}
                 {activeTab === 'sports' && <SportsManager />}
                 {activeTab === 'partners' && <PartnersManager />}
+                {activeTab === 'teams' && <TeamsManager />}
+                {activeTab === 'people' && <PeopleManager />}
             </div>
         </div>
     );

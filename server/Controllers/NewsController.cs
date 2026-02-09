@@ -63,6 +63,7 @@ public class NewsController : ControllerBase
         {
             var article = await _context.NewsArticles
                 .Include(n => n.Author)
+                .Include(n => n.GalleryImages)
                 .FirstOrDefaultAsync(n => n.Slug == slug && n.IsPublished);
 
             if (article == null)
@@ -89,6 +90,7 @@ public class NewsController : ControllerBase
 
             var news = await _context.NewsArticles
                 .Include(n => n.Author)
+                .Include(n => n.GalleryImages)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToListAsync();
 
@@ -147,6 +149,27 @@ public class NewsController : ControllerBase
             _context.NewsArticles.Add(article);
             await _context.SaveChangesAsync();
 
+            // Save gallery images if provided
+            _logger.LogInformation($"Gallery images count: {request.GalleryImages?.Count ?? 0}");
+            
+            if (request.GalleryImages != null && request.GalleryImages.Count > 0)
+            {
+                for (int i = 0; i < request.GalleryImages.Count; i++)
+                {
+                    _logger.LogInformation($"Processing gallery image {i + 1}/{request.GalleryImages.Count}: {request.GalleryImages[i].FileName}");
+                    var galleryImageUrl = await _imageService.OptimizeAndSaveImageAsync(request.GalleryImages[i], "news/gallery", 1200, 80);
+                    var newsImage = new NewsImage
+                    {
+                        NewsArticleId = article.Id,
+                        ImageUrl = galleryImageUrl,
+                        Order = i
+                    };
+                    _context.NewsImages.Add(newsImage);
+                }
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Successfully saved {request.GalleryImages.Count} gallery images");
+            }
+
             return CreatedAtAction(nameof(GetNewsBySlug), new { slug = article.Slug }, article);
         }
         catch (Exception ex)
@@ -190,6 +213,33 @@ public class NewsController : ControllerBase
             if (request.IsPublished && !article.PublishedAt.HasValue)
             {
                 article.PublishedAt = DateTime.UtcNow;
+            }
+            // Add new gallery images if provided
+            if (request.GalleryImages != null && request.GalleryImages.Count > 0)
+            {
+                _logger.LogInformation($"Updating article {id}: Processing {request.GalleryImages.Count} new gallery images");
+
+                // Get current max order to append new images
+                var currentMaxOrder = await _context.NewsImages
+                    .Where(ni => ni.NewsArticleId == id)
+                    .MaxAsync(ni => (int?)ni.Order) ?? -1;
+                
+                _logger.LogInformation($"Current max order for article {id} is {currentMaxOrder}");
+
+                for (int i = 0; i < request.GalleryImages.Count; i++)
+                {
+                    _logger.LogInformation($"Processing new gallery image {i + 1}/{request.GalleryImages.Count}");
+                    var galleryImageUrl = await _imageService.OptimizeAndSaveImageAsync(request.GalleryImages[i], "news/gallery", 1200, 80);
+                    
+                    var newsImage = new NewsImage
+                    {
+                        NewsArticleId = id,
+                        ImageUrl = galleryImageUrl,
+                        Order = currentMaxOrder + 1 + i
+                    };
+                    _context.NewsImages.Add(newsImage);
+                }
+                _logger.LogInformation($"Successfully added {request.GalleryImages.Count} new gallery images to context");
             }
 
             await _context.SaveChangesAsync();
@@ -257,6 +307,7 @@ public class NewsRequest
     public string Excerpt { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public IFormFile? Image { get; set; }
+    public List<IFormFile>? GalleryImages { get; set; }
     public string Category { get; set; } = string.Empty;
     public bool IsPublished { get; set; } = false;
 }

@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<NewsArticle> NewsArticles { get; set; }
     public DbSet<Sport> Sports { get; set; }
     public DbSet<InstitutionalPartner> InstitutionalPartners { get; set; }
+    public DbSet<NewsImage> NewsImages { get; set; }
 
     // New tables for flexible roles and profiles
     public DbSet<Role> Roles { get; set; }
@@ -154,6 +155,19 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.MemberProfile)
                 .WithMany(m => m.Payments)
                 .HasForeignKey(e => e.MemberProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // NewsImage configuration (many NewsImages to one NewsArticle)
+        modelBuilder.Entity<NewsImage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Order).HasDefaultValue(0);
+
+            entity.HasOne(e => e.NewsArticle)
+                .WithMany(n => n.GalleryImages)
+                .HasForeignKey(e => e.NewsArticleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

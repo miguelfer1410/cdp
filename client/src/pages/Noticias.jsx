@@ -6,23 +6,26 @@ const Noticias = () => {
   const [allNews, setAllNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('Todas');
-
-  const categories = [
-    'Todas',
-    'Clube',
-    'Atletismo',
-    'Badminton',
-    'Basquetebol',
-    'Futevólei',
-    'Futsal',
-    'Hóquei em Patins',
-    'Ténis de Mesa',
-    'Voleibol'
-  ];
+  const [categories, setCategories] = useState(['Todas', 'Clube']);
 
   useEffect(() => {
     fetchNews();
+    fetchSports();
   }, []);
+
+  const fetchSports = async () => {
+    try {
+      const response = await fetch('http://localhost:5285/api/sports');
+      if (response.ok) {
+        const data = await response.json();
+        // Add sports names to categories, keeping 'Todas' and 'Clube' at the beginning
+        const sportNames = data.map(sport => sport.name).sort();
+        setCategories(['Todas', 'Clube', ...sportNames]);
+      }
+    } catch (error) {
+      console.error('Error fetching sports:', error);
+    }
+  };
 
   const fetchNews = async () => {
     try {
