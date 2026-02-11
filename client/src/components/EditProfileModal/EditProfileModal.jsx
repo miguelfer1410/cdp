@@ -1,17 +1,33 @@
-import React, { useState } from 'react';
-import { FaPhone, FaMapMarkerAlt, FaIdCard, FaTimes, FaSave } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaPhone, FaMapMarkerAlt, FaIdCard, FaTimes, FaSave, FaUser } from 'react-icons/fa';
 import './EditProfileModal.css';
 
 const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
     const [formData, setFormData] = useState({
-        phone: userData?.phone || '',
-        nif: userData?.nif || '',
-        address: userData?.address || '',
-        postalCode: userData?.postalCode || '',
-        city: userData?.city || ''
+        firstName: '',
+        lastName: '',
+        phone: '',
+        nif: '',
+        address: '',
+        postalCode: '',
+        city: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (userData) {
+            setFormData({
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                phone: userData.phone || '',
+                nif: userData.nif || '',
+                address: userData.address || '',
+                postalCode: userData.postalCode || '',
+                city: userData.city || ''
+            });
+        }
+    }, [userData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -29,22 +45,38 @@ const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
 
         try {
             const token = localStorage.getItem('token');
+            const userId = userData.id || localStorage.getItem('userId');
 
-            const response = await fetch('http://localhost:5285/api/user/profile', {
+            // Construct the payload matching UserUpdateRequest
+            const payload = {
+                email: userData.email, // Email is required in DTO but might not be editable here
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                birthDate: userData.birthDate, // Preserve existing
+                nif: formData.nif,
+                address: formData.address,
+                postalCode: formData.postalCode,
+                city: formData.city
+            };
+
+            const response = await fetch(`http://localhost:5285/api/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
-                throw new Error('Erro ao atualizar perfil');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erro ao atualizar perfil');
             }
 
-            const updatedData = await response.json();
-            onSave(updatedData);
+            // Construct updated user data to pass back
+            const updatedUser = { ...userData, ...formData };
+            onSave(updatedUser);
             onClose();
         } catch (err) {
             console.error('Error updating profile:', err);
@@ -60,7 +92,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>Editar Informações Pessoais</h2>
+                    <h2><i className="fas fa-user-edit"></i> Editar Perfil</h2>
                     <button className="close-btn" onClick={onClose} disabled={loading}>
                         <FaTimes />
                     </button>
@@ -73,32 +105,64 @@ const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
                         </div>
                     )}
 
-                    <div className="form-group">
-                        <label>Telemóvel</label>
-                        <div className="input-wrapper">
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                placeholder="+351 912 345 678"
-                                disabled={loading}
-                            />
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Nome Próprio</label>
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Apelido</label>
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="form-group">
-                        <label>NIF</label>
-                        <div className="input-wrapper">
-                            <input
-                                type="text"
-                                name="nif"
-                                value={formData.nif}
-                                onChange={handleChange}
-                                placeholder="123456789"
-                                maxLength="9"
-                                disabled={loading}
-                            />
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Telemóvel</label>
+                            <div className="input-wrapper">
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    placeholder="+351 912 345 678"
+                                    disabled={loading}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label>NIF</label>
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    name="nif"
+                                    value={formData.nif}
+                                    onChange={handleChange}
+                                    placeholder="123456789"
+                                    maxLength="9"
+                                    disabled={loading}
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -119,26 +183,30 @@ const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
                     <div className="form-row">
                         <div className="form-group">
                             <label>Código Postal</label>
-                            <input
-                                type="text"
-                                name="postalCode"
-                                value={formData.postalCode}
-                                onChange={handleChange}
-                                placeholder="4490-500"
-                                disabled={loading}
-                            />
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    name="postalCode"
+                                    value={formData.postalCode}
+                                    onChange={handleChange}
+                                    placeholder="4490-500"
+                                    disabled={loading}
+                                />
+                            </div>
                         </div>
 
                         <div className="form-group">
                             <label>Localidade</label>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleChange}
-                                placeholder="Póvoa de Varzim"
-                                disabled={loading}
-                            />
+                            <div className="input-wrapper">
+                                <input
+                                    type="text"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    placeholder="Póvoa de Varzim"
+                                    disabled={loading}
+                                />
+                            </div>
                         </div>
                     </div>
 

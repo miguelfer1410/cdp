@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import './TeamsManager.css';
 
 const TeamsManager = () => {
@@ -27,6 +27,7 @@ const TeamsManager = () => {
         season: '',
         isActive: true
     });
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
     useEffect(() => {
         fetchTeams();
@@ -362,6 +363,45 @@ const TeamsManager = () => {
         });
     };
 
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const sortedTeams = useMemo(() => {
+        let sortableTeams = [...teams];
+        if (sortConfig.key !== null) {
+            sortableTeams.sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                // Special handling for gender to sort by text label
+                if (sortConfig.key === 'gender') {
+                    aValue = getGenderLabel(a.gender);
+                    bValue = getGenderLabel(b.gender);
+                }
+
+                // Convert null/undefined to empty string for comparison
+                aValue = aValue ? aValue.toString().toLowerCase() : '';
+                bValue = bValue ? bValue.toString().toLowerCase() : '';
+
+                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortableTeams;
+    }, [teams, sortConfig]);
+
+    const getSortIcon = (name) => {
+        if (sortConfig.key !== name) return <FaSort className="sort-icon" />;
+        if (sortConfig.direction === 'ascending') return <FaSortUp className="sort-icon active" />;
+        return <FaSortDown className="sort-icon active" />;
+    };
+
     const hasActiveFilters = searchFilters.name || searchFilters.nif || searchFilters.email;
 
     if (loading) {
@@ -403,16 +443,26 @@ const TeamsManager = () => {
                     <table className="teams-table">
                         <thead>
                             <tr>
-                                <th>Nome</th>
-                                <th>Modalidade</th>
-                                <th>Categoria</th>
-                                <th>Género</th>
-                                <th>Época</th>
+                                <th onClick={() => handleSort('name')} className="sortable-header">
+                                    Nome {getSortIcon('name')}
+                                </th>
+                                <th onClick={() => handleSort('sportName')} className="sortable-header">
+                                    Modalidade {getSortIcon('sportName')}
+                                </th>
+                                <th onClick={() => handleSort('category')} className="sortable-header">
+                                    Escalão {getSortIcon('category')}
+                                </th>
+                                <th onClick={() => handleSort('gender')} className="sortable-header">
+                                    Género {getSortIcon('gender')}
+                                </th>
+                                <th onClick={() => handleSort('season')} className="sortable-header">
+                                    Época {getSortIcon('season')}
+                                </th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {teams.map(team => (
+                            {sortedTeams.map(team => (
                                 <tr key={team.id}>
                                     <td className="team-name">{team.name}</td>
                                     <td>{team.sportName}</td>
@@ -457,16 +507,16 @@ const TeamsManager = () => {
 
             {/* Create/Edit Team Modal */}
             {showModal && (
-                <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="teams-modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+                    <div className="teams-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="teams-modal-header">
                             <h2>{editingTeam ? 'Editar Equipa' : 'Nova Equipa'}</h2>
-                            <button className="modal-close" onClick={() => { setShowModal(false); resetForm(); }}>
+                            <button className="teams-modal-close" onClick={() => { setShowModal(false); resetForm(); }}>
                                 ×
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modal-form">
+                        <form onSubmit={handleSubmit} className="teams-modal-form">
                             <div className="form-section">
                                 <label className="form-label">Modalidade *</label>
                                 <select
@@ -486,7 +536,7 @@ const TeamsManager = () => {
 
                             <div className="form-row">
                                 <div className="form-section">
-                                    <label className="form-label">Categoria</label>
+                                    <label className="form-label">Escalão</label>
                                     <input
                                         type="text"
                                         className="form-input"
@@ -556,7 +606,7 @@ const TeamsManager = () => {
                                 >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-submit" disabled={submitting}>
+                                <button type="submit" className="teams-btn-submit" disabled={submitting}>
                                     {submitting ? (
                                         <>
                                             <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>

@@ -49,17 +49,9 @@ namespace server.Services
                 emailMessage.Body = bodyBuilder.ToMessageBody();
 
                 using var smtpClient = new SmtpClient();
-                
-                // Connect using SSL on port 465 (implicit SSL)
                 await smtpClient.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.SmtpPort, SecureSocketOptions.SslOnConnect);
-                
-                // Authenticate
                 await smtpClient.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
-                
-                // Send email
                 await smtpClient.SendAsync(emailMessage);
-                
-                // Disconnect
                 await smtpClient.DisconnectAsync(true);
 
                 _logger.LogInformation($"Email sent successfully from {email}");
@@ -120,6 +112,95 @@ namespace server.Services
             catch (Exception ex)
             {
                 _logger.LogError($"Error sending password reset email: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task SendAccountActivationEmailAsync(string toEmail, string firstName, string activationLink)
+        {
+            try
+            {
+                _logger.LogInformation($"Attempting to send account activation email to {toEmail}");
+
+                var emailMessage = new MimeMessage();
+                emailMessage.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+                emailMessage.To.Add(new MailboxAddress(firstName, toEmail));
+                emailMessage.Subject = "Ative a sua conta - Clube Desportivo da Póvoa";
+
+                var bodyBuilder = new BodyBuilder
+                {
+                    HtmlBody = $@"
+                        <html>
+                        <body style='font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; background-color: #f4f6f8;'>
+                            <div style='max-width: 600px; margin: 0 auto; padding: 40px 20px;'>
+                                <div style='background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);'>
+                                    
+                                    <!-- Header -->
+                                    <div style='background: linear-gradient(135deg, #003380, #00509e); padding: 30px 40px; text-align: center;'>
+                                        <h1 style='color: white; margin: 0; font-size: 1.5em;'>Clube Desportivo da Póvoa</h1>
+                                    </div>
+                                    
+                                    <!-- Body -->
+                                    <div style='padding: 40px;'>
+                                        <h2 style='color: #003380; margin-top: 0;'>Bem-vindo(a), {firstName}!</h2>
+                                        
+                                        <p style='font-size: 1em; line-height: 1.6;'>
+                                            A sua conta no <strong>Clube Desportivo da Póvoa</strong> foi criada com sucesso.
+                                        </p>
+                                        
+                                        <p style='font-size: 1em; line-height: 1.6;'>
+                                            Para começar a utilizar o sistema, precisa de definir a sua password clicando no botão abaixo:
+                                        </p>
+                                        
+                                        <div style='text-align: center; margin: 35px 0;'>
+                                            <a href='{activationLink}' style='background: linear-gradient(135deg, #003380, #00509e); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1em; display: inline-block;'>
+                                                Ativar Conta e Definir Password
+                                            </a>
+                                        </div>
+                                        
+                                        <p style='font-size: 0.9em; color: #666;'>
+                                            Se o botão não funcionar, copie e cole o seguinte link no seu browser:
+                                        </p>
+                                        <p style='font-size: 0.85em; word-break: break-all; color: #003380; background: #f0f4ff; padding: 12px; border-radius: 6px;'>
+                                            {activationLink}
+                                        </p>
+                                        
+                                        <div style='background: #fff8e1; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-top: 25px;'>
+                                            <p style='margin: 0; font-size: 0.9em; color: #92400e;'>
+                                                <strong>Atenção:</strong> Este link é válido por 48 horas. Após esse período, terá de pedir um novo link ao administrador do clube.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Footer -->
+                                    <div style='background: #f8fafc; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;'>
+                                        <p style='font-size: 0.8em; color: #888; margin: 0;'>
+                                            Este email foi enviado automaticamente pelo sistema do Clube Desportivo da Póvoa.
+                                        </p>
+                                        <p style='font-size: 0.8em; color: #888; margin: 5px 0 0;'>
+                                            Se não reconhece este registo, pode ignorar este email com segurança.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                    "
+                };
+
+                emailMessage.Body = bodyBuilder.ToMessageBody();
+
+                using var smtpClient = new SmtpClient();
+                await smtpClient.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.SmtpPort, SecureSocketOptions.SslOnConnect);
+                await smtpClient.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
+                await smtpClient.SendAsync(emailMessage);
+                await smtpClient.DisconnectAsync(true);
+
+                _logger.LogInformation($"Account activation email sent successfully to {toEmail}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error sending account activation email: {ex.Message}");
                 throw;
             }
         }

@@ -54,6 +54,7 @@ const Login = () => {
 
       // Backend now returns roles array instead of userType
       const roles = data.roles || ['User'];
+      console.log(roles);
       const primaryRole = roles.includes('Admin') ? 'Admin' : (roles[0] || 'User');
 
       localStorage.setItem('token', data.token);
@@ -62,8 +63,26 @@ const Login = () => {
       localStorage.setItem('userType', primaryRole); // For backwards compatibility
       localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
       localStorage.setItem('userEmail', data.email);
+      localStorage.setItem('userId', data.id);
 
-      navigate('/');
+      // Redirect based on role
+      switch (primaryRole.toLowerCase()) {
+        case 'admin':
+          navigate('/dashboard-admin');
+          break;
+        case 'atleta':
+          navigate('/dashboard-atleta');
+          break;
+        case 'treinador':
+          navigate('/dashboard-treinador');
+          break;
+        case 'socio':
+        case 'user':
+          navigate('/dashboard-socio');
+          break;
+        default:
+          navigate('/');
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Email ou password incorretos. Por favor, tente novamente.');

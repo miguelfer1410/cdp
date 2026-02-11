@@ -17,6 +17,8 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 import DashboardSocio from './pages/dashboards/DashboardSocio';
 import DashboardAdmin from './pages/dashboards/DashboardAdmin';
+import DashboardAtleta from './pages/dashboards/DashboardAtleta';
+import AtivarConta from './pages/auth/AtivarConta';
 
 function AppContent() {
   const location = useLocation();
@@ -35,11 +37,13 @@ function AppContent() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard-socio" element={<DashboardSocio />} />
           <Route path="/dashboard-admin" element={<DashboardAdmin />} />
+          <Route path="/dashboard-atleta" element={<DashboardAtleta />} />
           <Route path="/clube" element={<Clube />} />
           <Route path="/modalidades" element={<Modalidades />} />
           <Route path="/noticias" element={<Noticias />} />
           <Route path="/noticias/:slug" element={<NoticiaDetalhe />} />
           <Route path="/contactos" element={<Contactos />} />
+          <Route path="/ativar-conta" element={<AtivarConta />} />
         </Routes>
       </main>
       {!isAdminDashboard && <Footer />}

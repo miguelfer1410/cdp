@@ -128,6 +128,26 @@
     letter-spacing: 0.5px;
 }
 
+.teams-table th.sortable-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.teams-table th.sortable-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sort-icon {
+    opacity: 0.5;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.sort-icon.active {
+    opacity: 1;
+}
+
 .teams-table tbody tr {
     border-bottom: 1px solid #f0f0f0;
     transition: background-color 0.2s ease;
@@ -235,7 +255,7 @@
 }
 
 /* Modal */
-.modal-overlay {
+.teams-modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -249,7 +269,7 @@
     padding: 1rem;
 }
 
-.modal {
+.teams-modal {
     background: white;
     border-radius: 12px;
     width: 100%;
@@ -259,7 +279,7 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
-.modal-header {
+.teams-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -267,14 +287,14 @@
     border-bottom: 1px solid #eee;
 }
 
-.modal-header h2 {
+.teams-modal-header h2 {
     margin: 0;
     color: #003380;
     font-size: 1.5rem;
     font-weight: 700;
 }
 
-.modal-close {
+.teams-modal-close {
     background: none;
     border: none;
     font-size: 2rem;
@@ -290,13 +310,13 @@
     transition: all 0.2s;
 }
 
-.modal-close:hover {
+.teams-modal-close:hover {
     background: #f0f0f0;
     color: #333;
 }
 
 /* Form */
-.modal-form {
+.teams-modal-form {
     padding: 1.5rem;
 }
 
@@ -409,7 +429,7 @@
     border-color: #ccc;
 }
 
-.btn-submit {
+.teams-btn-submit {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -424,13 +444,13 @@
     box-shadow: 0 2px 8px rgba(0, 51, 128, 0.2);
 }
 
-.btn-submit:hover:not(:disabled) {
+.teams-btn-submit:hover:not(:disabled) {
     background: #00509e;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 51, 128, 0.3);
 }
 
-.btn-submit:disabled {
+.teams-btn-submit:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }

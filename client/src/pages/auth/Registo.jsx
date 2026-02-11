@@ -61,6 +61,12 @@ const Registo = () => {
       return;
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:'",.<>?/]).{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      setError('A password não cumpre todos os requisitos de segurança.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -296,14 +302,33 @@ const Registo = () => {
                           value={formData.password}
                           onChange={handleChange}
                           placeholder="Mínimo 8 caracteres"
-                          minLength="8"
                           required
                           disabled={loading}
                         />
                       </div>
-                      <small className="password-hint">
-                        Deve conter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais
-                      </small>
+
+                      <div className="password-requirements">
+                        <div className={`requirement-item ${formData.password.length >= 8 ? 'met' : ''}`}>
+                          {formData.password.length >= 8 ? <FaCheckCircle /> : <div className="circle-placeholder" />}
+                          <span>Mínimo 8 caracteres</span>
+                        </div>
+                        <div className={`requirement-item ${/[A-Z]/.test(formData.password) ? 'met' : ''}`}>
+                          {/[A-Z]/.test(formData.password) ? <FaCheckCircle /> : <div className="circle-placeholder" />}
+                          <span>Uma letra maiúscula</span>
+                        </div>
+                        <div className={`requirement-item ${/[a-z]/.test(formData.password) ? 'met' : ''}`}>
+                          {/[a-z]/.test(formData.password) ? <FaCheckCircle /> : <div className="circle-placeholder" />}
+                          <span>Uma letra minúscula</span>
+                        </div>
+                        <div className={`requirement-item ${/[0-9]/.test(formData.password) ? 'met' : ''}`}>
+                          {/[0-9]/.test(formData.password) ? <FaCheckCircle /> : <div className="circle-placeholder" />}
+                          <span>Um número</span>
+                        </div>
+                        <div className={`requirement-item ${/[!@#$%^&*()_+\-=[\]{}|;:'",.<>?/]/.test(formData.password) ? 'met' : ''}`}>
+                          {/[!@#$%^&*()_+\-=[\]{}|;:'",.<>?/]/.test(formData.password) ? <FaCheckCircle /> : <div className="circle-placeholder" />}
+                          <span>Um carácter especial</span>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="form-group">
@@ -375,7 +400,7 @@ const Registo = () => {
                     Próximo →
                   </button>
                 ) : (
-                  <button type="submit" className="btn-submit" disabled={loading}>
+                  <button type="submit" className="registo-btn-submit" disabled={loading}>
                     Registar
                   </button>
                 )}

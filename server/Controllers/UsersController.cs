@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CdpApi.Data;
 using CdpApi.Models;
+using server.Services;
 
 namespace CdpApi.Controllers;
 
@@ -11,10 +12,14 @@ namespace CdpApi.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
 
-    public UsersController(ApplicationDbContext context)
+    public UsersController(ApplicationDbContext context, IEmailService emailService, IConfiguration configuration)
     {
         _context = context;
+        _emailService = emailService;
+        _configuration = configuration;
     }
 
     // GET: api/users - List all users with optional filters
@@ -46,7 +51,7 @@ public class UsersController : ControllerBase
             query = profileType.ToLower() switch
             {
                 "athlete" => query.Where(u => u.AthleteProfile != null),
-                "member" => query.Where(u => u.MemberProfile != null),
+                "member" => query.Where(u => u.MemberProfile != null && u.AthleteProfile == null),
                 "coach" => query.Where(u => u.CoachProfile != null),
                 _ => query
             };
@@ -205,7 +210,7 @@ public class UsersController : ControllerBase
         return Ok(response);
     }
 
-    // POST: api/users - Create new user
+    // POST: api/users - Create new user (sends activation email)
     [HttpPost]
     [Authorize]
     public async Task<ActionResult<UserResponse>> CreateUser([FromBody] UserCreateRequest request)
@@ -216,10 +221,14 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "Email já está em uso" });
         }
 
+        // Generate activation token
+        var activationToken = Guid.NewGuid().ToString();
+
         var user = new User
         {
             Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password ?? "TempPassword123!"), // Temporary password
+            // Random password hash - user will set real password via activation link
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
             FirstName = request.FirstName,
             LastName = request.LastName,
             Phone = request.Phone,
@@ -229,11 +238,27 @@ public class UsersController : ControllerBase
             PostalCode = request.PostalCode,
             City = request.City,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            // Use PasswordResetToken fields for activation
+            PasswordResetToken = activationToken,
+            PasswordResetTokenExpires = DateTime.UtcNow.AddHours(48) // 48h for activation
         };
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        // Send activation email
+        try
+        {
+            var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
+            var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
+            await _emailService.SendAccountActivationEmailAsync(user.Email, user.FirstName, activationLink);
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail user creation
+            Console.WriteLine($"Warning: Failed to send activation email to {user.Email}: {ex.Message}");
+        }
 
         var response = new UserResponse
         {
@@ -260,6 +285,40 @@ public class UsersController : ControllerBase
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, response);
     }
 
+    // POST: api/users/{id}/resend-activation - Resend activation email
+    [HttpPost("{id}/resend-activation")]
+    [Authorize]
+    public async Task<IActionResult> ResendActivation(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+
+        if (user == null)
+            return NotFound(new { message = "Utilizador não encontrado" });
+
+        // Check if user already has logged in (already activated)
+        if (user.LastLogin != null)
+            return BadRequest(new { message = "Utilizador já ativou a conta" });
+
+        // Generate new token
+        var activationToken = Guid.NewGuid().ToString();
+        user.PasswordResetToken = activationToken;
+        user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(48);
+        await _context.SaveChangesAsync();
+
+        // Send activation email
+        try
+        {
+            var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
+            var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
+            await _emailService.SendAccountActivationEmailAsync(user.Email, user.FirstName, activationLink);
+            return Ok(new { message = $"Email de ativação reenviado para {user.Email}" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Erro ao enviar email: {ex.Message}" });
+        }
+    }
+
     // PUT: api/users/{id} - Update user
     [HttpPut("{id}")]
     [Authorize]
@@ -272,7 +331,7 @@ public class UsersController : ControllerBase
             return NotFound(new { message = "Utilizador não encontrado" });
         }
 
-        // Check if email is being changed and if it's already in use
+        // Check if email is being changed to one that already exists
         if (user.Email != request.Email && await _context.Users.AnyAsync(u => u.Email == request.Email && u.Id != id))
         {
             return BadRequest(new { message = "Email já está em uso" });
@@ -293,16 +352,29 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/users/{id} - Soft delete user
+    // DELETE: api/users/{id} - Soft delete (deactivate)
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteUser(int id)
     {
-        var user = await _context.Users.FindAsync(id);
+        var user = await _context.Users
+            .Include(u => u.AthleteProfile)
+                .ThenInclude(ap => ap.AthleteTeams)
+            .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
         {
             return NotFound(new { message = "Utilizador não encontrado" });
+        }
+
+        // If user is an athlete, remove from current team
+        if (user.AthleteProfile != null)
+        {
+            var activeTeam = user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
+            if (activeTeam != null)
+            {
+                activeTeam.LeftAt = DateTime.UtcNow;
+            }
         }
 
         user.IsActive = false;
@@ -311,7 +383,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
-    // ========== PROFILE MANAGEMENT ==========
+    // ========== ATHLETE PROFILE MANAGEMENT ==========
 
     // POST: api/users/{id}/athlete-profile
     [HttpPost("{id}/athlete-profile")]
@@ -326,7 +398,7 @@ public class UsersController : ControllerBase
         if (user.AthleteProfile != null)
             return BadRequest(new { message = "Utilizador já tem perfil de atleta" });
 
-        var profile = new AthleteProfile
+        var athleteProfile = new AthleteProfile
         {
             UserId = id,
             Height = request.Height,
@@ -335,24 +407,21 @@ public class UsersController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
+        _context.AthleteProfiles.Add(athleteProfile);
+        await _context.SaveChangesAsync();
+
+        // If teamId provided, create AthleteTeam
         if (request.TeamId.HasValue)
         {
-            if (await _context.Teams.AnyAsync(t => t.Id == request.TeamId.Value))
+            var athleteTeam = new AthleteTeam
             {
-                profile.AthleteTeams.Add(new AthleteTeam
-                {
-                    TeamId = request.TeamId.Value,
-                    JoinedAt = DateTime.UtcNow
-                });
-            }
-            else
-            {
-                return BadRequest(new { message = "Equipa inválida" });
-            }
+                AthleteProfileId = athleteProfile.Id,
+                TeamId = request.TeamId.Value,
+                JoinedAt = DateTime.UtcNow
+            };
+            _context.AthleteTeams.Add(athleteTeam);
+            await _context.SaveChangesAsync();
         }
-
-        _context.AthleteProfiles.Add(profile);
-        await _context.SaveChangesAsync();
 
         return Ok(new { message = "Perfil de atleta criado com sucesso" });
     }
@@ -364,7 +433,7 @@ public class UsersController : ControllerBase
     {
         var user = await _context.Users
             .Include(u => u.AthleteProfile)
-            .ThenInclude(ap => ap.AthleteTeams)
+                .ThenInclude(a => a.AthleteTeams)
             .FirstOrDefaultAsync(u => u.Id == id);
         
         if (user == null)
@@ -373,54 +442,49 @@ public class UsersController : ControllerBase
         if (user.AthleteProfile == null)
             return NotFound(new { message = "Utilizador não tem perfil de atleta" });
 
-        // Update basic info
         user.AthleteProfile.Height = request.Height;
         user.AthleteProfile.Weight = request.Weight;
         user.AthleteProfile.MedicalCertificateExpiry = request.MedicalCertificateExpiry;
 
-        // Manage Team Association
-        // 1. Get current active team
-        var currentTeam = user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
-
-        // 2. If a new team provided
+        // Handle team changes
         if (request.TeamId.HasValue)
         {
-            // If strictly different from current team
-            if (currentTeam == null || currentTeam.TeamId != request.TeamId.Value)
+            var currentTeam = user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
+            if (currentTeam != null && currentTeam.TeamId != request.TeamId.Value)
             {
-                // Verify new team exists
-                if (!await _context.Teams.AnyAsync(t => t.Id == request.TeamId.Value))
-                    return BadRequest(new { message = "Equipa inválida" });
-
-                // Deactivate current team if exists
-                if (currentTeam != null)
+                // Leave current team
+                currentTeam.LeftAt = DateTime.UtcNow;
+                // Join new team
+                var newTeam = new AthleteTeam
                 {
-                    currentTeam.LeftAt = DateTime.UtcNow;
-                }
-
-                // Add new team
-                user.AthleteProfile.AthleteTeams.Add(new AthleteTeam
-                {
+                    AthleteProfileId = user.AthleteProfile.Id,
                     TeamId = request.TeamId.Value,
                     JoinedAt = DateTime.UtcNow
-                });
+                };
+                _context.AthleteTeams.Add(newTeam);
+            }
+            else if (currentTeam == null)
+            {
+                var newTeam = new AthleteTeam
+                {
+                    AthleteProfileId = user.AthleteProfile.Id,
+                    TeamId = request.TeamId.Value,
+                    JoinedAt = DateTime.UtcNow
+                };
+                _context.AthleteTeams.Add(newTeam);
             }
         }
         else
         {
-            // If null passed and there is an active team, we might want to remove it
-            // For now, let's assume null means "no change" to team unless we add specific logic
-            // Or if we want null to mean "remove from team", we would do:
-            /*
+            // Remove from current team if any
+            var currentTeam = user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
             if (currentTeam != null)
             {
                 currentTeam.LeftAt = DateTime.UtcNow;
             }
-            */
         }
 
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 
@@ -443,6 +507,8 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
+    // ========== MEMBER PROFILE MANAGEMENT ==========
+
     // POST: api/users/{id}/member-profile
     [HttpPost("{id}/member-profile")]
     [Authorize]
@@ -456,24 +522,28 @@ public class UsersController : ControllerBase
         if (user.MemberProfile != null)
             return BadRequest(new { message = "Utilizador já tem perfil de sócio" });
 
-        // Generate unique membership number
-        var count = await _context.MemberProfiles.CountAsync();
-        var membershipNumber = $"CDP{DateTime.UtcNow.Year}{(count + 1):D5}";
+        // Generate membership number
+        var lastNumber = await _context.MemberProfiles.OrderByDescending(m => m.Id).Select(m => m.MembershipNumber).FirstOrDefaultAsync();
+        var nextNumber = 1;
+        if (!string.IsNullOrEmpty(lastNumber) && int.TryParse(lastNumber.Replace("CDP-", ""), out var num))
+        {
+            nextNumber = num + 1;
+        }
 
-        var profile = new MemberProfile
+        var memberProfile = new MemberProfile
         {
             UserId = id,
-            MembershipNumber = membershipNumber,
+            MembershipNumber = $"CDP-{nextNumber:D5}",
             MembershipStatus = request.MembershipStatus,
             MemberSince = request.MemberSince ?? DateTime.UtcNow,
             PaymentPreference = request.PaymentPreference,
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.MemberProfiles.Add(profile);
+        _context.MemberProfiles.Add(memberProfile);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "Perfil de sócio criado com sucesso", membershipNumber });
+        return Ok(new { message = "Perfil de sócio criado com sucesso", membershipNumber = memberProfile.MembershipNumber });
     }
 
     // PUT: api/users/{id}/member-profile
@@ -490,11 +560,10 @@ public class UsersController : ControllerBase
             return NotFound(new { message = "Utilizador não tem perfil de sócio" });
 
         user.MemberProfile.MembershipStatus = request.MembershipStatus;
-        user.MemberProfile.MemberSince = request.MemberSince ?? user.MemberProfile.MemberSince;
+        user.MemberProfile.MemberSince = request.MemberSince;
         user.MemberProfile.PaymentPreference = request.PaymentPreference;
 
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 
@@ -517,6 +586,8 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
+    // ========== COACH PROFILE MANAGEMENT ==========
+
     // POST: api/users/{id}/coach-profile
     [HttpPost("{id}/coach-profile")]
     [Authorize]
@@ -530,15 +601,7 @@ public class UsersController : ControllerBase
         if (user.CoachProfile != null)
             return BadRequest(new { message = "Utilizador já tem perfil de treinador" });
 
-        // Validate SportId
-        if (!await _context.Sports.AnyAsync(s => s.Id == request.SportId))
-            return BadRequest(new { message = "Modalidade inválida" });
-
-        // Validate TeamId if provided
-        if (request.TeamId.HasValue && !await _context.Teams.AnyAsync(t => t.Id == request.TeamId.Value))
-            return BadRequest(new { message = "Equipa inválida" });
-
-        var profile = new CoachProfile
+        var coachProfile = new CoachProfile
         {
             UserId = id,
             SportId = request.SportId,
@@ -550,7 +613,7 @@ public class UsersController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.CoachProfiles.Add(profile);
+        _context.CoachProfiles.Add(coachProfile);
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Perfil de treinador criado com sucesso" });
@@ -569,14 +632,6 @@ public class UsersController : ControllerBase
         if (user.CoachProfile == null)
             return NotFound(new { message = "Utilizador não tem perfil de treinador" });
 
-        // Validate SportId
-        if (!await _context.Sports.AnyAsync(s => s.Id == request.SportId))
-            return BadRequest(new { message = "Modalidade inválida" });
-
-        // Validate TeamId if provided
-        if (request.TeamId.HasValue && !await _context.Teams.AnyAsync(t => t.Id == request.TeamId.Value))
-            return BadRequest(new {message = "Equipa inválida" });
-
         user.CoachProfile.SportId = request.SportId;
         user.CoachProfile.TeamId = request.TeamId;
         user.CoachProfile.LicenseNumber = request.LicenseNumber;
@@ -585,7 +640,6 @@ public class UsersController : ControllerBase
         user.CoachProfile.Specialization = request.Specialization;
 
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 
@@ -814,4 +868,3 @@ public class AssignRoleRequest
 {
     public int RoleId { get; set; }
 }
-

@@ -42,6 +42,8 @@ public class AuthService : IAuthService
         var user = await _context.Users
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
+            .Include(u => u.AthleteProfile)
+            .Include(u => u.CoachProfile)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
 
         if (user == null)
@@ -62,13 +64,35 @@ public class AuthService : IAuthService
         user.LastLogin = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        var token = GenerateJwtToken(user);
+        var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
+        
+        // Add implicit roles based on profiles
+        if (user.AthleteProfile != null && !roles.Contains("Atleta"))
+        {
+            roles.Add("Atleta");
+        }
+        
+        if (user.CoachProfile != null && !roles.Contains("Treinador"))
+        {
+            roles.Add("Treinador");
+        }
+
+        // If user has specific roles (Athlete, Coach, Admin), remove the generic "User" role
+        // This ensures the frontend redirects correctly and displays the correct dashboard
+        if (roles.Contains("User") && (roles.Contains("Atleta") || roles.Contains("Treinador") || roles.Contains("Admin")))
+        {
+            roles.Remove("User");
+        }
+
+        // Re-generate token with new roles
+        var token = GenerateJwtToken(user, roles);
         var expirationHours = _configuration.GetValue<int>("JwtSettings:ExpirationHours", 24);
 
         return new LoginResponse
         {
             Token = token,
-            Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(),
+            Id = user.Id,
+            Roles = roles,
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
@@ -185,7 +209,7 @@ public class AuthService : IAuthService
         return true;
     }
 
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(User user, List<string> roles = null)
     {
         var securityKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key not configured")));
@@ -200,10 +224,21 @@ public class AuthService : IAuthService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        // Add role claims from UserRoles
-        foreach (var userRole in user.UserRoles)
+        // Add role claims
+        if (roles != null)
         {
-            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+        }
+        else
+        {
+            // Fallback to database roles if not provided (for backward compatibility if method used elsewhere)
+            foreach (var userRole in user.UserRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+            }
         }
 
         var expirationHours = _configuration.GetValue<int>("JwtSettings:ExpirationHours", 24);

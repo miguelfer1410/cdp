@@ -261,7 +261,7 @@
 
 .btn-prev,
 .btn-next,
-.btn-submit {
+.registo-btn-submit {
   flex: 1;
   padding: 16px;
   border: none;
@@ -272,6 +272,7 @@
   transition: all 0.3s ease;
   font-family: inherit;
   color: white;
+  background-color: var(--primary-color);
 }
 
 .btn-prev {
@@ -285,7 +286,7 @@
 }
 
 .btn-next,
-.btn-submit {
+.registo-btn-submit {
   background: var(--primary-color);
   color: white;
   display: flex;
@@ -295,7 +296,7 @@
 }
 
 .btn-next:hover,
-.btn-submit:hover {
+.registo-btn-submit:hover {
   background: var(--accent-color);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 51, 128, 0.3);
@@ -382,4 +383,44 @@
     height: 45px;
     font-size: 1.1rem;
   }
+}
+
+/* Password Requirements */
+.password-requirements {
+  margin-top: 1rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.requirement-item:last-child {
+  margin-bottom: 0;
+}
+
+.requirement-item.met {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.circle-placeholder {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+}
+
+.requirement-item.met svg {
+  color: #10b981;
+  font-size: 1rem;
 }
