@@ -27,6 +27,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<CoachProfile> CoachProfiles { get; set; }
     public DbSet<Team> Teams { get; set; }
     public DbSet<AthleteTeam> AthleteTeams { get; set; }
+    public DbSet<Event> Events { get; set; }
+    public DbSet<TrainingSchedule> TrainingSchedules { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -145,6 +147,49 @@ public class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // Event configuration
+        modelBuilder.Entity<Event>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Sport)
+                .WithMany()
+                .HasForeignKey(e => e.SportId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Team)
+                .WithMany()
+                .HasForeignKey(e => e.TeamId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // TrainingSchedule configuration
+        modelBuilder.Entity<TrainingSchedule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Team)
+                .WithMany()
+                .HasForeignKey(e => e.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
         // Payment configuration (now references MemberProfile)
         modelBuilder.Entity<Payment>(entity =>
         {
@@ -187,8 +232,8 @@ public class ApplicationDbContext : DbContext
 
         // Seed data: Roles
         modelBuilder.Entity<Role>().HasData(
-            new Role { Id = 1, Name = "User", Description = "Standard user access", CreatedAt = DateTime.UtcNow },
-            new Role { Id = 2, Name = "Admin", Description = "Administrator with full access", CreatedAt = DateTime.UtcNow }
+            new Role { Id = 1, Name = "User", Description = "Acesso padrão de utilizador", CreatedAt = DateTime.UtcNow },
+            new Role { Id = 2, Name = "Admin", Description = "Administrador com acesso total", CreatedAt = DateTime.UtcNow }
         );
 
         // Seed data: Admin User

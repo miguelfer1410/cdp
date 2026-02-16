@@ -86,10 +86,16 @@ const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay" onMouseDown={handleOverlayClick}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2><i className="fas fa-user-edit"></i> Editar Perfil</h2>

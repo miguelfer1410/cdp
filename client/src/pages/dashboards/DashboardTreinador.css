@@ -1,0 +1,669 @@
+/* Dashboard Specific Styles */
+.dashboard-wrapper {
+    background: var(--bg-light);
+    min-height: 100vh;
+    padding-top: 0;
+}
+
+/* Profile Header */
+.profile-header {
+    background: linear-gradient(135deg, #003380 0%, #001f4d 100%);
+    color: white;
+    padding: 40px 0 60px;
+}
+
+.profile-content {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 5px solid white;
+    object-fit: cover;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-info h1 {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.profile-meta {
+    display: flex;
+    gap: 25px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.profile-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+
+.profile-meta-item i {
+    font-size: 1.1rem;
+}
+
+/* Quick Stats Cards */
+.quick-stats {
+    margin-top: -40px;
+    position: relative;
+    z-index: 10;
+    padding-bottom: 40px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+.stat-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 1.8rem;
+}
+
+.stat-card h3 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.stat-card p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+/* Main Dashboard Content */
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    padding-bottom: 60px;
+}
+
+/* Dashboard Card */
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.dashboard-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--bg-light);
+}
+
+.dashboard-card-header h2 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-card-header h2 i {
+    font-size: 1.3rem;
+}
+
+.view-all-link {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.view-all-link:hover {
+    color: var(--accent-color);
+}
+
+/* Training Session */
+.training-item {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    background: var(--bg-light);
+    margin-bottom: 15px;
+    transition: all 0.3s;
+}
+
+.training-item:hover {
+    background: #e8f0fe;
+    transform: translateX(5px);
+}
+
+.training-date {
+    text-align: center;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    padding: 10px 15px;
+    min-width: 70px;
+}
+
+.training-date .day {
+    font-size: 1.8rem;
+    font-weight: 700;
+    display: block;
+    line-height: 1;
+}
+
+.training-date .month {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    margin-top: 5px;
+    display: block;
+}
+
+.training-details {
+    flex: 1;
+}
+
+.training-details h3 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.training-details p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+}
+
+.attendance-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.badge-complete {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.badge-partial {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.badge-upcoming {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+/* Athletes List */
+.athletes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.athlete-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.athlete-item:hover {
+    background: #e8f0fe;
+    transform: translateX(5px);
+}
+
+.athlete-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.athlete-info h4 {
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+.athlete-info p {
+    color: var(--text-light);
+    font-size: 0.8rem;
+}
+
+/* Statistics Table */
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stats-table th,
+.stats-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.stats-table th {
+    background: var(--bg-light);
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.stats-table td {
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.stats-table tr:hover {
+    background: var(--bg-light);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.action-btn {
+    background: white;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.action-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.action-btn i {
+    font-size: 1.2rem;
+}
+
+.action-btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.action-btn-primary:hover {
+    background: var(--accent-color);
+}
+
+/* Match Result Card */
+.match-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: var(--bg-light);
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.match-team {
+    text-align: center;
+    flex: 1;
+}
+
+.match-team h4 {
+    color: var(--primary-color);
+    font-size: 1rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.match-score {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.match-vs {
+    padding: 0 20px;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.match-info {
+    text-align: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.match-info p {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    margin: 3px 0;
+}
+
+/* Notifications */
+.notification-item {
+    display: flex;
+    gap: 15px;
+    padding: 18px;
+    border-left: 4px solid var(--primary-color);
+    background: var(--bg-light);
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 15px;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notification-content h4 {
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.notification-content p {
+    color: var(--text-light);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.notification-time {
+    color: #999;
+    font-size: 0.75rem;
+    margin-top: 5px;
+}
+
+/* Salary Section */
+.salary-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.salary-card {
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.salary-monthly {
+    background: #e8f5e9;
+}
+
+.salary-monthly p {
+    color: #2e7d32;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.salary-monthly h3 {
+    color: #2e7d32;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.salary-next {
+    background: #e3f2fd;
+}
+
+.salary-next p {
+    color: #1976d2;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.salary-next h3 {
+    color: #1976d2;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Payment Item */
+.payment-item {
+    padding: 18px;
+    background: var(--bg-light);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.payment-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.payment-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.payment-icon-paid {
+    background: #2e7d32;
+}
+
+.payment-info h4 {
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+    font-weight: 600;
+}
+
+.payment-info p {
+    color: var(--text-light);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.payment-details {
+    text-align: right;
+}
+
+.payment-details h4 {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.payment-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-paid {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Attendance Summary */
+.attendance-summary {
+    padding: 20px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.attendance-summary h3 {
+    color: #2e7d32;
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+.attendance-summary p {
+    color: #2e7d32;
+    font-size: 0.9rem;
+}
+
+/* Absent Section */
+.absent-section {
+    margin-bottom: 15px;
+}
+
+.absent-section h4 {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.absent-athlete {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #ffebee;
+    border-radius: 8px;
+    border-left: 4px solid #c62828;
+}
+
+.absent-avatar {
+    width: 40px;
+    height: 40px;
+    background: #c62828;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.absent-name {
+    color: #c62828;
+    font-weight: 600;
+    margin: 0;
+}
+
+.absent-reason {
+    color: #999;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-meta {
+        justify-content: center;
+    }
+
+    .athletes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .salary-summary {
+        grid-template-columns: 1fr;
+    }
+}

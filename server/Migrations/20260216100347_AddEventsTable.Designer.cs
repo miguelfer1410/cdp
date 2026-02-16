@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260216100347_AddEventsTable")]
+    partial class AddEventsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -501,14 +504,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 16, 10, 23, 13, 912, DateTimeKind.Utc).AddTicks(5881),
+                            CreatedAt = new DateTime(2026, 2, 16, 10, 3, 47, 46, DateTimeKind.Utc).AddTicks(9639),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 16, 10, 23, 13, 912, DateTimeKind.Utc).AddTicks(5882),
+                            CreatedAt = new DateTime(2026, 2, 16, 10, 3, 47, 46, DateTimeKind.Utc).AddTicks(9640),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -587,62 +590,6 @@ namespace CdpApi.Migrations
                     b.HasIndex("SportId");
 
                     b.ToTable("Teams");
-                });
-
-            modelBuilder.Entity("CdpApi.Models.TrainingSchedule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DaysOfWeek")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("time");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<DateTime>("ValidFrom")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ValidUntil")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("TrainingSchedules");
                 });
 
             modelBuilder.Entity("CdpApi.Models.User", b =>
@@ -726,12 +673,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 16, 10, 23, 14, 38, DateTimeKind.Utc).AddTicks(9379),
+                            CreatedAt = new DateTime(2026, 2, 16, 10, 3, 47, 168, DateTimeKind.Utc).AddTicks(5968),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$vZJQiP4mNnV/QSAr8cpp3uxqTpMsVJCNZn6Swoee9TqLZFX3dGHN."
+                            PasswordHash = "$2a$11$wCi8U6jFOtUw3LP.02lcKu/ZrUEBrbyEEBXO2qzzhUwnujIK1yRWK"
                         });
                 });
 
@@ -765,7 +712,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 16, 10, 23, 14, 38, DateTimeKind.Utc).AddTicks(9829),
+                            AssignedAt = new DateTime(2026, 2, 16, 10, 3, 47, 168, DateTimeKind.Utc).AddTicks(6403),
                             RoleId = 2,
                             UserId = 1
                         });
@@ -906,25 +853,6 @@ namespace CdpApi.Migrations
                         .IsRequired();
 
                     b.Navigation("Sport");
-                });
-
-            modelBuilder.Entity("CdpApi.Models.TrainingSchedule", b =>
-                {
-                    b.HasOne("CdpApi.Models.User", "Creator")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CdpApi.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Creator");
-
-                    b.Navigation("Team");
                 });
 
             modelBuilder.Entity("CdpApi.Models.UserRole", b =>

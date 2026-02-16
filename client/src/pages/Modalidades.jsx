@@ -138,14 +138,43 @@ const Modalidades = () => {
         </div>
       </section>
 
+      {/* Quick Links Navigation */}
+      <section className="quick-links-section">
+        <div className="container">
+          <div className="quick-links-grid">
+            {modalidades.map((modalidade) => (
+              <a
+                key={modalidade.id}
+                href={`#${modalidade.name.toLowerCase().replace(/\s+/g, '-')}`}
+                className="quick-link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const element = document.getElementById(modalidade.name.toLowerCase().replace(/\s+/g, '-'));
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+              >
+                {modalidade.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Modalidades List */}
       <section className="modalidades-list">
         <div className="container">
           {modalidades.map((modalidade, index) => {
             const detalhesInfo = modalidadesDetalhes[modalidade.name] || { detalhes: [] };
+            const sectionId = modalidade.name.toLowerCase().replace(/\s+/g, '-');
 
             return (
-              <div key={modalidade.id} className={`modalidade-item ${index % 2 === 0 ? 'reverse' : ''}`}>
+              <div
+                key={modalidade.id}
+                id={sectionId}
+                className={`modalidade-item ${index % 2 === 0 ? 'reverse' : ''}`}
+              >
                 <div className="modalidade-image">
                   <img src={getImageUrl(modalidade.imageUrl)} alt={modalidade.name} />
                 </div>

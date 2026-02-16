@@ -1,18 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaImages, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends } from 'react-icons/fa';
+import { FaImages, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort } from 'react-icons/fa';
 import HeroBannerManager from '../../components/Admin/HeroBannerManager';
 import NewsManager from '../../components/Admin/NewsManager';
 import SportsManager from '../../components/Admin/SportsManager';
 import PartnersManager from '../../components/Admin/PartnersManager';
 import TeamsManager from '../../components/Admin/TeamsManager';
+import CalendarManager from '../../components/Admin/CalendarManager';
+import NavReorderModal from '../../components/Admin/NavReorderModal/NavReorderModal';
 import './DashboardAdmin.css';
 import PeopleManager from '../../components/Admin/PeopleManager';
+
+const NAV_ITEMS_CONFIG = {
+    hero: { id: 'hero', label: 'Banner', icon: <FaImages /> },
+    news: { id: 'news', label: 'Notícias', icon: <FaNewspaper /> },
+    sports: { id: 'sports', label: 'Modalidades', icon: <FaFutbol /> },
+    partners: { id: 'partners', label: 'Parceiros', icon: <FaHandshake /> },
+    teams: { id: 'teams', label: 'Equipas', icon: <FaUsers /> },
+    people: { id: 'people', label: 'Pessoas', icon: <FaUserFriends /> },
+    calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> }
+};
+
+const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people', 'calendar'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('hero');
     const [loading, setLoading] = useState(true);
+    const [navOrder, setNavOrder] = useState(DEFAULT_NAV_ORDER);
+    const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+
+    useEffect(() => {
+        // Load nav order from localStorage
+        const savedOrder = localStorage.getItem('adminNavOrder');
+        if (savedOrder) {
+            try {
+                const parsedOrder = JSON.parse(savedOrder);
+                // Validate that all default keys exist in saved order (handle new items)
+                const missingItems = DEFAULT_NAV_ORDER.filter(item => !parsedOrder.includes(item));
+                if (missingItems.length > 0) {
+                    setNavOrder([...parsedOrder, ...missingItems]);
+                } else {
+                    setNavOrder(parsedOrder);
+                }
+            } catch (e) {
+                console.error('Error parsing nav order:', e);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         // Verify admin access
@@ -43,6 +78,16 @@ const DashboardAdmin = () => {
         navigate('/login');
     };
 
+    const handleSaveNavOrder = (newOrder) => {
+        const orderIds = newOrder.map(item => item.id);
+        setNavOrder(orderIds);
+        localStorage.setItem('adminNavOrder', JSON.stringify(orderIds));
+    };
+
+    const getNavItems = () => {
+        return navOrder.map(key => NAV_ITEMS_CONFIG[key]).filter(Boolean); // filter Boolean guards against removed keys
+    };
+
     if (loading) {
         return (
             <div className="admin-loading">
@@ -61,47 +106,33 @@ const DashboardAdmin = () => {
                 </div>
 
                 <nav className="admin-nav">
-                    <button
-                        className={`admin-nav-item ${activeTab === 'hero' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('hero')}
-                    >
-                        <FaImages /> Banner
-                    </button>
-                    <button
-                        className={`admin-nav-item ${activeTab === 'news' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('news')}
-                    >
-                        <FaNewspaper /> Notícias
-                    </button>
-                    <button
-                        className={`admin-nav-item ${activeTab === 'sports' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('sports')}
-                    >
-                        <FaFutbol /> Modalidades
-                    </button>
-                    <button
-                        className={`admin-nav-item ${activeTab === 'partners' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('partners')}
-                    >
-                        <FaHandshake /> Parceiros
-                    </button>
-                    <button
-                        className={`admin-nav-item ${activeTab === 'teams' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('teams')}
-                    >
-                        <FaUsers /> Equipas
-                    </button>
-                    <button
-                        className={`admin-nav-item ${activeTab === 'people' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('people')}
-                    >
-                        <FaUserFriends /> Pessoas
-                    </button>
+                    {navOrder.map(key => {
+                        const item = NAV_ITEMS_CONFIG[key];
+                        if (!item) return null;
+                        return (
+                            <button
+                                key={item.id}
+                                className={`admin-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                                onClick={() => setActiveTab(item.id)}
+                            >
+                                {item.icon} {item.label}
+                            </button>
+                        );
+                    })}
                 </nav>
 
-                <button className="admin-logout" onClick={handleLogout}>
-                    <FaSignOutAlt /> Sair
-                </button>
+                <div className="admin-sidebar-footer">
+                    <button
+                        className="admin-reorder-btn"
+                        onClick={() => setIsReorderModalOpen(true)}
+                        title="Organizar Menu"
+                    >
+                        <FaSort /> Organizar
+                    </button>
+                    <button className="admin-logout" onClick={handleLogout}>
+                        <FaSignOutAlt /> Sair
+                    </button>
+                </div>
             </div>
 
             <div className="admin-content">
@@ -111,7 +142,15 @@ const DashboardAdmin = () => {
                 {activeTab === 'partners' && <PartnersManager />}
                 {activeTab === 'teams' && <TeamsManager />}
                 {activeTab === 'people' && <PeopleManager />}
+                {activeTab === 'calendar' && <CalendarManager />}
             </div>
+
+            <NavReorderModal
+                isOpen={isReorderModalOpen}
+                onClose={() => setIsReorderModalOpen(false)}
+                items={getNavItems()}
+                onSave={handleSaveNavOrder}
+            />
         </div>
     );
 };

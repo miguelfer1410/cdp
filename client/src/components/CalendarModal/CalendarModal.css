@@ -1,0 +1,130 @@
+/* Calendar Modal Overlay */
+.calendar-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.calendar-modal-content {
+    background-color: white;
+    border-radius: 12px;
+    width: 95%;
+    max-width: 1000px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.calendar-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    background-color: #f8fafc;
+    border-radius: 12px 12px 0 0;
+}
+
+.calendar-modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #64748b;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    background-color: #e2e8f0;
+    color: #ef4444;
+}
+
+.calendar-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.calendar-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: 1.2rem;
+    color: #64748b;
+}
+
+/* FullCalendar Overrides for Modal */
+.calendar-modal-content .fc {
+    font-family: inherit;
+    height: 100%;
+}
+
+.calendar-modal-content .fc-toolbar-title {
+    font-size: 1.2rem;
+    color: #1e293b;
+}
+
+.calendar-modal-content .fc-button {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    text-transform: capitalize;
+    font-size: 0.9rem;
+}
+
+.calendar-modal-content .fc-button:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.calendar-modal-content .fc-button-active {
+    background-color: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+}
+
+.calendar-modal-content .fc-daygrid-day-number {
+    color: #334155;
+    text-decoration: none;
+}
+
+.calendar-modal-content .fc-col-header-cell-cushion {
+    color: #475569;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}

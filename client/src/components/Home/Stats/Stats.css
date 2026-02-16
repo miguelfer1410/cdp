@@ -1,4 +1,4 @@
-.stats-bar {
+.home-stats-bar {
     background-color: var(--primary-color);
     color: var(--white);
     padding: 60px 0;
@@ -6,10 +6,10 @@
     margin: 0 auto;
     border-radius: 10px;
     text-align: center;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
 }
 
-.stats-grid {
+.home-stats-grid {
     display: flex;
     justify-content: space-around;
     text-align: center;
@@ -17,23 +17,23 @@
     gap: 30px;
 }
 
-.stat-item h3 {
+.home-stat-item h3 {
     font-size: 3rem;
     font-weight: 700;
     margin-bottom: 10px;
 }
 
-.stat-item p {
+.home-stat-item p {
     font-size: 1.1rem;
     opacity: 0.9;
 }
 
 @media (max-width: 768px) {
-    .stats-bar {
+    .home-stats-bar {
         width: 90%;
     }
-    
-    .stats-grid {
+
+    .home-stats-grid {
         gap: 50px;
     }
 }

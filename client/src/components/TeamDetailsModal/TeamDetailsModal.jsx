@@ -5,8 +5,14 @@ import './TeamDetailsModal.css';
 const TeamDetailsModal = ({ isOpen, onClose, teamData }) => {
     if (!isOpen || !teamData) return null;
 
+    const handleOverlayClick = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay" onMouseDown={handleOverlayClick}>
             <div className="modal-content team-modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2><i className="fas fa-users"></i> {teamData.name} - Plantel Completo</h2>

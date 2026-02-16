@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaUsers, FaRunning, FaIdCard, FaChalkboardTeacher, FaUserShield, FaSort, FaSortUp, FaSortDown, FaCheck, FaArrowRight, FaArrowLeft, FaUser, FaClipboardList, FaLock, FaEye, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaUsers, FaRunning, FaIdCard, FaChalkboardTeacher, FaUserShield, FaSort, FaSortUp, FaSortDown, FaCheck, FaArrowRight, FaArrowLeft, FaUser, FaClipboardList, FaLock, FaEye, FaTimes, FaFileExcel } from 'react-icons/fa';
 import './PeopleManager.css';
 
 const PeopleManager = () => {
@@ -90,6 +90,19 @@ const PeopleManager = () => {
         }, 500);
         return () => clearTimeout(timeoutId);
     }, [searchTerm]);
+
+    // Auto-select "User" role when Athlete or Coach profile is selected
+    useEffect(() => {
+        if ((formData.hasAthleteProfile || formData.hasCoachProfile) && roles.length > 0) {
+            const userRole = roles.find(role => role.name === 'User');
+            if (userRole && !formData.selectedRoles.includes(userRole.id)) {
+                setFormData(prev => ({
+                    ...prev,
+                    selectedRoles: [...prev.selectedRoles, userRole.id]
+                }));
+            }
+        }
+    }, [formData.hasAthleteProfile, formData.hasCoachProfile, roles]);
 
     const fetchUsers = async () => {
         try {
@@ -589,6 +602,64 @@ const PeopleManager = () => {
         return sport ? sport.name : '-';
     };
 
+    const handleExport = () => {
+        if (!users || users.length === 0) {
+            alert('Não há dados para exportar.');
+            return;
+        }
+
+        // Define headers
+        const headers = [
+            'Nome Completo',
+            'Email',
+            'Telefone',
+            'NIF',
+            'Data Nascimento',
+            'Morada',
+            'Código Postal',
+            'Cidade',
+            'Perfis',
+            'Equipa',
+            'Estado Sócio',
+            'Funções'
+        ];
+
+        // Format data rows
+        const rows = users.map(user => {
+            const profiles = getProfileBadges(user).map(b => b.label).join(', ');
+            const roles = user.roles ? user.roles.map(r => r.name).join(', ') : '';
+            const memberStatus = (user.hasMemberProfile && user.memberProfile) ? getMemberStatusLabel(user.memberProfile.membershipStatus) : '-';
+
+            return [
+                `"${user.fullName}"`,
+                `"${user.email}"`,
+                `"${user.phone || ''}"`,
+                `"${user.nif || ''}"`,
+                `"${user.birthDate ? user.birthDate.split('T')[0] : ''}"`,
+                `"${user.address || ''}"`,
+                `"${user.postalCode || ''}"`,
+                `"${user.city || ''}"`,
+                `"${profiles}"`,
+                `"${user.currentTeam || ''}"`,
+                `"${memberStatus}"`,
+                `"${roles}"`
+            ].join(';');
+        });
+
+        // Combine headers and rows
+        const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // Add BOM for Excel support
+
+        // Create blob and download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `lista_pessoas_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // ─────────────────────────────────────────
     // RENDER: Wizard Step Content
     // ─────────────────────────────────────────
@@ -826,7 +897,9 @@ const PeopleManager = () => {
                                 >
                                     <option value="">Sem equipa atribuída</option>
                                     {teams.map(team => (
-                                        <option key={team.id} value={team.id}>{team.name}</option>
+                                        <option key={team.id} value={team.id}>
+                                            {team.name} - {team.sportName}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -932,7 +1005,9 @@ const PeopleManager = () => {
                                 >
                                     <option value="">Sem equipa atribuída</option>
                                     {teams.map(team => (
-                                        <option key={team.id} value={team.id}>{team.name}</option>
+                                        <option key={team.id} value={team.id}>
+                                            {team.name} - {team.sportName}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -1173,9 +1248,14 @@ const PeopleManager = () => {
                     <h1>Gestão de Pessoas</h1>
                     <p className="header-subtitle">Gerir atletas, sócios, treinadores e utilizadores do clube</p>
                 </div>
-                <button className="btn-add" onClick={() => setShowModal(true)}>
-                    <FaPlus /> Adicionar Pessoa
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn-export" onClick={handleExport}>
+                        <FaFileExcel /> Exportar Excel
+                    </button>
+                    <button className="btn-add" onClick={() => setShowModal(true)}>
+                        <FaPlus /> Adicionar Pessoa
+                    </button>
+                </div>
             </div>
 
             {/* Filters */}
@@ -1288,7 +1368,7 @@ const PeopleManager = () => {
 
             {/* Wizard Modal */}
             {showModal && (
-                <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
                     <div className="modal-content wizard-modal" onClick={(e) => e.stopPropagation()}>
                         {/* Modal Header */}
                         <div className="modal-header">

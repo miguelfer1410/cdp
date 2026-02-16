@@ -323,7 +323,7 @@ const NewsManager = () => {
             )}
 
             {showModal && (
-                <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
                     <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingNews ? 'Editar Notícia' : 'Nova Notícia'}</h2>

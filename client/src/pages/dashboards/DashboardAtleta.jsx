@@ -3,14 +3,17 @@ import { Link } from 'react-router-dom';
 import './DashboardAtleta.css';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
+import CalendarModal from '../../components/CalendarModal/CalendarModal';
 
 const DashboardAtleta = () => {
     const [athleteData, setAthleteData] = useState(null);
     const [teamData, setTeamData] = useState(null);
+    const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+    const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -50,6 +53,23 @@ const DashboardAtleta = () => {
                     if (teamResponse.ok) {
                         const teamData = await teamResponse.json();
                         setTeamData(teamData);
+
+                        // Fetch Upcoming Events for the team
+                        const today = new Date().toISOString();
+                        const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${primaryTeam.id}&startDate=${today}`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (eventsResponse.ok) {
+                            const eventsData = await eventsResponse.json();
+                            // Sort by date (ascending) and take next 3
+                            const sortedEvents = eventsData
+                                .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
+                                .slice(0, 3);
+                            setEvents(sortedEvents);
+                        }
                     }
                 }
 
@@ -145,10 +165,6 @@ const DashboardAtleta = () => {
                             <p>Pontos por Jogo</p>
                         </div>
 
-                        <div className="stat-card">
-                            <h3>-</h3>
-                            <p>Próximos Eventos</p>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -163,11 +179,46 @@ const DashboardAtleta = () => {
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="far fa-calendar"></i> Próximos Eventos</h2>
-                                    <a href="#" className="view-all-link">Ver Calendário <i className="fas fa-arrow-right"></i></a>
+                                    <button className="view-all-link" onClick={() => setIsCalendarModalOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                        Ver Calendário <i className="fas fa-arrow-right"></i>
+                                    </button>
                                 </div>
 
-                                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                    Não existem eventos agendados.
+                                <div className="events-list">
+                                    {events.length > 0 ? (
+                                        events.map(event => (
+                                            <div key={event.id} className="event-item" style={{ padding: '12px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                <div className="event-date" style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    minWidth: '50px',
+                                                    padding: '5px',
+                                                    background: '#f0f7ff',
+                                                    borderRadius: '6px',
+                                                    color: '#003380',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    <span style={{ fontSize: '0.8rem' }}>{new Date(event.startDateTime).toLocaleDateString('pt-PT', { day: '2-digit' })}</span>
+                                                    <span style={{ fontSize: '0.7rem', textTransform: 'uppercase' }}>{new Date(event.startDateTime).toLocaleDateString('pt-PT', { month: 'short' }).replace('.', '')}</span>
+                                                </div>
+                                                <div className="event-details" style={{ flex: 1 }}>
+                                                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.95rem', color: '#333' }}>
+                                                        {event.eventType === 1 ? 'Jogo: ' : event.eventType === 2 ? 'Treino: ' : 'Evento: '}
+                                                        {event.title}
+                                                    </h4>
+                                                    <div style={{ display: 'flex', gap: '10px', fontSize: '0.8rem', color: '#666' }}>
+                                                        <span><i className="far fa-clock"></i> {new Date(event.startDateTime).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        {event.location && <span><i className="fas fa-map-marker-alt"></i> {event.location}</span>}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                                            Não existem eventos agendados.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -360,6 +411,12 @@ const DashboardAtleta = () => {
                 isOpen={isTeamModalOpen}
                 onClose={() => setIsTeamModalOpen(false)}
                 teamData={teamData}
+            />
+
+            <CalendarModal
+                isOpen={isCalendarModalOpen}
+                onClose={() => setIsCalendarModalOpen(false)}
+                teamId={primaryTeam?.id}
             />
         </div >
     );

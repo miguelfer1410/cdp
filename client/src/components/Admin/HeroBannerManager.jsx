@@ -158,7 +158,7 @@ const HeroBannerManager = () => {
         <div className="hero-banner-manager">
             <div className="manager-header">
                 <div className="header-content">
-                    <h1>Hero Banners</h1>
+                    <h1>Banners</h1>
                     <p className="header-subtitle">Gerir imagens do carrossel principal</p>
                 </div>
                 <button className="btn-add" onClick={() => setShowModal(true)}>
@@ -215,7 +215,7 @@ const HeroBannerManager = () => {
             )}
 
             {showModal && (
-                <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingBanner ? 'Editar Banner' : 'Novo Banner'}</h2>

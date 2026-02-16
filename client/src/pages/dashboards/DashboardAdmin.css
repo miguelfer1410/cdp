@@ -76,12 +76,45 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 20px;
+    width: 100%;
+    justify-content: flex-start;
     border-radius: 8px;
 }
 
 .admin-logout:hover {
     background: rgba(255, 0, 0, 0.3);
+}
+
+.admin-sidebar-footer {
+    padding: 20px;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-reorder-btn {
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.admin-reorder-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .admin-content {

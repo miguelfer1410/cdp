@@ -18,6 +18,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 import DashboardSocio from './pages/dashboards/DashboardSocio';
 import DashboardAdmin from './pages/dashboards/DashboardAdmin';
 import DashboardAtleta from './pages/dashboards/DashboardAtleta';
+import DashboardTreinador from './pages/dashboards/DashboardTreinador';
 import AtivarConta from './pages/auth/AtivarConta';
 
 function AppContent() {
@@ -38,6 +39,7 @@ function AppContent() {
           <Route path="/dashboard-socio" element={<DashboardSocio />} />
           <Route path="/dashboard-admin" element={<DashboardAdmin />} />
           <Route path="/dashboard-atleta" element={<DashboardAtleta />} />
+          <Route path="/dashboard-treinador" element={<DashboardTreinador />} />
           <Route path="/clube" element={<Clube />} />
           <Route path="/modalidades" element={<Modalidades />} />
           <Route path="/noticias" element={<Noticias />} />

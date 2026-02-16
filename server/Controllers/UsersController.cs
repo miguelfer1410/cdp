@@ -247,7 +247,6 @@ public class UsersController : ControllerBase
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        // Send activation email
         try
         {
             var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
@@ -305,7 +304,9 @@ public class UsersController : ControllerBase
         user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(48);
         await _context.SaveChangesAsync();
 
-        // Send activation email
+        return NoContent();
+
+
         try
         {
             var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
@@ -317,6 +318,7 @@ public class UsersController : ControllerBase
         {
             return StatusCode(500, new { message = $"Erro ao enviar email: {ex.Message}" });
         }
+
     }
 
     // PUT: api/users/{id} - Update user

@@ -246,7 +246,7 @@ const PartnersManager = () => {
             )}
 
             {showModal && (
-                <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
                     <div className="modal" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingPartner ? 'Editar Parceiro' : 'Novo Parceiro'}</h2>

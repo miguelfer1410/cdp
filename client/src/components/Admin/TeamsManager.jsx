@@ -19,6 +19,7 @@ const TeamsManager = () => {
         nif: '',
         email: ''
     });
+    const [selectedSportFilter, setSelectedSportFilter] = useState('');
     const [formData, setFormData] = useState({
         sportId: '',
         name: '',
@@ -373,6 +374,12 @@ const TeamsManager = () => {
 
     const sortedTeams = useMemo(() => {
         let sortableTeams = [...teams];
+
+        // Apply sport filter
+        if (selectedSportFilter) {
+            sortableTeams = sortableTeams.filter(team => team.sportId === parseInt(selectedSportFilter));
+        }
+
         if (sortConfig.key !== null) {
             sortableTeams.sort((a, b) => {
                 let aValue = a[sortConfig.key];
@@ -394,7 +401,7 @@ const TeamsManager = () => {
             });
         }
         return sortableTeams;
-    }, [teams, sortConfig]);
+    }, [teams, sortConfig, selectedSportFilter]);
 
     const getSortIcon = (name) => {
         if (sortConfig.key !== name) return <FaSort className="sort-icon" />;
@@ -421,13 +428,43 @@ const TeamsManager = () => {
                 <div className="header-content">
                     <h1>Gestão de Equipas</h1>
                     <p className="header-subtitle">
-                        {teams.length} {teams.length === 1 ? 'equipa registada' : 'equipas registadas'}
+                        {sortedTeams.length} {sortedTeams.length === 1 ? 'equipa' : 'equipas'} {selectedSportFilter ? 'encontrada' : 'registada'}{sortedTeams.length !== 1 ? 's' : ''}
                     </p>
                 </div>
                 <button className="btn-add" onClick={openAddModal}>
                     <FaPlus /> Nova Equipa
                 </button>
             </div>
+
+            {/* Sport Filter */}
+            {teams.length > 0 && (
+                <div className="filter-section">
+                    <div className="filter-group">
+                        <label className="filter-label">Filtrar por Modalidade:</label>
+                        <select
+                            className="filter-select"
+                            value={selectedSportFilter}
+                            onChange={(e) => setSelectedSportFilter(e.target.value)}
+                        >
+                            <option value="">Todas as Modalidades</option>
+                            {sports.map(sport => (
+                                <option key={sport.id} value={sport.id}>
+                                    {sport.name}
+                                </option>
+                            ))}
+                        </select>
+                        {selectedSportFilter && (
+                            <button
+                                className="clear-filter-btn"
+                                onClick={() => setSelectedSportFilter('')}
+                                title="Limpar filtro"
+                            >
+                                <FaTimes /> Limpar
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {teams.length === 0 ? (
                 <div className="empty-state">
@@ -507,7 +544,7 @@ const TeamsManager = () => {
 
             {/* Create/Edit Team Modal */}
             {showModal && (
-                <div className="teams-modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+                <div className="teams-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
                     <div className="teams-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="teams-modal-header">
                             <h2>{editingTeam ? 'Editar Equipa' : 'Nova Equipa'}</h2>
@@ -624,7 +661,7 @@ const TeamsManager = () => {
 
             {/* Team Details Modal */}
             {showDetailsModal && viewingTeam && (
-                <div className="modal-overlay" onClick={() => { setShowDetailsModal(false); setViewingTeam(null); setAddingAthletes(false); }}>
+                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowDetailsModal(false); setViewingTeam(null); setAddingAthletes(false); } }}>
                     <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px' }}>
                         <div className="modal-header">
                             <div>
