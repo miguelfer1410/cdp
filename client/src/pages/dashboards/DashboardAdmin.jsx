@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaImages, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort } from 'react-icons/fa';
+import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort } from 'react-icons/fa';
 import HeroBannerManager from '../../components/Admin/HeroBannerManager';
 import NewsManager from '../../components/Admin/NewsManager';
 import SportsManager from '../../components/Admin/SportsManager';
@@ -29,6 +29,7 @@ const DashboardAdmin = () => {
     const [loading, setLoading] = useState(true);
     const [navOrder, setNavOrder] = useState(DEFAULT_NAV_ORDER);
     const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         // Load nav order from localStorage
@@ -78,6 +79,11 @@ const DashboardAdmin = () => {
         navigate('/login');
     };
 
+    const handleNavClick = (tabId) => {
+        setActiveTab(tabId);
+        setIsSidebarOpen(false);
+    };
+
     const handleSaveNavOrder = (newOrder) => {
         const orderIds = newOrder.map(item => item.id);
         setNavOrder(orderIds);
@@ -98,8 +104,18 @@ const DashboardAdmin = () => {
     }
 
     return (
-        <div className="admin-dashboard">
-            <div className="admin-sidebar">
+        <div className={`admin-dashboard ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* NOVO: Header Mobile */}
+            <div className="mobile-header">
+                <button className="menu-toggle" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                    {isSidebarOpen ? <FaTimes /> : <FaBars />}
+                </button>
+                <h2>Admin</h2>
+            </div>
+
+            {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+
+            <div className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
                 <div className="admin-sidebar-header">
                     <h2>Admin Dashboard</h2>
                     <p>Gestão do Clube</p>

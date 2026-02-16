@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaUser, FaChevronDown, FaSignOutAlt, FaTachometerAlt, FaCog, FaUserCircle } from 'react-icons/fa';
+import { FaUser, FaChevronDown, FaSignOutAlt, FaTachometerAlt, FaCog, FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
 import './Header.css';
 
 const Header = () => {
@@ -10,6 +10,7 @@ const Header = () => {
   const [userName, setUserName] = useState('');
   const [userType, setUserType] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -35,6 +36,11 @@ const Header = () => {
         setUserType(type || 'User');
       }
     }
+  }, [location]);
+
+  // Close mobile menu when location changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
   }, [location]);
 
   useEffect(() => {
@@ -96,21 +102,25 @@ const Header = () => {
             </div>
           </Link>
         </div>
-        <nav className="navbar">
+        <div className="mobile-menu-icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </div>
+
+        <nav className={`navbar ${mobileMenuOpen ? 'active' : ''}`}>
           <div className="nav-links">
-            <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+            <Link to="/" className={location.pathname === '/' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Início
             </Link>
-            <Link to="/clube" className={location.pathname === '/clube' ? 'active' : ''}>
+            <Link to="/clube" className={location.pathname === '/clube' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Clube
             </Link>
-            <Link to="/modalidades" className={location.pathname === '/modalidades' ? 'active' : ''}>
+            <Link to="/modalidades" className={location.pathname === '/modalidades' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Modalidades
             </Link>
-            <Link to="/noticias" className={location.pathname === '/noticias' ? 'active' : ''}>
+            <Link to="/noticias" className={location.pathname === '/noticias' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Notícias
             </Link>
-            <Link to="/contactos" className={location.pathname === '/contactos' ? 'active' : ''}>
+            <Link to="/contactos" className={location.pathname === '/contactos' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Contactos
             </Link>
           </div>
@@ -140,7 +150,10 @@ const Header = () => {
                       key={index}
                       to={option.link}
                       className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        setMobileMenuOpen(false);
+                      }}
                     >
                       {option.icon}
                       <span>{option.label}</span>
@@ -155,7 +168,7 @@ const Header = () => {
               )}
             </div>
           ) : (
-            <Link to="/login" className="btn-login">
+            <Link to="/login" className="btn-login" onClick={() => setMobileMenuOpen(false)}>
               <i className="fa-regular fa-user"></i> Login
             </Link>
           )}

@@ -149,12 +149,6 @@ const CalendarModal = ({ isOpen, onClose, teamId }) => {
                                                         <div className="card-text">{event.location}</div>
                                                     </div>
                                                 )}
-                                                {event.description && (
-                                                    <div className="card-row">
-                                                        <div className="card-icon"><i className="fas fa-align-left"></i></div>
-                                                        <div className="card-text">{event.description}</div>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     ))
@@ -181,6 +175,10 @@ const CalendarModal = ({ isOpen, onClose, teamId }) => {
                             dateClick={handleDateClick}
                             buttonText={{
                                 today: 'Hoje',
+                                month: 'Mês',
+                                week: 'Semana',
+                                day: 'Dia',
+                                list: 'Lista'
                             }}
                             eventClick={(info) => {
                                 handleDateClick({ date: info.event.start });

@@ -163,14 +163,6 @@
     /* Ensure text is readable on colored backgrounds */
 }
 
-/* Hide the default time text if it's cluttering, or style it */
-.calendar-modal-content .fc-event-time {
-    font-weight: bold;
-    margin-right: 4px;
-    font-size: 0.7rem;
-    opacity: 0.9;
-}
-
 .calendar-modal-content .fc-daygrid-dot-event {
     align-items: center;
     padding: 2px;
