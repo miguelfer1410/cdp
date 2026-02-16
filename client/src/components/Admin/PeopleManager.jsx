@@ -660,10 +660,6 @@ const PeopleManager = () => {
         document.body.removeChild(link);
     };
 
-    // ─────────────────────────────────────────
-    // RENDER: Wizard Step Content
-    // ─────────────────────────────────────────
-
     const renderPersonalStep = () => (
         <div className="wizard-step-content">
             <div className="step-intro">

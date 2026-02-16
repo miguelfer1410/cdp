@@ -159,7 +159,7 @@ const DashboardTreinador = () => {
                             {/* Próximos Treinos/Jogos */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
-                                    <h2><i className="far fa-calendar"></i> Próximos Treinos e Jogos</h2>
+                                    <h2><i className="far fa-calendar"></i> Calendário</h2>
                                     <button className="view-all-link" onClick={() => setIsCalendarModalOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
                                         Ver Calendário <i className="fas fa-arrow-right"></i>
                                     </button>

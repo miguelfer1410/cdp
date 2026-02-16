@@ -351,8 +351,8 @@ const DashboardAtleta = () => {
                                 </div>
 
                                 <div className="quick-actions">
-                                    <a href="#" className="action-btn">
-                                        <i className="fas fa-calendar-alt"></i>
+                                    <a href="#" className="action-btn" onClick={() => setIsCalendarModalOpen(true)}>
+                                        <i className="fas fa-calendar-alt" ></i>
                                         Ver Calendário
                                     </a>
                                     <button className="action-btn" onClick={() => setIsEditModalOpen(true)} style={{ width: '100%', textAlign: 'left' }}>
