@@ -27,7 +27,6 @@ const DashboardAtleta = () => {
                     throw new Error('User not authenticated');
                 }
 
-                // Fetch Athlete Data
                 const userResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -41,7 +40,6 @@ const DashboardAtleta = () => {
                 const userData = await userResponse.json();
                 setAthleteData(userData);
 
-                // Fetch Team Data if assigned
                 const primaryTeam = userData.athleteProfile?.teams?.[0];
                 if (primaryTeam && primaryTeam.id) {
                     const teamResponse = await fetch(`http://localhost:5285/api/teams/${primaryTeam.id}`, {
@@ -54,7 +52,6 @@ const DashboardAtleta = () => {
                         const teamData = await teamResponse.json();
                         setTeamData(teamData);
 
-                        // Fetch Upcoming Events for the team
                         const today = new Date().toISOString();
                         const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${primaryTeam.id}&startDate=${today}`, {
                             headers: {
@@ -64,7 +61,6 @@ const DashboardAtleta = () => {
 
                         if (eventsResponse.ok) {
                             const eventsData = await eventsResponse.json();
-                            // Sort by date (ascending) and take next 3
                             const sortedEvents = eventsData
                                 .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
                                 .slice(0, 3);
@@ -88,13 +84,11 @@ const DashboardAtleta = () => {
     if (error) return <div className="dashboard-error">Erro: {error}</div>;
     if (!athleteData) return <div className="dashboard-error">Não foi possível carregar os dados.</div>;
 
-    // Helper to format date
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         return new Date(dateString).toLocaleDateString('pt-PT');
     };
 
-    // Helper to calculate age
     const calculateAge = (birthDate) => {
         if (!birthDate) return 'N/A';
         const today = new Date();
@@ -107,12 +101,10 @@ const DashboardAtleta = () => {
         return age;
     };
 
-    // Get primary team info
     const primaryTeam = athleteData.athleteProfile?.teams?.[0] || {};
 
     const handleSaveProfile = (updatedData) => {
         setAthleteData(updatedData);
-        // Update local storage in case name changed
         localStorage.setItem('userName', `${updatedData.firstName} ${updatedData.lastName}`);
     };
 

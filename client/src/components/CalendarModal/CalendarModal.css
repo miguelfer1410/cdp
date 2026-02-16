@@ -127,4 +127,187 @@
     text-decoration: none;
     text-transform: uppercase;
     font-size: 0.8rem;
+    padding: 8px 0;
+}
+
+/* Event Styling Overrides */
+.calendar-modal-content .fc-event {
+    cursor: pointer;
+    border: none;
+    margin-bottom: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.calendar-modal-content .fc-event:hover {
+    transform: scale(1.02);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 5;
+}
+
+.calendar-modal-content .fc-daygrid-event {
+    white-space: nowrap;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.calendar-modal-content .fc-event-main {
+    padding: 2px 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: white;
+    /* Ensure text is readable on colored backgrounds */
+}
+
+/* Hide the default time text if it's cluttering, or style it */
+.calendar-modal-content .fc-event-time {
+    font-weight: bold;
+    margin-right: 4px;
+    font-size: 0.7rem;
+    opacity: 0.9;
+}
+
+.calendar-modal-content .fc-daygrid-dot-event {
+    align-items: center;
+    padding: 2px;
+}
+
+.calendar-modal-content .fc-daygrid-dot-event .fc-event-title {
+    font-weight: 500;
+}
+
+/* Day View & Event Cards */
+.day-view-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.day-view-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    background-color: #f1f5f9;
+    color: #334155;
+}
+
+.day-view-title {
+    font-size: 1.5rem;
+    color: #1e293b;
+    margin: 0;
+    font-weight: 600;
+}
+
+.events-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.no-events-message {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 40px;
+    font-size: 1.1rem;
+}
+
+.event-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f1f5f9;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.event-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.event-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.event-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+}
+
+.event-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.event-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #475569;
+    font-size: 0.95rem;
+}
+
+.card-icon {
+    color: #94a3b8;
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.card-text {
+    flex: 1;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
