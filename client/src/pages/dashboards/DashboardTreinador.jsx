@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './DashboardTreinador.css';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
 import CalendarModal from '../../components/CalendarModal/CalendarModal';
@@ -8,6 +8,7 @@ import EventAttendanceModal from '../../components/Attendance/EventAttendanceMod
 import GameCallUpModal from '../../components/Game/GameCallUpModal';
 
 const DashboardTreinador = () => {
+    const navigate = useNavigate();
     const [coachData, setCoachData] = useState(null);
     const [teamData, setTeamData] = useState(null);
     const [events, setEvents] = useState([]);
@@ -25,6 +26,26 @@ const DashboardTreinador = () => {
     // Game Call-up Modal State
     const [isCallUpModalOpen, setIsCallUpModalOpen] = useState(false);
     const [selectedEventForCallUp, setSelectedEventForCallUp] = useState(null);
+
+    // Linked profiles (accounts sharing the same base email)
+    const [linkedUsers] = useState(() => {
+        try {
+            const stored = localStorage.getItem('linkedUsers');
+            return stored ? JSON.parse(stored) : [];
+        } catch { return []; }
+    });
+    const currentUserId = parseInt(localStorage.getItem('userId')) || null;
+
+    const handleLinkedTabClick = (lu) => {
+        const dashboardRoutes = {
+            atleta: '/dashboard-atleta',
+            treinador: '/dashboard-treinador',
+            socio: '/dashboard-socio',
+            user: '/dashboard-socio'
+        };
+        localStorage.setItem('userId', lu.id);
+        navigate(dashboardRoutes[lu.dashboardType] || '/dashboard-socio');
+    };
 
     const fetchData = async () => {
         try {
@@ -151,6 +172,28 @@ const DashboardTreinador = () => {
 
     return (
         <div className="dashboard-wrapper">
+            {/* Linked Profile Tabs - shown when there are multiple linked accounts */}
+            {linkedUsers.length > 1 && (
+                <div className="athlete-tabs">
+                    <div className="container athlete-tabs-container">
+                        {linkedUsers.map((lu) => (
+                            <button
+                                key={lu.id}
+                                onClick={() => handleLinkedTabClick(lu)}
+                                className={`athlete-tab ${currentUserId === lu.id ? 'active' : ''}`}
+                            >
+                                <i className={
+                                    lu.dashboardType === 'atleta' ? 'fas fa-running' :
+                                        lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
+                                            'fas fa-id-card'
+                                }></i>
+                                {`${lu.firstName} ${lu.lastName}`.trim() || `Conta ${lu.id}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Profile Header */}
             <section className="profile-header">
                 <div className="container">

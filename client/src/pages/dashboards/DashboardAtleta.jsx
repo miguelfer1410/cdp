@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './DashboardAtleta.css';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
 import CalendarModal from '../../components/CalendarModal/CalendarModal';
 
 const DashboardAtleta = () => {
+    const navigate = useNavigate();
     const [athleteData, setAthleteData] = useState(null);
     const [teamData, setTeamData] = useState(null);
     const [events, setEvents] = useState([]);
@@ -192,16 +193,37 @@ const DashboardAtleta = () => {
             {linkedUsers.length > 1 && (
                 <div className="athlete-tabs">
                     <div className="container athlete-tabs-container">
-                        {linkedUsers.map((lu) => (
-                            <button
-                                key={lu.id}
-                                onClick={() => setSelectedUserId(lu.id)}
-                                className={`athlete-tab ${selectedUserId === lu.id ? 'active' : ''}`}
-                            >
-                                <i className="fas fa-user"></i>
-                                {`${lu.firstName} ${lu.lastName}`.trim() || `Atleta ${lu.id}`}
-                            </button>
-                        ))}
+                        {linkedUsers.map((lu) => {
+                            const dashboardRoutes = {
+                                atleta: null, // stay on this page, just switch userId
+                                treinador: '/dashboard-treinador',
+                                socio: '/dashboard-socio',
+                                user: '/dashboard-socio'
+                            };
+                            const handleClick = () => {
+                                const route = dashboardRoutes[lu.dashboardType];
+                                if (route) {
+                                    localStorage.setItem('userId', lu.id);
+                                    navigate(route);
+                                } else {
+                                    setSelectedUserId(lu.id);
+                                }
+                            };
+                            return (
+                                <button
+                                    key={lu.id}
+                                    onClick={handleClick}
+                                    className={`athlete-tab ${selectedUserId === lu.id ? 'active' : ''}`}
+                                >
+                                    <i className={
+                                        lu.dashboardType === 'atleta' ? 'fas fa-running' :
+                                            lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
+                                                'fas fa-id-card'
+                                    }></i>
+                                    {`${lu.firstName} ${lu.lastName}`.trim() || `Atleta ${lu.id}`}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}

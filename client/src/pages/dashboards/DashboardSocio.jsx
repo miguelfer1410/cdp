@@ -36,6 +36,26 @@ const DashboardSocio = () => {
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+    // Linked profiles (accounts sharing the same base email)
+    const [linkedUsers] = useState(() => {
+        try {
+            const stored = localStorage.getItem('linkedUsers');
+            return stored ? JSON.parse(stored) : [];
+        } catch { return []; }
+    });
+    const currentUserId = parseInt(localStorage.getItem('userId')) || null;
+
+    const handleLinkedTabClick = (lu) => {
+        const dashboardRoutes = {
+            atleta: '/dashboard-atleta',
+            treinador: '/dashboard-treinador',
+            socio: '/dashboard-socio',
+            user: '/dashboard-socio'
+        };
+        localStorage.setItem('userId', lu.id);
+        navigate(dashboardRoutes[lu.dashboardType] || '/dashboard-socio');
+    };
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -148,6 +168,27 @@ const DashboardSocio = () => {
     if (userData.membershipStatus === 'Pending') {
         return (
             <div className="dashboard-wrapper">
+                {/* Linked Profile Tabs */}
+                {linkedUsers.length > 1 && (
+                    <div className="athlete-tabs">
+                        <div className="container athlete-tabs-container">
+                            {linkedUsers.map((lu) => (
+                                <button
+                                    key={lu.id}
+                                    onClick={() => handleLinkedTabClick(lu)}
+                                    className={`athlete-tab ${currentUserId === lu.id ? 'active' : ''}`}
+                                >
+                                    <i className={
+                                        lu.dashboardType === 'atleta' ? 'fas fa-running' :
+                                            lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
+                                                'fas fa-id-card'
+                                    }></i>
+                                    {`${lu.firstName} ${lu.lastName}`.trim() || `Conta ${lu.id}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <BecomeMember userData={userData} />
             </div>
         );
@@ -261,6 +302,28 @@ const DashboardSocio = () => {
 
     return (
         <div className="dashboard-wrapper">
+            {/* Linked Profile Tabs - shown when there are multiple linked accounts */}
+            {linkedUsers.length > 1 && (
+                <div className="athlete-tabs">
+                    <div className="container athlete-tabs-container">
+                        {linkedUsers.map((lu) => (
+                            <button
+                                key={lu.id}
+                                onClick={() => handleLinkedTabClick(lu)}
+                                className={`athlete-tab ${currentUserId === lu.id ? 'active' : ''}`}
+                            >
+                                <i className={
+                                    lu.dashboardType === 'atleta' ? 'fas fa-running' :
+                                        lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
+                                            'fas fa-id-card'
+                                }></i>
+                                {`${lu.firstName} ${lu.lastName}`.trim() || `Conta ${lu.id}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Profile Header */}
             <section className="profile-header">
                 <div className="container">

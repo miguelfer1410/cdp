@@ -97,8 +97,10 @@ public class AuthService : IAuthService
 
             // Find all users whose email starts with localPart (covers base + aliases)
             var allLinked = await _context.Users
+                .Include(u => u.AthleteProfile)
+                .Include(u => u.CoachProfile)
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.Email.ToLower().StartsWith(localPart) && u.Email.ToLower().EndsWith(domain))
-                .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email })
                 .ToListAsync();
 
             // Only include if they are actually base or alias (localPart or localPart+...)
@@ -108,7 +110,16 @@ public class AuthService : IAuthService
                     var localLower = emailLower.Substring(0, emailLower.LastIndexOf('@'));
                     return localLower == localPart || localLower.StartsWith(localPart + "+");
                 })
-                .Select(u => new LinkedUserInfo { Id = u.Id, FirstName = u.FirstName, LastName = u.LastName })
+                .Select(u => new LinkedUserInfo
+                {
+                    Id = u.Id,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    DashboardType = u.AthleteProfile != null ? "atleta"
+                        : u.CoachProfile != null ? "treinador"
+                        : u.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
+                        : "user"
+                })
                 .ToList();
         }
 

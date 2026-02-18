@@ -70,7 +70,7 @@ const Registo = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost5/api/register', {
+      const response = await fetch('http://localhost:5285/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
