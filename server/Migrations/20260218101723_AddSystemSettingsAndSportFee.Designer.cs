@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218101723_AddSystemSettingsAndSportFee")]
+    partial class AddSystemSettingsAndSportFee
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -516,10 +519,6 @@ namespace CdpApi.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("Entity")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<int>("MemberProfileId")
                         .HasColumnType("int");
 
@@ -530,16 +529,6 @@ namespace CdpApi.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("PeriodMonth")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PeriodYear")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reference")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -588,14 +577,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 18, 11, 2, 34, 619, DateTimeKind.Utc).AddTicks(3666),
+                            CreatedAt = new DateTime(2026, 2, 18, 10, 17, 22, 651, DateTimeKind.Utc).AddTicks(6746),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 18, 11, 2, 34, 619, DateTimeKind.Utc).AddTicks(3668),
+                            CreatedAt = new DateTime(2026, 2, 18, 10, 17, 22, 651, DateTimeKind.Utc).AddTicks(6748),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -838,12 +827,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 18, 11, 2, 34, 754, DateTimeKind.Utc).AddTicks(6065),
+                            CreatedAt = new DateTime(2026, 2, 18, 10, 17, 22, 792, DateTimeKind.Utc).AddTicks(8169),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$WUbpKx.7ZuLazSe0sgzCCuZCxkpGYBqn3VBT83t4KvPwcNtwHI4uu"
+                            PasswordHash = "$2a$11$Xvm/NxQzy./3fNQMJf7P1u57GxO9rNPLbWEu75V6jfwEEAIRbsl/W"
                         });
                 });
 
@@ -877,7 +866,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 18, 11, 2, 34, 754, DateTimeKind.Utc).AddTicks(6747),
+                            AssignedAt = new DateTime(2026, 2, 18, 10, 17, 22, 792, DateTimeKind.Utc).AddTicks(8678),
                             RoleId = 2,
                             UserId = 1
                         });

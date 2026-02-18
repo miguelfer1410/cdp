@@ -21,4 +21,5 @@ public class AthleteProfile
     // Navigation properties
     public User User { get; set; } = null!;
     public ICollection<AthleteTeam> AthleteTeams { get; set; } = new List<AthleteTeam>();
+    public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 }

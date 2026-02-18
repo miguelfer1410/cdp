@@ -29,6 +29,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<AthleteTeam> AthleteTeams { get; set; }
     public DbSet<Event> Events { get; set; }
     public DbSet<TrainingSchedule> TrainingSchedules { get; set; }
+    public DbSet<Attendance> Attendances { get; set; }
+    public DbSet<GameCallUp> GameCallUps { get; set; }
+    public DbSet<SystemSetting> SystemSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -188,6 +191,45 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // Attendance configuration
+        modelBuilder.Entity<Attendance>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.EventId, e.AthleteId }).IsUnique();
+
+            entity.HasOne(e => e.Event)
+                .WithMany(ev => ev.Attendances)
+                .HasForeignKey(e => e.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Athlete)
+                .WithMany(a => a.Attendances)
+                .HasForeignKey(e => e.AthleteId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // GameCallUp Configuration
+        modelBuilder.Entity<GameCallUp>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.EventId, e.AthleteId }).IsUnique();
+
+            entity.HasOne(e => e.Event)
+                .WithMany() // Assuming Event does not have a navigation property back to GameCallUp
+                .HasForeignKey(e => e.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Athlete)
+                .WithMany() // Assuming AthleteProfile does not have a navigation property back to GameCallUp
+                .HasForeignKey(e => e.AthleteId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // Payment configuration (now references MemberProfile)

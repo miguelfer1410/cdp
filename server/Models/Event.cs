@@ -55,4 +55,5 @@ public class Event
     public Team? Team { get; set; }
     public Sport Sport { get; set; } = null!;
     public User Creator { get; set; } = null!;
+    public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 }

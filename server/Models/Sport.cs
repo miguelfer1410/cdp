@@ -14,6 +14,9 @@ public class Sport
     [Required]
     public string Description { get; set; } = string.Empty;
 
+    [Range(0, 1000)]
+    public decimal MonthlyFee { get; set; } = 0;
+
     [MaxLength(500)]
     public string? ImageUrl { get; set; }
 

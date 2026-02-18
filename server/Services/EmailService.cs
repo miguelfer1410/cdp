@@ -204,5 +204,97 @@ namespace server.Services
                 throw;
             }
         }
+
+        public async Task SendGameCallUpEmailAsync(string toEmail, string athleteName, string eventTitle, DateTime eventDate, string location)
+        {
+            try
+            {
+                _logger.LogInformation($"Attempting to send game call-up email to {toEmail}");
+
+                var emailMessage = new MimeMessage();
+                emailMessage.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+                emailMessage.To.Add(new MailboxAddress(athleteName, toEmail));
+                emailMessage.Subject = $"Convocatória - {eventTitle} - Clube Desportivo da Póvoa";
+
+                var bodyBuilder = new BodyBuilder
+                {
+                    HtmlBody = $@"
+                        <html>
+                        <body style='font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; background-color: #f4f6f8;'>
+                            <div style='max-width: 600px; margin: 0 auto; padding: 40px 20px;'>
+                                <div style='background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);'>
+                                    
+                                    <!-- Header -->
+                                    <div style='background: linear-gradient(135deg, #003380, #00509e); padding: 30px 40px; text-align: center;'>
+                                        <h1 style='color: white; margin: 0; font-size: 1.5em;'>Clube Desportivo da Póvoa</h1>
+                                    </div>
+                                    
+                                    <!-- Body -->
+                                    <div style='padding: 40px;'>
+                                        <h2 style='color: #003380; margin-top: 0;'>Convocatória</h2>
+                                        
+                                        <p style='font-size: 1em; line-height: 1.6;'>
+                                            Olá <strong>{athleteName}</strong>,
+                                        </p>
+                                        
+                                        <p style='font-size: 1em; line-height: 1.6;'>
+                                            Foste convocado(a) para o seguinte jogo:
+                                        </p>
+                                        
+                                        <div style='background: #f0f7ff; border-left: 4px solid #003380; padding: 20px; margin: 25px 0; border-radius: 4px;'>
+                                            <h3 style='margin: 0 0 10px 0; color: #003380;'>{eventTitle}</h3>
+                                            <p style='margin: 5px 0;'><strong>Data e Hora:</strong> {eventDate.ToString("dd/MM/yyyy HH:mm")}</p>
+                                            <p style='margin: 5px 0;'><strong>Local:</strong> {location}</p>
+                                        </div>
+                                        
+                                        <p style='font-size: 1em; line-height: 1.6;'>
+                                            Contamos com a tua presença e empenho!
+                                        </p>
+                                        
+                                        <div style='text-align: center; margin: 35px 0;'>
+                                            <a href='http://localhost:3000/dashboard/atleta' style='background: linear-gradient(135deg, #003380, #00509e); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1em; display: inline-block;'>
+                                                Ver Detalhes no Dashboard
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Footer -->
+                                    <div style='background: #f8fafc; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;'>
+                                        <p style='font-size: 0.8em; color: #888; margin: 0;'>
+                                            Este email foi enviado automaticamente pelo sistema do Clube Desportivo da Póvoa.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                    "
+                };
+
+                emailMessage.Body = bodyBuilder.ToMessageBody();
+
+                using var smtpClient = new SmtpClient();
+                try
+                {
+                    await smtpClient.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.SmtpPort, SecureSocketOptions.SslOnConnect);
+                    await smtpClient.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
+                    await smtpClient.SendAsync(emailMessage);
+                    await smtpClient.DisconnectAsync(true);
+                    _logger.LogInformation($"Game call-up email sent successfully to {toEmail}");
+                }
+                catch (Exception smtpEx)
+                {
+                    // Log but don't crash if email fails, just rethrow or handle gracefully
+                    _logger.LogError($"SMTP Error sending game call-up email: {smtpEx.Message}");
+                    // In a production app, we might want to queue this or alert the user.
+                    // For now, we logging error is sufficient as per requirements.
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"General Error creating/sending game call-up email: {ex.Message}");
+                throw;
+            }
+        }
     }
 }

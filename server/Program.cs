@@ -18,6 +18,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IEasypayService, EasypayService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

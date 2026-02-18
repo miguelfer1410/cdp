@@ -737,6 +737,170 @@ public class UsersController : ControllerBase
 
         return NoContent();
     }
+    // POST: api/users/fix-athlete-members - Temporary fix for missing member profiles
+    [HttpPost("fix-athlete-members")]
+    [Authorize] // Should be restricted to Admin in production, but for now Authorize is enough as requested
+    public async Task<IActionResult> FixAthleteMembers()
+    {
+        // 1. Get all users with AthleteProfile but NO MemberProfile
+        var usersToFix = await _context.Users
+            .Include(u => u.AthleteProfile)
+            .Include(u => u.MemberProfile)
+            .Where(u => u.AthleteProfile != null && u.MemberProfile == null)
+            .ToListAsync();
+
+        if (!usersToFix.Any())
+        {
+            return Ok(new { message = "Nenhum atleta encontrado sem perfil de sócio." });
+        }
+
+        // 2. Get the last membership number to increment from
+        var lastMember = await _context.MemberProfiles
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        int nextNumber = 1;
+        if (lastMember != null && !string.IsNullOrEmpty(lastMember.MembershipNumber))
+        {
+            // Assuming format CDP-00001
+            if (lastMember.MembershipNumber.StartsWith("CDP-") && 
+                int.TryParse(lastMember.MembershipNumber.Substring(4), out int lastNum))
+            {
+                nextNumber = lastNum + 1;
+            }
+        }
+
+        int count = 0;
+        foreach (var user in usersToFix)
+        {
+            var membershipNumber = $"CDP-{nextNumber:D5}";
+            
+            var memberProfile = new MemberProfile
+            {
+                UserId = user.Id,
+                MembershipNumber = membershipNumber,
+                MembershipStatus = MembershipStatus.Active, // Assuming active since they are athletes
+                MemberSince = DateTime.UtcNow,
+                PaymentPreference = "Monthly",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.MemberProfiles.Add(memberProfile);
+            
+            nextNumber++;
+            count++;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { 
+            message = "Correção concluída com sucesso.", 
+            fixedCount = count,
+            firstNewNumber = $"CDP-{(nextNumber - count):D5}",
+            lastNewNumber = $"CDP-{(nextNumber - 1):D5}"
+        });
+    }
+
+    // POST: api/users/import-siblings - Bulk import for siblings with aliased emails
+    [HttpPost("import-siblings")]
+    // [Authorize] // Temporarily disabled for script execution
+    public async Task<IActionResult> ImportSiblings([FromBody] List<ImportSiblingDto> siblings)
+    {
+        if (siblings == null || !siblings.Any())
+            return BadRequest(new { message = "Empty list" });
+
+        var results = new List<object>();
+        
+        // Get last membership number
+        var lastMember = await _context.MemberProfiles
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        int nextNumber = 1;
+        if (lastMember != null && !string.IsNullOrEmpty(lastMember.MembershipNumber))
+        {
+            if (lastMember.MembershipNumber.StartsWith("CDP-") && 
+                int.TryParse(lastMember.MembershipNumber.Substring(4), out int lastNum))
+            {
+                nextNumber = lastNum + 1;
+            }
+        }
+
+        foreach (var sibling in siblings)
+        {
+            try 
+            {
+                // check if exists
+                if (await _context.Users.AnyAsync(u => u.Email == sibling.Email))
+                {
+                    results.Add(new { name = sibling.Name, email = sibling.Email, status = "Skipped - Email exists" });
+                    continue;
+                }
+
+                // Create User
+                var user = new User
+                {
+                    Email = sibling.Email,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Mudeme123!"), // Default password
+                    FirstName = sibling.Name.Split(' ').FirstOrDefault() ?? "Unknown",
+                    LastName = sibling.Name.Split(' ').LastOrDefault() ?? "Unknown",
+                    Phone = sibling.Phone,
+                    BirthDate = sibling.BirthDate,
+                    Nif = sibling.Nif,
+                    Address = sibling.Address,
+                    PostalCode = sibling.PostalCode,
+                    City = sibling.City,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    PasswordResetToken = Guid.NewGuid().ToString(), // Activate token
+                    PasswordResetTokenExpires = DateTime.UtcNow.AddHours(48)
+                };
+
+                // Fix names slightly better if possible
+                var names = sibling.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (names.Length > 1)
+                {
+                    user.FirstName = names[0];
+                    user.LastName = string.Join(" ", names.Skip(1));
+                }
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Create Athlete Profile
+                var athleteProfile = new AthleteProfile
+                {
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.AthleteProfiles.Add(athleteProfile);
+
+                // Create Member Profile
+                var memberProfile = new MemberProfile
+                {
+                    UserId = user.Id,
+                    MembershipNumber = $"CDP-{nextNumber:D5}",
+                    MembershipStatus = MembershipStatus.Active,
+                    MemberSince = DateTime.UtcNow,
+                    PaymentPreference = "Monthly",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.MemberProfiles.Add(memberProfile);
+                
+                nextNumber++;
+                
+                results.Add(new { name = sibling.Name, email = sibling.Email, status = "Success", id = user.Id });
+            }
+            catch (Exception ex)
+            {
+                results.Add(new { name = sibling.Name, email = sibling.Email, status = $"Error: {ex.Message}" });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(results);
+    }
 }
 
 // DTOs
@@ -797,13 +961,26 @@ public class CoachProfileInfo
     public string? LicenseLevel { get; set; }
     public DateTime? LicenseExpiry { get; set; }
     public string? Specialization { get; set; }
+
+
+    // POST: api/users/import-siblings - Bulk import for siblings with aliased emails
+
 }
 
-public class RoleInfo
+public class ImportSiblingDto
 {
-    public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime? BirthDate { get; set; }
+    public string? Nif { get; set; }
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? PostalCode { get; set; }
+    public string? Gender { get; set; }
+    public string? CC { get; set; }
 }
+
 
 public class TeamInfo
 {

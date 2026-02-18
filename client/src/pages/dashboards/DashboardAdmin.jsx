@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort } from 'react-icons/fa';
+import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort, FaEuroSign } from 'react-icons/fa';
 import HeroBannerManager from '../../components/Admin/HeroBannerManager';
 import NewsManager from '../../components/Admin/NewsManager';
 import SportsManager from '../../components/Admin/SportsManager';
@@ -10,6 +10,8 @@ import CalendarManager from '../../components/Admin/CalendarManager';
 import NavReorderModal from '../../components/Admin/NavReorderModal/NavReorderModal';
 import './DashboardAdmin.css';
 import PeopleManager from '../../components/Admin/PeopleManager';
+import FeeManager from '../../components/Admin/FeeManager';
+import PaymentManager from '../../components/Admin/PaymentManager';
 
 const NAV_ITEMS_CONFIG = {
     hero: { id: 'hero', label: 'Banner', icon: <FaImages /> },
@@ -18,10 +20,12 @@ const NAV_ITEMS_CONFIG = {
     partners: { id: 'partners', label: 'Parceiros', icon: <FaHandshake /> },
     teams: { id: 'teams', label: 'Equipas', icon: <FaUsers /> },
     people: { id: 'people', label: 'Pessoas', icon: <FaUserFriends /> },
-    calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> }
+    calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> },
+    fees: { id: 'fees', label: 'Config. Quotas', icon: <FaEuroSign /> },
+    payments: { id: 'payments', label: 'Pagamentos', icon: <FaEuroSign /> }
 };
 
-const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people', 'calendar'];
+const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people', 'calendar', 'fees', 'payments'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
@@ -158,7 +162,10 @@ const DashboardAdmin = () => {
                 {activeTab === 'partners' && <PartnersManager />}
                 {activeTab === 'teams' && <TeamsManager />}
                 {activeTab === 'people' && <PeopleManager />}
+                {activeTab === 'people' && <PeopleManager />}
                 {activeTab === 'calendar' && <CalendarManager />}
+                {activeTab === 'fees' && <FeeManager />}
+                {activeTab === 'payments' && <PaymentManager />}
             </div>
 
             <NavReorderModal

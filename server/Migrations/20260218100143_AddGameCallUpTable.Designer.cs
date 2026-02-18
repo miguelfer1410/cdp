@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218100143_AddGameCallUpTable")]
+    partial class AddGameCallUpTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -516,10 +519,6 @@ namespace CdpApi.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("Entity")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<int>("MemberProfileId")
                         .HasColumnType("int");
 
@@ -530,16 +529,6 @@ namespace CdpApi.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("PeriodMonth")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PeriodYear")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reference")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -588,14 +577,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 18, 11, 2, 34, 619, DateTimeKind.Utc).AddTicks(3666),
+                            CreatedAt = new DateTime(2026, 2, 18, 10, 1, 42, 774, DateTimeKind.Utc).AddTicks(2300),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 18, 11, 2, 34, 619, DateTimeKind.Utc).AddTicks(3668),
+                            CreatedAt = new DateTime(2026, 2, 18, 10, 1, 42, 774, DateTimeKind.Utc).AddTicks(2301),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -623,9 +612,6 @@ namespace CdpApi.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<decimal>("MonthlyFee")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -637,28 +623,6 @@ namespace CdpApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Sports");
-                });
-
-            modelBuilder.Entity("CdpApi.Models.SystemSetting", b =>
-                {
-                    b.Property<string>("Key")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Key");
-
-                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("CdpApi.Models.Team", b =>
@@ -838,12 +802,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 18, 11, 2, 34, 754, DateTimeKind.Utc).AddTicks(6065),
+                            CreatedAt = new DateTime(2026, 2, 18, 10, 1, 42, 960, DateTimeKind.Utc).AddTicks(7482),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$WUbpKx.7ZuLazSe0sgzCCuZCxkpGYBqn3VBT83t4KvPwcNtwHI4uu"
+                            PasswordHash = "$2a$11$/vPl.aKvvVuC0gBWbM9mc.dBNp6qeu.N2gRRzFwrhVRSSydy6.yKG"
                         });
                 });
 
@@ -877,7 +841,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 18, 11, 2, 34, 754, DateTimeKind.Utc).AddTicks(6747),
+                            AssignedAt = new DateTime(2026, 2, 18, 10, 1, 42, 960, DateTimeKind.Utc).AddTicks(8330),
                             RoleId = 2,
                             UserId = 1
                         });

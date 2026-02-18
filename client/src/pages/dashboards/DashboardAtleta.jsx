@@ -15,6 +15,43 @@ const DashboardAtleta = () => {
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
+    // Payment State
+    const [paymentReference, setPaymentReference] = useState(null);
+    const [paymentStatus, setPaymentStatus] = useState('unpaid'); // 'unpaid', 'pending', 'paid'
+    const [generatingReference, setGeneratingReference] = useState(false);
+    const [quotaAmount, setQuotaAmount] = useState(null);
+
+    const handleGenerateReference = async () => {
+        setGeneratingReference(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5285/api/payment/reference', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Erro ao gerar referência');
+            }
+
+            const data = await response.json();
+            setPaymentReference(data);
+            setPaymentStatus('pending');
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        } finally {
+            setGeneratingReference(false);
+        }
+    };
+
+    const checkPaymentStatus = async () => {
+        window.location.reload();
+    };
+
     useEffect(() => {
         window.scrollTo(0, 0);
 
@@ -25,6 +62,24 @@ const DashboardAtleta = () => {
 
                 if (!userId || !token) {
                     throw new Error('User not authenticated');
+                }
+
+                // Fetch Quota Amount
+                try {
+                    const quotaResponse = await fetch('http://localhost:5285/api/payment/quota', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (quotaResponse.ok) {
+                        const quotaData = await quotaResponse.json();
+                        console.log(quotaData);
+                        setQuotaAmount(quotaData.amount);
+                        setPaymentStatus(quotaData.status); // 'paid', 'pending', 'unpaid'
+                        if (quotaData.existingPayment) {
+                            setPaymentReference(quotaData.existingPayment);
+                        }
+                    }
+                } catch (qErr) {
+                    console.error("Error fetching quota:", qErr);
                 }
 
                 const userResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
@@ -110,7 +165,6 @@ const DashboardAtleta = () => {
 
     return (
         <div className="dashboard-wrapper">
-            {/* Profile Header */}
             <section className="profile-header">
                 <div className="container">
                     <div className="profile-content">
@@ -120,7 +174,7 @@ const DashboardAtleta = () => {
                             <div className="profile-meta">
                                 <div className="profile-meta-item">
                                     <i className="fas fa-basketball-ball"></i>
-                                    <span>Basquetebol</span> {/* Static for now or fetch sport from team/coach */}
+                                    <span>Basquetebol</span>
                                 </div>
                                 <div className="profile-meta-item">
                                     <i className="fas fa-users"></i>
@@ -136,10 +190,8 @@ const DashboardAtleta = () => {
                 </div>
             </section>
 
-            {/* Quick Stats */}
             <section className="quick-stats">
                 <div className="container">
-
 
                     <div className="stats-grid">
                         <div className="stat-card">
@@ -161,13 +213,10 @@ const DashboardAtleta = () => {
                 </div>
             </section>
 
-            {/* Main Dashboard Content */}
             <section>
                 <div className="container">
                     <div className="dashboard-content">
-                        {/* Left Column */}
                         <div>
-                            {/* Próximos Eventos */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="far fa-calendar"></i> Próximos Eventos</h2>
@@ -214,7 +263,6 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* Estatísticas Pessoais */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-chart-bar"></i> Estatísticas da Época 2025/26</h2>
@@ -226,7 +274,6 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* Dados Pessoais */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-user"></i> Dados Pessoais</h2>
@@ -275,7 +322,6 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* Equipa */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-users"></i> A Minha Equipa</h2>
@@ -285,7 +331,6 @@ const DashboardAtleta = () => {
                                 </div>
 
                                 <div className="team-grid">
-                                    {/* Coaches (Limit to 2) */}
                                     {teamData?.coaches?.slice(0, 2).map((coach) => (
                                         <div className="team-member" key={`coach-${coach.id}`}>
                                             <div className="team-member-avatar" style={{ backgroundColor: '#003380', color: 'white' }}>
@@ -298,9 +343,6 @@ const DashboardAtleta = () => {
                                         </div>
                                     ))}
 
-
-
-                                    {/* Athletes (Limit to 4) */}
                                     {teamData?.athletes?.slice(0, 4).map((athlete) => (
                                         <div className="team-member" key={`athlete-${athlete.id}`}>
                                             <div className="team-member-avatar">
@@ -322,9 +364,7 @@ const DashboardAtleta = () => {
                             </div>
                         </div>
 
-                        {/* Right Column */}
                         <div>
-                            {/* Notificações */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-bell"></i> Notificações</h2>
@@ -336,7 +376,6 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* Ações Rápidas */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-bolt"></i> Ações Rápidas</h2>
@@ -362,7 +401,6 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* Documentos */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-folder"></i> Documentos</h2>
@@ -374,17 +412,73 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* Informações de Pagamento */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-credit-card"></i> Estado de Pagamento</h2>
                                 </div>
 
                                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                                    <a href="#" className="action-btn" style={{ display: 'inline-flex', background: 'var(--primary-color)', color: 'white', borderColor: 'var(--primary-color)', width: '100%', justifyContent: 'center' }}>
-                                        <i className="fas fa-credit-card" style={{ marginRight: '8px' }}></i>
-                                        Pagar Quotas
-                                    </a>
+                                    {paymentStatus === 'paid' ? (
+                                        <div className="payment-reference-box" style={{ background: '#ecfdf5', padding: '15px', borderRadius: '8px', border: '1px solid #10b981' }}>
+                                            <div style={{ color: '#059669', fontSize: '3rem', marginBottom: '10px' }}>
+                                                <i className="fas fa-check-circle"></i>
+                                            </div>
+                                            <h4 style={{ color: '#059669', margin: '0 0 5px 0' }}>Quotas em Dia</h4>
+                                            <p style={{ fontSize: '0.9rem', color: '#047857' }}>
+                                                O pagamento deste mês foi concluído com sucesso.
+                                            </p>
+                                        </div>
+                                    ) : paymentStatus === 'pending' && paymentReference ? (
+                                        <div className="payment-reference-box" style={{ background: '#f0f9ff', padding: '15px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                                            <h4 style={{ color: '#003380', margin: '0 0 10px 0' }}>Referência Multibanco</h4>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px', textAlign: 'left', maxWidth: '250px', margin: '0 auto' }}>
+                                                <span style={{ color: '#666' }}>Entidade:</span>
+                                                <span style={{ fontWeight: 'bold' }}>{paymentReference.entity}</span>
+                                                <span style={{ color: '#666' }}>Referência:</span>
+                                                <span style={{ fontWeight: 'bold' }}>{paymentReference.reference}</span>
+                                                <span style={{ color: '#666' }}>Valor:</span>
+                                                <span style={{ fontWeight: 'bold', color: '#003380' }}>{quotaAmount} €</span>
+                                            </div>
+                                            <div style={{ marginTop: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                                <button
+                                                    onClick={() => checkPaymentStatus(athleteData?.memberProfile?.id /* Ideally we need payment ID here, but for now user might just refresh */)}
+                                                    className="action-btn"
+                                                    style={{ fontSize: '0.8rem', padding: '5px 10px' }}
+                                                >
+                                                    <i className="fas fa-sync-alt"></i> Atualizar Estado
+                                                </button>
+                                            </div>
+                                            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '10px' }}>
+                                                Pagamento a aguardar confirmação.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <p style={{ marginBottom: '15px', color: '#666' }}>
+                                                Quota Mensal: <strong>{quotaAmount !== null ? `${quotaAmount.toFixed(2)} €` : 'A calcular...'}</strong>
+                                            </p>
+                                            <button
+                                                className="action-btn"
+                                                onClick={handleGenerateReference}
+                                                disabled={generatingReference || quotaAmount === null}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    background: 'var(--primary-color)',
+                                                    color: 'white',
+                                                    borderColor: 'var(--primary-color)',
+                                                    width: '100%',
+                                                    justifyContent: 'center',
+                                                    opacity: (generatingReference || quotaAmount === null) ? 0.7 : 1
+                                                }}
+                                            >
+                                                {generatingReference ? (
+                                                    <><i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> A gerar...</>
+                                                ) : (
+                                                    <><i className="fas fa-credit-card" style={{ marginRight: '8px' }}></i> Pagar Quotas</>
+                                                )}
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

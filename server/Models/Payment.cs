@@ -30,8 +30,17 @@ public class Payment
     [MaxLength(100)]
     public string? TransactionId { get; set; }
 
+    [MaxLength(20)]
+    public string? Entity { get; set; }
+
+    [MaxLength(20)]
+    public string? Reference { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation property
     public MemberProfile? MemberProfile { get; set; }
+
+    public int? PeriodMonth { get; set; }
+    public int? PeriodYear { get; set; }
 }

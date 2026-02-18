@@ -4,6 +4,8 @@ import './DashboardTreinador.css';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
 import CalendarModal from '../../components/CalendarModal/CalendarModal';
 import CalendarManager from '../../components/Admin/CalendarManager';
+import EventAttendanceModal from '../../components/Attendance/EventAttendanceModal';
+import GameCallUpModal from '../../components/Game/GameCallUpModal';
 
 const DashboardTreinador = () => {
     const [coachData, setCoachData] = useState(null);
@@ -14,6 +16,15 @@ const DashboardTreinador = () => {
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
     const [showCalendarManager, setShowCalendarManager] = useState(false);
+
+    // Attendance Modal State
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+    const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null);
+    const [lastTrainingStats, setLastTrainingStats] = useState(null);
+
+    // Game Call-up Modal State
+    const [isCallUpModalOpen, setIsCallUpModalOpen] = useState(false);
+    const [selectedEventForCallUp, setSelectedEventForCallUp] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -50,8 +61,9 @@ const DashboardTreinador = () => {
                     const teamData = await teamResponse.json();
                     setTeamData(teamData);
 
-                    // Fetch Upcoming Events for the team
                     const today = new Date().toISOString();
+
+                    // Fetch Upcoming Events for the team
                     const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${today}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -65,6 +77,39 @@ const DashboardTreinador = () => {
                             .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
                             .slice(0, 3);
                         setEvents(sortedEvents);
+                    }
+
+                    // Fetch Last Training Statistics
+                    const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${today}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (pastTrainingsResponse.ok) {
+                        const pastTrainings = await pastTrainingsResponse.json();
+                        if (pastTrainings.length > 0) {
+                            // Get the most recent one (last in the list because API sorts ascending)
+                            const lastTraining = pastTrainings[pastTrainings.length - 1];
+
+                            // Fetch attendance for this training
+                            const attResponse = await fetch(`http://localhost:5285/api/attendance/event/${lastTraining.id}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+
+                            if (attResponse.ok) {
+                                const attendanceData = await attResponse.json();
+                                const totalAthletes = teamData.athletes.length;
+                                const presentCount = attendanceData.filter(a => a.status === 1 || a.status === 3).length; // Present or Late
+                                const attendanceRate = totalAthletes > 0 ? Math.round((presentCount / totalAthletes) * 100) : 0;
+
+                                setLastTrainingStats({
+                                    date: lastTraining.startDateTime,
+                                    rate: attendanceRate,
+                                    present: presentCount,
+                                    total: totalAthletes,
+                                    details: attendanceData
+                                });
+                            }
+                        }
                     }
                 }
             }
@@ -138,8 +183,8 @@ const DashboardTreinador = () => {
                         </div>
 
                         <div className="stat-card">
-                            <h3>-</h3>
-                            <p>Taxa de Presença</p>
+                            <h3>{lastTrainingStats ? `${lastTrainingStats.rate}%` : '-'}</h3>
+                            <p>Taxa de Presença (Último Treino)</p>
                         </div>
 
                         <div className="stat-card">
@@ -193,6 +238,54 @@ const DashboardTreinador = () => {
                                                         {event.location && <span><i className="fas fa-map-marker-alt"></i> {event.location}</span>}
                                                     </div>
                                                 </div>
+
+                                                {/* Attendance Button for Trainings */}
+                                                {event.eventType === 2 && (
+                                                    <button
+                                                        className="action-btn-small"
+                                                        onClick={() => {
+                                                            setSelectedEventForAttendance(event);
+                                                            setIsAttendanceModalOpen(true);
+                                                        }}
+                                                        style={{
+                                                            padding: '5px 10px',
+                                                            background: '#e9ecef',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: '#003380',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: '600'
+                                                        }}
+                                                        title="Registar Presenças"
+                                                    >
+                                                        <i className="fas fa-clipboard-check"></i>
+                                                    </button>
+                                                )}
+
+                                                {/* Call-up Button for Games */}
+                                                {event.eventType === 1 && (
+                                                    <button
+                                                        className="action-btn-small"
+                                                        onClick={() => {
+                                                            setSelectedEventForCallUp(event);
+                                                            setIsCallUpModalOpen(true);
+                                                        }}
+                                                        style={{
+                                                            padding: '5px 10px',
+                                                            background: '#fff7ed',
+                                                            border: '1px solid #ffedd5',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                            color: '#c2410c',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: '600'
+                                                        }}
+                                                        title="Convocar Atletas"
+                                                    >
+                                                        <i className="fas fa-bullhorn"></i>
+                                                    </button>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -313,9 +406,29 @@ const DashboardTreinador = () => {
                                     <h2><i className="fas fa-check-circle"></i> Presenças - Último Treino</h2>
                                 </div>
 
-                                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                    Informações de presença não disponíveis.
-                                </div>
+                                {lastTrainingStats ? (
+                                    <div style={{ padding: '20px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                                            <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                                                {new Date(lastTrainingStats.date).toLocaleDateString()}
+                                            </span>
+                                            <span style={{ fontWeight: 'bold', color: '#003380' }}>
+                                                {lastTrainingStats.present}/{lastTrainingStats.total} Presentes
+                                            </span>
+                                        </div>
+                                        <div style={{ background: '#eee', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
+                                            <div style={{
+                                                width: `${lastTrainingStats.rate}%`,
+                                                background: lastTrainingStats.rate > 75 ? '#28a745' : lastTrainingStats.rate > 50 ? '#ffc107' : '#dc3545',
+                                                height: '100%'
+                                            }}></div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                                        Sem dados de treinos recentes.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -331,6 +444,27 @@ const DashboardTreinador = () => {
             <CalendarModal
                 isOpen={isCalendarModalOpen}
                 onClose={() => setIsCalendarModalOpen(false)}
+                teamId={coachData?.coachProfile?.teamId}
+            />
+
+            <EventAttendanceModal
+                isOpen={isAttendanceModalOpen}
+                onClose={() => {
+                    setIsAttendanceModalOpen(false);
+                    setSelectedEventForAttendance(null);
+                    // Optionally refresh data here if needed
+                }}
+                event={selectedEventForAttendance}
+                teamId={coachData?.coachProfile?.teamId}
+            />
+
+            <GameCallUpModal
+                isOpen={isCallUpModalOpen}
+                onClose={() => {
+                    setIsCallUpModalOpen(false);
+                    setSelectedEventForCallUp(null);
+                }}
+                event={selectedEventForCallUp}
                 teamId={coachData?.coachProfile?.teamId}
             />
         </div>
