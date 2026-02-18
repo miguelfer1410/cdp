@@ -37,7 +37,8 @@ const DashboardAtleta = () => {
         setGeneratingReference(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/payment/reference', {
+            // Pass the selectedUserId to generate reference for the correct athlete
+            const response = await fetch(`http://localhost:5285/api/payment/reference?userId=${selectedUserId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -57,36 +58,15 @@ const DashboardAtleta = () => {
     };
 
     const checkPaymentStatus = async () => {
+        // We could just re-fetch, but reload is a simple way to reset everything for now
         window.location.reload();
     };
 
-    // Fetch quota only once on mount
-    useEffect(() => {
-        window.scrollTo(0, 0);
-        const fetchQuota = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const quotaResponse = await fetch('http://localhost:5285/api/payment/quota', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (quotaResponse.ok) {
-                    const quotaData = await quotaResponse.json();
-                    setQuotaAmount(quotaData.amount);
-                    setPaymentStatus(quotaData.status);
-                    if (quotaData.existingPayment) setPaymentReference(quotaData.existingPayment);
-                }
-            } catch (qErr) {
-                console.error('Error fetching quota:', qErr);
-            }
-        };
-        fetchQuota();
-    }, []);
-
-    // Fetch user data whenever the selected tab (userId) changes
+    // Fetch all data (User + Team + Events + Quota) whenever the selected tab (userId) changes
     useEffect(() => {
         if (!selectedUserId) return;
 
-        const fetchUserData = async () => {
+        const fetchData = async () => {
             if (!athleteData) setLoading(true);
             else setLoadingTab(true);
 
@@ -94,7 +74,7 @@ const DashboardAtleta = () => {
                 const token = localStorage.getItem('token');
                 if (!token) throw new Error('User not authenticated');
 
-                // Fetch the selected user's profile
+                // 1. Fetch User Profile
                 const userResponse = await fetch(`http://localhost:5285/api/users/${selectedUserId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -102,7 +82,28 @@ const DashboardAtleta = () => {
                 const userData = await userResponse.json();
                 setAthleteData(userData);
 
-                // Fetch team + events for their profile
+                // 2. Fetch Quota for this user
+                try {
+                    const quotaResponse = await fetch(`http://localhost:5285/api/payment/quota?userId=${selectedUserId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (quotaResponse.ok) {
+                        const quotaData = await quotaResponse.json();
+                        setQuotaAmount(quotaData.amount);
+                        setPaymentStatus(quotaData.status);
+                        // If there's an existing payment, set it; otherwise clear it
+                        setPaymentReference(quotaData.existingPayment || null);
+                    } else {
+                        // Reset quota state on error
+                        setQuotaAmount(0);
+                        setPaymentStatus('-');
+                        setPaymentReference(null);
+                    }
+                } catch (qErr) {
+                    console.error('Error fetching quota:', qErr);
+                }
+
+                // 3. Fetch Team + Events
                 const teamId = userData.athleteProfile?.teams?.[0]?.id;
                 if (teamId) {
                     const [teamResponse, eventsResponse] = await Promise.all([
@@ -136,7 +137,7 @@ const DashboardAtleta = () => {
             }
         };
 
-        fetchUserData();
+        fetchData();
     }, [selectedUserId]);
 
     if (loading) return <div className="dashboard-loading">A carregar...</div>;

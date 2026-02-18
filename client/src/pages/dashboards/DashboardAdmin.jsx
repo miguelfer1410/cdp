@@ -29,7 +29,14 @@ const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'peopl
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState(DEFAULT_NAV_ORDER[0]);
+    const [activeTab, setActiveTab] = useState(() => {
+        // Try to get active tab from sessionStorage first
+        const savedTab = sessionStorage.getItem('adminActiveTab');
+        if (savedTab && DEFAULT_NAV_ORDER.includes(savedTab)) {
+            return savedTab;
+        }
+        return DEFAULT_NAV_ORDER[0];
+    });
     const [loading, setLoading] = useState(true);
     const [navOrder, setNavOrder] = useState(DEFAULT_NAV_ORDER);
     const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
@@ -43,10 +50,19 @@ const DashboardAdmin = () => {
                 const parsedOrder = JSON.parse(savedOrder);
                 // Validate that all default keys exist in saved order (handle new items)
                 const missingItems = DEFAULT_NAV_ORDER.filter(item => !parsedOrder.includes(item));
+                let finalOrder = parsedOrder;
+
                 if (missingItems.length > 0) {
-                    setNavOrder([...parsedOrder, ...missingItems]);
-                } else {
-                    setNavOrder(parsedOrder);
+                    finalOrder = [...parsedOrder, ...missingItems];
+                }
+
+                setNavOrder(finalOrder);
+
+                // Only set default active tab from order if NO session storage exists
+                // This ensures we respect the user's dashboard entry point preference
+                // BUT if they are just refreshing, we keep them where they were
+                if (!sessionStorage.getItem('adminActiveTab') && finalOrder.length > 0) {
+                    setActiveTab(finalOrder[0]);
                 }
             } catch (e) {
                 console.error('Error parsing nav order:', e);
@@ -80,11 +96,13 @@ const DashboardAdmin = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        sessionStorage.removeItem('adminActiveTab'); // Clear session tab on logout
         navigate('/login');
     };
 
     const handleNavClick = (tabId) => {
         setActiveTab(tabId);
+        sessionStorage.setItem('adminActiveTab', tabId); // Save active tab to session
         setIsSidebarOpen(false);
     };
 

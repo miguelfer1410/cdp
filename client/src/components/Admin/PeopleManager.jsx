@@ -20,6 +20,9 @@ const PeopleManager = () => {
         roleId: null,
         isActive: true,
         teamId: '',
+        isActive: true,
+        teamId: '',
+        sportId: '',
         search: ''
     });
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
@@ -118,6 +121,8 @@ const PeopleManager = () => {
             if (filters.roleId) params.append('roleId', filters.roleId);
             if (filters.isActive !== null) params.append('isActive', filters.isActive);
             if (filters.teamId) params.append('teamId', filters.teamId);
+            if (filters.teamId) params.append('teamId', filters.teamId);
+            if (filters.sportId) params.append('sportId', filters.sportId);
             if (filters.search) params.append('search', filters.search);
 
             const response = await fetch(`http://localhost:5285/api/users?${params}`, {
@@ -618,6 +623,9 @@ const PeopleManager = () => {
                 } else if (sortConfig.key === 'team') {
                     aValue = a.currentTeam || '';
                     bValue = b.currentTeam || '';
+                } else if (sortConfig.key === 'sport') {
+                    aValue = a.sport || '';
+                    bValue = b.sport || '';
                 } else {
                     aValue = aValue ? aValue.toString().toLowerCase() : '';
                     bValue = bValue ? bValue.toString().toLowerCase() : '';
@@ -676,6 +684,12 @@ const PeopleManager = () => {
             'Perfis',
             'Equipa',
             'Estado Sócio',
+            'Código Postal',
+            'Cidade',
+            'Perfis',
+            'Modalidade',
+            'Equipa',
+            'Estado Sócio',
             'Funções'
         ];
 
@@ -695,6 +709,8 @@ const PeopleManager = () => {
                 `"${user.postalCode || ''}"`,
                 `"${user.city || ''}"`,
                 `"${profiles}"`,
+                `"${profiles}"`,
+                `"${user.sport || ''}"`,
                 `"${user.currentTeam || ''}"`,
                 `"${memberStatus}"`,
                 `"${roles}"`
@@ -1379,6 +1395,20 @@ const PeopleManager = () => {
                     </select>
                 </div>
 
+                <div className="filter-group">
+                    <label className="filter-label">Modalidade:</label>
+                    <select
+                        className="filter-select"
+                        value={filters.sportId || ''}
+                        onChange={(e) => setFilters({ ...filters, sportId: e.target.value ? parseInt(e.target.value) : '' })}
+                    >
+                        <option value="">Todas</option>
+                        {sports.map(sport => (
+                            <option key={sport.id} value={sport.id}>{sport.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="filter-group search-group">
                     <input
                         type="text"
@@ -1421,6 +1451,9 @@ const PeopleManager = () => {
                                 <th onClick={() => handleSort('profiles')} style={{ cursor: 'pointer' }}>
                                     <div className="th-content">Perfis {getSortIcon('profiles')}</div>
                                 </th>
+                                <th onClick={() => handleSort('sport')} style={{ cursor: 'pointer' }}>
+                                    <div className="th-content">Modalidade {getSortIcon('sport')}</div>
+                                </th>
                                 <th onClick={() => handleSort('team')} style={{ cursor: 'pointer' }}>
                                     <div className="th-content">Equipa {getSortIcon('team')}</div>
                                 </th>
@@ -1448,6 +1481,7 @@ const PeopleManager = () => {
                                         ))}
                                         {getProfileBadges(user).length === 0 && '-'}
                                     </td>
+                                    <td>{user.sport || '-'}</td>
                                     <td>{user.currentTeam || '-'}</td>
                                     <td className="actions-cell">
                                         <button className="action-btn edit" onClick={() => handleEdit(user)} title="Editar">

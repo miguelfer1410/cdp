@@ -343,17 +343,61 @@ public class PaymentController : ControllerBase
         return $"{month} {date.Year}";
     }
 
+    // Helper to validate if logged-in user can access/manage requested user (self or linked alias)
+    private async Task<int?> GetAuthorizedUserIdAsync(int? requestedUserId)
+    {
+        var loggedInIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(loggedInIdClaim) || !int.TryParse(loggedInIdClaim, out int loggedInId))
+        {
+            return null;
+        }
+
+        // If no specific user requested, or requested self, return logged-in ID
+        if (!requestedUserId.HasValue || requestedUserId.Value == loggedInId)
+        {
+            return loggedInId;
+        }
+
+        // If requesting another user, verify they are linked (share base email)
+        var loggedInUser = await _context.Users.FindAsync(loggedInId);
+        var requestedUser = await _context.Users.FindAsync(requestedUserId.Value);
+
+        if (loggedInUser == null || requestedUser == null)
+        {
+            return null;
+        }
+
+        // Check if emails share the same base (e.g. parent@mail.com and parent+child@mail.com)
+        var email1 = loggedInUser.Email.ToLower();
+        var email2 = requestedUser.Email.ToLower();
+
+        var GetBase = (string email) => 
+        {
+            var atIndex = email.LastIndexOf('@');
+            if (atIndex < 0) return email;
+            var local = email.Substring(0, atIndex);
+            var domain = email.Substring(atIndex);
+            var plusIndex = local.IndexOf('+');
+            var baseLocal = plusIndex >= 0 ? local.Substring(0, plusIndex) : local;
+            return baseLocal + domain;
+        };
+
+        if (GetBase(email1) != GetBase(email2))
+        {
+            return null; // Not authorized
+        }
+
+        return requestedUserId.Value;
+    }
+
     [HttpGet("quota")]
     [Authorize]
-    public async Task<ActionResult> GetCurrentQuota()
+    public async Task<ActionResult> GetCurrentQuota([FromQuery] int? userId)
     {
         try
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
-                return Unauthorized(new { message = "Invalid user token" });
-            }
+            var targetUserId = await GetAuthorizedUserIdAsync(userId);
+            if (targetUserId == null) return Unauthorized(new { message = "Unauthorized access to this user's quota" });
 
             var user = await _context.Users
                 .Include(u => u.MemberProfile)
@@ -361,8 +405,8 @@ public class PaymentController : ControllerBase
                 .ThenInclude(ap => ap.AthleteTeams)
                 .ThenInclude(at => at.Team)
                 .ThenInclude(t => t.Sport)
-                .FirstOrDefaultAsync(u => u.Id == userId);
-
+                .FirstOrDefaultAsync(u => u.Id == targetUserId);
+            
             if (user == null || user.MemberProfile == null)
             {
                 return BadRequest(new { message = "User not found" });
@@ -374,40 +418,68 @@ public class PaymentController : ControllerBase
             int? currentMonth = null;
             int currentYear = DateTime.UtcNow.Year;
 
-            if (user.MemberProfile.PaymentPreference != "Annual")
+            if (user.MemberProfile.PaymentPreference == "Annual")
+            {
+                // currentMonth remains null
+            }
+            else
             {
                 currentMonth = DateTime.UtcNow.Month;
             }
 
-            // Check if there is already a payment for this period
-            // We search for a payment with matching PeriodMonth (or null) and PeriodYear
-            var existingPayment = await _context.Payments
-                .Where(p => p.MemberProfileId == user.MemberProfile.Id && 
-                            p.PeriodYear == currentYear &&
-                            (p.PeriodMonth == currentMonth)) // Handles null matching too
-                .OrderByDescending(p => p.CreatedAt) // Get latest attempt
-                .FirstOrDefaultAsync();
+            // Check if there is an existing pending payment for this exact period & user
+            // We need to verify if we have a payment wrapper for this
+            // Simplification: Check EasypayPaymentHistory for Pending status matching entity/ref?
+            // Actually locally we might not store the "Period" in the payment table explicitly in a queryable way 
+            // if it's just in description. 
+            // BUT, we can check if there's a recent pending payment for this user with same amount?
+            // For now, let's just return the generic status. 
+            // Ideally we should lookup "PaymentRequests" table if we had one.
+            // As a fallback, we check if the user has a valid payment for this period in history:
+            
+            bool isPaid = false;
+            if (user.MemberProfile.PaymentPreference == "Annual")
+            {
+                isPaid = await _context.Payments.AnyAsync(p => 
+                    p.MemberProfileId == user.MemberProfile.Id && 
+                    p.Status == "Completed" && 
+                    p.PeriodYear == currentYear &&
+                    p.PeriodMonth == null);
+            }
+            else
+            {
+                isPaid = await _context.Payments.AnyAsync(p => 
+                    p.MemberProfileId == user.MemberProfile.Id && 
+                    p.Status == "Completed" && 
+                    p.PeriodYear == currentYear &&
+                    p.PeriodMonth == currentMonth);
+            }
 
-            string status = "unpaid";
+            string status = isPaid ? "Regularizada" : "Por Regularizar";
             object paymentDetails = null;
 
-            if (existingPayment != null)
+            if (!isPaid)
             {
-                if (existingPayment.Status == "Completed")
+                // Check if we have ANY pending payment for this user
+                // The user wants it to stick around until paid
+                var existingPendingPayment = await _context.Payments
+                    .Where(p => p.MemberProfileId == user.MemberProfile.Id && 
+                                p.Status == "Pending")
+                    .OrderByDescending(p => p.CreatedAt)
+                    .FirstOrDefaultAsync();
+                
+                if (existingPendingPayment != null)
                 {
-                    status = "paid";
+                     // Return it even if amount is slightly different (e.g. if quota changed after generation)
+                     status = "Pendente";
+                     paymentDetails = new 
+                     {
+                        entity = existingPendingPayment.Entity,
+                        reference = existingPendingPayment.Reference,
+                        amount = existingPendingPayment.Amount,
+                        id = existingPendingPayment.Id
+                     };
                 }
-                else if (existingPayment.Status == "Pending")
-                {
-                    status = "pending";
-                    paymentDetails = new 
-                    {
-                        entity = existingPayment.Entity,
-                        reference = existingPayment.Reference,
-                        amount = existingPayment.Amount
-                    };
-                }
-                // If Failed, we treat as 'unpaid' so they can try again (generate new reference)
             }
 
             return Ok(new 
@@ -428,15 +500,12 @@ public class PaymentController : ControllerBase
 
     [HttpPost("reference")]
     [Authorize]
-    public async Task<ActionResult> GenerateReference([FromServices] IEasypayService easypayService, [FromServices] IEmailService emailService)
+    public async Task<ActionResult> GenerateReference([FromServices] IEasypayService easypayService, [FromServices] IEmailService emailService, [FromQuery] int? userId)
     {
         try
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
-                return Unauthorized(new { message = "Invalid user token" });
-            }
+            var targetUserId = await GetAuthorizedUserIdAsync(userId);
+            if (targetUserId == null) return Unauthorized(new { message = "Unauthorized access" });
 
             var user = await _context.Users
                 .Include(u => u.MemberProfile)
@@ -444,7 +513,8 @@ public class PaymentController : ControllerBase
                 .ThenInclude(ap => ap.AthleteTeams)
                 .ThenInclude(at => at.Team)
                 .ThenInclude(t => t.Sport) // To get Sport Fee
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == targetUserId);
+
 
             if (user == null || user.MemberProfile == null)
             {

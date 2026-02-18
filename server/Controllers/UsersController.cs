@@ -30,12 +30,14 @@ public class UsersController : ControllerBase
         [FromQuery] int? roleId = null,
         [FromQuery] bool? isActive = null,
         [FromQuery] int? teamId = null,
+        [FromQuery] int? sportId = null,
         [FromQuery] string? search = null)
     {
         var query = _context.Users
             .Include(u => u.AthleteProfile)
                 .ThenInclude(ap => ap.AthleteTeams)
                     .ThenInclude(at => at.Team)
+                        .ThenInclude(t => t.Sport)
             .Include(u => u.MemberProfile)
             .Include(u => u.CoachProfile)
                 .ThenInclude(c => c.Sport)
@@ -75,6 +77,15 @@ public class UsersController : ControllerBase
             query = query.Where(u =>
                 (u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null)) ||
                 (u.CoachProfile != null && u.CoachProfile.TeamId == teamId.Value)
+            );
+        }
+
+        // Filter by sport
+        if (sportId.HasValue)
+        {
+            query = query.Where(u =>
+                (u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null)) ||
+                (u.CoachProfile != null && u.CoachProfile.SportId == sportId.Value)
             );
         }
 
@@ -120,7 +131,10 @@ public class UsersController : ControllerBase
             IsActive = u.IsActive,
             CreatedAt = u.CreatedAt,
             LastLogin = u.LastLogin,
-            AthleteProfileId = u.AthleteProfile?.Id
+            AthleteProfileId = u.AthleteProfile?.Id,
+            Sport = u.AthleteProfile != null
+                ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
+                : (u.CoachProfile != null ? u.CoachProfile.Sport?.Name : null)
         }).ToList();
 
         return Ok(response);
@@ -1094,6 +1108,7 @@ public class UserResponse
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLogin { get; set; }
     public int? AthleteProfileId { get; set; }
+    public string? Sport { get; set; }
 }
 
 public class UserDetailResponse : UserResponse
