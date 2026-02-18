@@ -168,6 +168,24 @@ const DashboardAtleta = () => {
         localStorage.setItem('userName', `${updatedData.firstName} ${updatedData.lastName}`);
     };
 
+    const getDisplayEmail = (email) => {
+        if (!email) return 'N/A';
+        // Check for alias pattern: local+alias@domain
+        const atIndex = email.lastIndexOf('@');
+        if (atIndex === -1) return email;
+
+        const localPart = email.substring(0, atIndex);
+        const domain = email.substring(atIndex);
+
+        // If local part has '+', strip everything after it
+        const plusIndex = localPart.indexOf('+');
+        if (plusIndex !== -1) {
+            return localPart.substring(0, plusIndex) + domain;
+        }
+
+        return email;
+    };
+
     return (
         <div className="dashboard-wrapper">
             {/* Athlete Tabs - shown when there are multiple linked users (siblings) */}
@@ -333,7 +351,7 @@ const DashboardAtleta = () => {
 
                                     <div style={{ padding: '15px', background: 'var(--bg-light)', borderRadius: '8px', gridColumn: '1 / -1' }}>
                                         <p style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginBottom: '5px' }}>Email</p>
-                                        <p style={{ color: 'var(--text-color)', fontWeight: '600', fontSize: '1rem' }}>{athleteData.email}</p>
+                                        <p style={{ color: 'var(--text-color)', fontWeight: '600', fontSize: '1rem' }}>{getDisplayEmail(athleteData.email)}</p>
                                     </div>
 
                                     <div style={{ padding: '15px', background: 'var(--bg-light)', borderRadius: '8px', gridColumn: '1 / -1' }}>

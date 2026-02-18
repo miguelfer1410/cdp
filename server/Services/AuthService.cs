@@ -233,6 +233,34 @@ public class AuthService : IAuthService
         user.PasswordHash = _passwordService.HashPassword(newPassword);
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpires = null;
+
+        // Also update password for all aliased accounts (e.g. parent+child@gmail.com)
+        // so the parent can log in to all accounts with the same new password
+        var emailLower = user.Email.ToLower();
+        var atIndex = emailLower.LastIndexOf('@');
+        if (atIndex > 0)
+        {
+            var localPart = emailLower.Substring(0, atIndex);
+            var domain = emailLower.Substring(atIndex); // includes @
+
+            // If this is a primary email (no '+' alias), update its children
+            // If this is already an alias, we might want to update siblings? 
+            // For now, let's assume valid flow is parent (primary) resetting password.
+            if (!localPart.Contains('+'))
+            {
+                var aliasedUsers = await _context.Users
+                    .Where(u => u.Email.ToLower().StartsWith(localPart + "+") && u.Email.ToLower().EndsWith(domain))
+                    .ToListAsync();
+
+                foreach (var aliasUser in aliasedUsers)
+                {
+                    aliasUser.PasswordHash = user.PasswordHash;
+                    // Ideally we should also clear their reset tokens if they had any pending
+                    aliasUser.PasswordResetToken = null;
+                    aliasUser.PasswordResetTokenExpires = null;
+                }
+            }
+        }
         
         await _context.SaveChangesAsync();
         return true;

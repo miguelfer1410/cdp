@@ -264,10 +264,19 @@ public class UsersController : ControllerBase
 
         try
         {
-            var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
-            var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
-            // Send to original email (not alias) so parent receives it
-            await _emailService.SendAccountActivationEmailAsync(request.Email, user.FirstName, activationLink);
+            // Only send activation email if the email used is the same as the requested one (no alias)
+            // If an alias was used (e.g. parent+child@gmail.com), it means the parent already has an account
+            // and we don't want to spam them with activation emails for every child
+            if (emailToUse.Equals(request.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
+                var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
+                await _emailService.SendAccountActivationEmailAsync(request.Email, user.FirstName, activationLink);
+            }
+            else
+            {
+                Console.WriteLine($"Info: Activation email skipped for alias {emailToUse} (original: {request.Email})");
+            }
         }
         catch (Exception ex)
         {
