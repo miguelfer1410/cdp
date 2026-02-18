@@ -1,0 +1,139 @@
+Email: afpbr@hotmail.com
+Atletas:
+ - Goncalo Cabral (Sheet: Basquetebol)
+ - GABRIEL VIEIRA (Sheet: Futsal)
+
+Email: analariva.2@gmail.com
+Atletas:
+ - Francisca Laranjeira (Sheet: Voleibol)
+ - Leonardo Laranjeira (Sheet: Voleibol)
+
+Email: anascarneiro@yahoo.com
+Atletas:
+ - Maria Lages (Sheet: Voleibol)
+ - Sofia Lages (Sheet: Voleibol)
+
+Email: arqdelfinacarvalhodearaujo@gmail.com
+Atletas:
+ - Guilherme Araujo (Sheet: Basquetebol)
+ - Isaac Araujo (Sheet: Basquetebol)
+
+Email: asfsilva87@gmail.com
+Atletas:
+ - Diana Lopes (Sheet: Basquetebol)
+ - Beatriz Lopes (Sheet: Basquetebol)
+
+Email: brigiteribeiro19@gmail.com
+Atletas:
+ - Ismael Leite (Sheet: Basquetebol)
+ - Simao Carvalho (Sheet: Basquetebol)
+
+Email: c-goncalves@edu.ulisboa.pt
+Atletas:
+ - Jose Cruz (Sheet: Hóquei)
+ - Duarte Cruz (Sheet: Hóquei)
+
+Email: carlagavinapinto@hotmail.com
+Atletas:
+ - Beatriz Pinto (Sheet: Hóquei)
+ - Iara Pinto (Sheet: Hóquei)
+
+Email: cldclaro@gmail.com
+Atletas:
+ - Mariana Carneiro (Sheet: Basquetebol)
+ - Catarina Carneiro (Sheet: Voleibol)
+
+Email: daniela-vilasboas@hotmail.com
+Atletas:
+ - SANTIAGO BARROSO (Sheet: Futsal)
+ - Diogo Duarte (Sheet: Futsal)
+
+Email: fernandespatricia@hotmail.com
+Atletas:
+ - Goncalo Ribeiro (Sheet: Hóquei)
+ - Salvador Ribeiro (Sheet: Hóquei)
+
+Email: francisca.eiras@gmail.com
+Atletas:
+ - Henrique Loureiro (Sheet: Basquetebol)
+ - Francisco Loureiro (Sheet: Basquetebol)
+
+Email: hugopinheiro.eng@gmail.com
+Atletas:
+ - Simao Pinheiro (Sheet: Basquetebol)
+ - Andre Pinheiro (Sheet: Basquetebol)
+
+Email: kapitaniangamarinete@gmail.com
+Atletas:
+ - Joao Landa (Sheet: Basquetebol)
+ - Marjorie Landa (Sheet: Basquetebol)
+
+Email: marquesmoreto.pt@gmail.com
+Atletas:
+ - Manuella Moreto (Sheet: Basquetebol)
+ - Nicollas Moreto (Sheet: Basquetebol)
+
+Email: migueldesapereira@gmail.com
+Atletas:
+ - Dinis Pereira (Sheet: Basquetebol)
+ - Francisco Pereira (Sheet: Basquetebol)
+
+Email: paulocosta.2008@hotmail.com
+Atletas:
+ - RAFAEL AMBROSIO (Sheet: Futsal)
+ - GUILHERME PAIVA (Sheet: Futsal)
+
+Email: pmanuelsousa@gmail.com
+Atletas:
+ - João Sousa (Sheet: Futsal)
+ - José Sousa (Sheet: Futsal)
+
+Email: pt.gracio@gmail.com
+Atletas:
+ - José Grácio (Sheet: Basquetebol)
+ - Margarida Grácio (Sheet: Basquetebol)
+
+Email: ricardofilipemoreira@gmail.com
+Atletas:
+ - Hugo Moreira (Sheet: Hóquei)
+ - Ana Moreira (Sheet: Hóquei)
+
+Email: rmruimata@gmail.com
+Atletas:
+ - Tomas Mata (Sheet: Basquetebol)
+ - Pedro Mata (Sheet: Basquetebol)
+
+Email: rodrigo.jsmenezes@gmail.com
+Atletas:
+ - Pedro Menezes (Sheet: Hóquei)
+ - Heitor Menezes (Sheet: Hóquei)
+
+Email: sandraicmachado@gmail.com
+Atletas:
+ - Joao Couto (Sheet: Basquetebol)
+ - Miguel Couto (Sheet: Hóquei)
+
+Email: saramoleiro2004@gmail.com
+Atletas:
+ - SANTIAGO BRIOSO (Sheet: Futsal)
+ - SIMAO MARQUES (Sheet: Futsal)
+
+Email: silviaramosenf@gmail.com
+Atletas:
+ - Gustavo Pereira (Sheet: Basquetebol)
+ - Goncalo Pereira (Sheet: Basquetebol)
+
+Email: sofiacdantas@gmail.com
+Atletas:
+ - Francisco Macedo (Sheet: Basquetebol)
+ - Frederico Macedo (Sheet: Basquetebol)
+
+Email: susanamscouto@gmail.com
+Atletas:
+ - Joana Madalena (Sheet: Voleibol)
+ - Rafaela Madalena (Sheet: Voleibol)
+
+Email: vitorserrao22@hotmail.com
+Atletas:
+ - Gabriel Silva (Sheet: Futsal)
+ - Lourenço Silva (Sheet: Futsal)

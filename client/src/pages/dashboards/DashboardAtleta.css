@@ -5,6 +5,55 @@
     padding-top: 0;
 }
 
+/* Athlete Tabs */
+.athlete-tabs {
+    background: linear-gradient(to right, #002659, #001f4d);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.athlete-tabs-container {
+    display: flex;
+    gap: 2px;
+}
+
+.athlete-tab {
+    padding: 16px 24px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 3px solid transparent;
+}
+
+.athlete-tab:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.athlete-tab.active {
+    color: white;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    border-bottom-color: white;
+}
+
+.athlete-tab i {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.athlete-tab.active i {
+    opacity: 1;
+    color: white;
+}
+
 /* Profile Header */
 .profile-header {
     background: linear-gradient(135deg, #003380 0%, #001f4d 100%);

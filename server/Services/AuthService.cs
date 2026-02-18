@@ -39,6 +39,7 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request)
     {
+        // Find the primary user (exact email match)
         var user = await _context.Users
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
@@ -78,10 +79,37 @@ public class AuthService : IAuthService
         }
 
         // If user has specific roles (Athlete, Coach, Admin), remove the generic "User" role
-        // This ensures the frontend redirects correctly and displays the correct dashboard
         if (roles.Contains("User") && (roles.Contains("Atleta") || roles.Contains("Treinador") || roles.Contains("Admin")))
         {
             roles.Remove("User");
+        }
+
+        // Find all users sharing the same base email (for siblings/children with aliased emails)
+        // e.g. login with "mae@gmail.com" also finds "mae+joao@gmail.com", "mae+maria@gmail.com"
+        var baseEmail = request.Email.ToLower();
+        var atIndex = baseEmail.LastIndexOf('@');
+        var linkedUsers = new List<LinkedUserInfo>();
+
+        if (atIndex > 0)
+        {
+            var localPart = baseEmail.Substring(0, atIndex);
+            var domain = baseEmail.Substring(atIndex); // includes @
+
+            // Find all users whose email starts with localPart (covers base + aliases)
+            var allLinked = await _context.Users
+                .Where(u => u.IsActive && u.Email.ToLower().StartsWith(localPart) && u.Email.ToLower().EndsWith(domain))
+                .Select(u => new { u.Id, u.FirstName, u.LastName, u.Email })
+                .ToListAsync();
+
+            // Only include if they are actually base or alias (localPart or localPart+...)
+            linkedUsers = allLinked
+                .Where(u => {
+                    var emailLower = u.Email.ToLower();
+                    var localLower = emailLower.Substring(0, emailLower.LastIndexOf('@'));
+                    return localLower == localPart || localLower.StartsWith(localPart + "+");
+                })
+                .Select(u => new LinkedUserInfo { Id = u.Id, FirstName = u.FirstName, LastName = u.LastName })
+                .ToList();
         }
 
         // Re-generate token with new roles
@@ -96,7 +124,8 @@ public class AuthService : IAuthService
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
-            ExpiresAt = DateTime.UtcNow.AddHours(expirationHours)
+            ExpiresAt = DateTime.UtcNow.AddHours(expirationHours),
+            LinkedUsers = linkedUsers
         };
     }
 

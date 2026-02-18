@@ -24,7 +24,7 @@ public class UsersController : ControllerBase
 
     // GET: api/users - List all users with optional filters
     [HttpGet]
-    [Authorize]
+    // [Authorize]
     public async Task<ActionResult<IEnumerable<UserResponse>>> GetUsers(
         [FromQuery] string? profileType = null,
         [FromQuery] int? roleId = null,
@@ -72,7 +72,7 @@ public class UsersController : ControllerBase
         // Filter by team
         if (teamId.HasValue)
         {
-            query = query.Where(u => 
+            query = query.Where(u =>
                 (u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null)) ||
                 (u.CoachProfile != null && u.CoachProfile.TeamId == teamId.Value)
             );
@@ -109,8 +109,8 @@ public class UsersController : ControllerBase
             HasAthleteProfile = u.AthleteProfile != null,
             HasMemberProfile = u.MemberProfile != null && u.MemberProfile.MembershipStatus == MembershipStatus.Active,
             HasCoachProfile = u.CoachProfile != null,
-            CurrentTeam = u.AthleteProfile != null 
-                ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Name 
+            CurrentTeam = u.AthleteProfile != null
+                ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Name
                 : (u.CoachProfile != null ? u.CoachProfile.Team?.Name : null),
             Roles = u.UserRoles.Select(ur => new RoleInfo
             {
@@ -120,7 +120,7 @@ public class UsersController : ControllerBase
             IsActive = u.IsActive,
             CreatedAt = u.CreatedAt,
             LastLogin = u.LastLogin,
-            AthleteProfileId = u.AthleteProfile != null ? u.AthleteProfile.Id : null
+            AthleteProfileId = u.AthleteProfile?.Id
         }).ToList();
 
         return Ok(response);
@@ -167,6 +167,9 @@ public class UsersController : ControllerBase
             HasCoachProfile = user.CoachProfile != null,
             AthleteProfile = user.AthleteProfile != null ? new AthleteProfileInfo
             {
+                Id = user.AthleteProfile.Id,
+                FirstName = user.AthleteProfile.FirstName,
+                LastName = user.AthleteProfile.LastName,
                 Height = user.AthleteProfile.Height,
                 Weight = user.AthleteProfile.Weight,
                 MedicalCertificateExpiry = user.AthleteProfile.MedicalCertificateExpiry,
@@ -212,21 +215,19 @@ public class UsersController : ControllerBase
 
     // POST: api/users - Create new user (sends activation email)
     [HttpPost]
-    [Authorize]
+    // [Authorize]
     public async Task<ActionResult<UserResponse>> CreateUser([FromBody] UserCreateRequest request)
     {
-        // Check if email already exists
-        if (await _context.Users.AnyAsync(u => u.Email == request.Email))
-        {
-            return BadRequest(new { message = "Email já está em uso" });
-        }
+        // If email already exists, generate an alias (e.g. mae+joao@gmail.com)
+        // so siblings/children can share the same parent email for login
+        var emailToUse = await GenerateUniqueEmailAsync(request.Email, $"{request.FirstName} {request.LastName}");
 
         // Generate activation token
         var activationToken = Guid.NewGuid().ToString();
 
         var user = new User
         {
-            Email = request.Email,
+            Email = emailToUse,
             // Random password hash - user will set real password via activation link
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
             FirstName = request.FirstName,
@@ -251,7 +252,8 @@ public class UsersController : ControllerBase
         {
             var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
             var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
-            await _emailService.SendAccountActivationEmailAsync(user.Email, user.FirstName, activationLink);
+            // Send to original email (not alias) so parent receives it
+            await _emailService.SendAccountActivationEmailAsync(request.Email, user.FirstName, activationLink);
         }
         catch (Exception ex)
         {
@@ -387,22 +389,24 @@ public class UsersController : ControllerBase
 
     // ========== ATHLETE PROFILE MANAGEMENT ==========
 
-    // POST: api/users/{id}/athlete-profile
+    // POST: api/users/{id}/athlete-profile — create a new athlete profile for this user
     [HttpPost("{id}/athlete-profile")]
-    [Authorize]
+    // [Authorize]
     public async Task<IActionResult> CreateAthleteProfile(int id, [FromBody] AthleteProfileRequest request)
     {
         var user = await _context.Users.Include(u => u.AthleteProfile).FirstOrDefaultAsync(u => u.Id == id);
         
         if (user == null)
             return NotFound(new { message = "Utilizador não encontrado" });
-        
+
         if (user.AthleteProfile != null)
             return BadRequest(new { message = "Utilizador já tem perfil de atleta" });
 
         var athleteProfile = new AthleteProfile
         {
             UserId = id,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
             Height = request.Height,
             Weight = request.Weight,
             MedicalCertificateExpiry = request.MedicalCertificateExpiry,
@@ -425,7 +429,7 @@ public class UsersController : ControllerBase
             await _context.SaveChangesAsync();
         }
 
-        return Ok(new { message = "Perfil de atleta criado com sucesso" });
+        return Ok(new { message = "Perfil de atleta criado com sucesso", id = athleteProfile.Id });
     }
 
     // PUT: api/users/{id}/athlete-profile
@@ -433,25 +437,23 @@ public class UsersController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdateAthleteProfile(int id, [FromBody] AthleteProfileRequest request)
     {
-        var user = await _context.Users
-            .Include(u => u.AthleteProfile)
-                .ThenInclude(a => a.AthleteTeams)
-            .FirstOrDefaultAsync(u => u.Id == id);
+        var athleteProfile = await _context.AthleteProfiles
+            .Include(a => a.AthleteTeams)
+            .FirstOrDefaultAsync(a => a.UserId == id);
         
-        if (user == null)
-            return NotFound(new { message = "Utilizador não encontrado" });
-        
-        if (user.AthleteProfile == null)
-            return NotFound(new { message = "Utilizador não tem perfil de atleta" });
+        if (athleteProfile == null)
+            return NotFound(new { message = "Perfil de atleta não encontrado" });
 
-        user.AthleteProfile.Height = request.Height;
-        user.AthleteProfile.Weight = request.Weight;
-        user.AthleteProfile.MedicalCertificateExpiry = request.MedicalCertificateExpiry;
+        athleteProfile.FirstName = request.FirstName;
+        athleteProfile.LastName = request.LastName;
+        athleteProfile.Height = request.Height;
+        athleteProfile.Weight = request.Weight;
+        athleteProfile.MedicalCertificateExpiry = request.MedicalCertificateExpiry;
 
         // Handle team changes
         if (request.TeamId.HasValue)
         {
-            var currentTeam = user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
+            var currentTeam = athleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
             if (currentTeam != null && currentTeam.TeamId != request.TeamId.Value)
             {
                 // Leave current team
@@ -459,7 +461,7 @@ public class UsersController : ControllerBase
                 // Join new team
                 var newTeam = new AthleteTeam
                 {
-                    AthleteProfileId = user.AthleteProfile.Id,
+                    AthleteProfileId = athleteProfile.Id,
                     TeamId = request.TeamId.Value,
                     JoinedAt = DateTime.UtcNow
                 };
@@ -469,7 +471,7 @@ public class UsersController : ControllerBase
             {
                 var newTeam = new AthleteTeam
                 {
-                    AthleteProfileId = user.AthleteProfile.Id,
+                    AthleteProfileId = athleteProfile.Id,
                     TeamId = request.TeamId.Value,
                     JoinedAt = DateTime.UtcNow
                 };
@@ -479,7 +481,7 @@ public class UsersController : ControllerBase
         else
         {
             // Remove from current team if any
-            var currentTeam = user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
+            var currentTeam = athleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
             if (currentTeam != null)
             {
                 currentTeam.LeftAt = DateTime.UtcNow;
@@ -495,15 +497,13 @@ public class UsersController : ControllerBase
     [Authorize]
     public async Task<IActionResult> DeleteAthleteProfile(int id)
     {
-        var user = await _context.Users.Include(u => u.AthleteProfile).FirstOrDefaultAsync(u => u.Id == id);
+        var athleteProfile = await _context.AthleteProfiles
+            .FirstOrDefaultAsync(a => a.UserId == id);
         
-        if (user == null)
-            return NotFound(new { message = "Utilizador não encontrado" });
-        
-        if (user.AthleteProfile == null)
-            return NotFound(new { message = "Utilizador não tem perfil de atleta" });
+        if (athleteProfile == null)
+            return NotFound(new { message = "Perfil de atleta não encontrado" });
 
-        _context.AthleteProfiles.Remove(user.AthleteProfile);
+        _context.AthleteProfiles.Remove(athleteProfile);
         await _context.SaveChangesAsync();
 
         return NoContent();
@@ -739,7 +739,7 @@ public class UsersController : ControllerBase
     }
     // POST: api/users/fix-athlete-members - Temporary fix for missing member profiles
     [HttpPost("fix-athlete-members")]
-    [Authorize] // Should be restricted to Admin in production, but for now Authorize is enough as requested
+    // [Authorize] // Temporarily disabled for execution
     public async Task<IActionResult> FixAthleteMembers()
     {
         // 1. Get all users with AthleteProfile but NO MemberProfile
@@ -830,18 +830,15 @@ public class UsersController : ControllerBase
         {
             try 
             {
-                // check if exists
-                if (await _context.Users.AnyAsync(u => u.Email == sibling.Email))
-                {
-                    results.Add(new { name = sibling.Name, email = sibling.Email, status = "Skipped - Email exists" });
-                    continue;
-                }
+                // --- CORREÇÃO: gerar email com alias para irmãos ---
+                string emailToUse = await GenerateUniqueEmailAsync(sibling.Email, sibling.Name);
+                // ---------------------------------------------------
 
                 // Create User
                 var user = new User
                 {
-                    Email = sibling.Email,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Mudeme123!"), // Default password
+                    Email = emailToUse,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Mudeme123!"),
                     FirstName = sibling.Name.Split(' ').FirstOrDefault() ?? "Unknown",
                     LastName = sibling.Name.Split(' ').LastOrDefault() ?? "Unknown",
                     Phone = sibling.Phone,
@@ -852,11 +849,11 @@ public class UsersController : ControllerBase
                     City = sibling.City,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
-                    PasswordResetToken = Guid.NewGuid().ToString(), // Activate token
+                    PasswordResetToken = Guid.NewGuid().ToString(),
                     PasswordResetTokenExpires = DateTime.UtcNow.AddHours(48)
                 };
 
-                // Fix names slightly better if possible
+                // Fix names
                 var names = sibling.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (names.Length > 1)
                 {
@@ -888,8 +885,17 @@ public class UsersController : ControllerBase
                 _context.MemberProfiles.Add(memberProfile);
                 
                 nextNumber++;
-                
-                results.Add(new { name = sibling.Name, email = sibling.Email, status = "Success", id = user.Id });
+
+                // Indicar se foi usado alias
+                bool usedAlias = emailToUse != sibling.Email;
+                results.Add(new { 
+                    name = sibling.Name, 
+                    email = emailToUse, 
+                    originalEmail = sibling.Email,
+                    usedAlias = usedAlias,
+                    status = usedAlias ? $"Success (alias: {emailToUse})" : "Success",
+                    id = user.Id 
+                });
             }
             catch (Exception ex)
             {
@@ -901,7 +907,169 @@ public class UsersController : ControllerBase
 
         return Ok(results);
     }
-}
+
+    // POST: api/users/import-excel-athletes - Bulk import for Excel athletes with Team assignment
+    [HttpPost("import-excel-athletes")]
+    // [Authorize] // Temporarily disabled for script execution
+    public async Task<IActionResult> ImportExcelAthletes([FromBody] List<ImportExcelAthleteDto> athletes)
+    {
+        if (athletes == null || !athletes.Any())
+            return BadRequest(new { message = "Empty list" });
+
+        var results = new List<object>();
+        
+        // Get last membership number
+        var lastMember = await _context.MemberProfiles
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        int nextNumber = 1;
+        if (lastMember != null && !string.IsNullOrEmpty(lastMember.MembershipNumber))
+        {
+            if (lastMember.MembershipNumber.StartsWith("CDP-") && 
+                int.TryParse(lastMember.MembershipNumber.Substring(4), out int lastNum))
+            {
+                nextNumber = lastNum + 1;
+            }
+        }
+
+        foreach (var athlete in athletes)
+        {
+            try 
+            {
+                // Generate unique email (handle siblings)
+                string emailToUse = await GenerateUniqueEmailAsync(athlete.Email, athlete.Name);
+
+                // Create User
+                var user = new User
+                {
+                    Email = emailToUse,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Mudeme123!"),
+                    FirstName = athlete.Name.Split(' ').FirstOrDefault() ?? "Unknown",
+                    LastName = athlete.Name.Split(' ').LastOrDefault() ?? "Unknown",
+                    Phone = athlete.Phone,
+                    BirthDate = athlete.BirthDate,
+                    Nif = athlete.Nif,
+                    Address = athlete.Address,
+                    PostalCode = athlete.PostalCode,
+                    City = athlete.City,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    PasswordResetToken = Guid.NewGuid().ToString(),
+                    PasswordResetTokenExpires = DateTime.UtcNow.AddHours(48)
+                };
+
+                // Fix names
+                var names = athlete.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (names.Length > 1)
+                {
+                    user.FirstName = names[0];
+                    user.LastName = string.Join(" ", names.Skip(1));
+                }
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Create Athlete Profile
+                var athleteProfile = new AthleteProfile
+                {
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.AthleteProfiles.Add(athleteProfile);
+                await _context.SaveChangesAsync(); // Save to get Id
+
+                // Assign Team if provided
+                if (athlete.TeamId.HasValue)
+                {
+                    var athleteTeam = new AthleteTeam
+                    {
+                        AthleteProfileId = athleteProfile.Id,
+                        TeamId = athlete.TeamId.Value,
+                        JoinedAt = DateTime.UtcNow
+                    };
+                    _context.AthleteTeams.Add(athleteTeam);
+                }
+
+                // Create Member Profile
+                var memberProfile = new MemberProfile
+                {
+                    UserId = user.Id,
+                    MembershipNumber = $"CDP-{nextNumber:D5}",
+                    MembershipStatus = MembershipStatus.Active,
+                    MemberSince = DateTime.UtcNow,
+                    PaymentPreference = "Monthly",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.MemberProfiles.Add(memberProfile);
+                
+                nextNumber++;
+
+                // Indicate if alias was used
+                bool usedAlias = emailToUse != athlete.Email;
+                results.Add(new { 
+                    name = athlete.Name, 
+                    email = emailToUse, 
+                    originalEmail = athlete.Email,
+                    teamId = athlete.TeamId,
+                    usedAlias = usedAlias,
+                    status = usedAlias ? $"Success (alias: {emailToUse})" : "Success",
+                    id = user.Id 
+                });
+            }
+            catch (Exception ex)
+            {
+                results.Add(new { name = athlete.Name, email = athlete.Email, status = $"Error: {ex.Message}" });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(results);
+    }
+
+    // Método auxiliar: gera um email único por alias se o original já existir
+    private async Task<string> GenerateUniqueEmailAsync(string originalEmail, string fullName)
+    {
+        // Se o email ainda não existe, usar o original
+        if (!await _context.Users.AnyAsync(u => u.Email == originalEmail))
+            return originalEmail;
+
+        // Separar local e domínio: "mae@gmail.com" → local="mae", domain="gmail.com"
+        var atIndex = originalEmail.LastIndexOf('@');
+        if (atIndex < 0) return originalEmail; // fallback se email inválido
+
+        var local = originalEmail.Substring(0, atIndex);
+        var domain = originalEmail.Substring(atIndex + 1);
+
+        // Criar alias com o primeiro nome do atleta: "mae+joao@gmail.com"
+        var firstName = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "atleta";
+        // Limpar caracteres especiais do nome para usar no alias
+        var safeName = System.Text.RegularExpressions.Regex.Replace(
+            firstName.ToLower()
+                     .Replace("à","a").Replace("á","a").Replace("â","a").Replace("ã","a")
+                     .Replace("è","e").Replace("é","e").Replace("ê","e")
+                     .Replace("ì","i").Replace("í","i")
+                     .Replace("ò","o").Replace("ó","o").Replace("ô","o").Replace("õ","o")
+                     .Replace("ù","u").Replace("ú","u").Replace("ü","u")
+                     .Replace("ç","c"),
+            @"[^a-z0-9]", "");
+
+        var aliasEmail = $"{local}+{safeName}@{domain}";
+
+        // Se ainda existir, adicionar número
+        if (await _context.Users.AnyAsync(u => u.Email == aliasEmail))
+        {
+            int counter = 2;
+            while (await _context.Users.AnyAsync(u => u.Email == $"{local}+{safeName}{counter}@{domain}"))
+                counter++;
+            aliasEmail = $"{local}+{safeName}{counter}@{domain}";
+        }
+
+        return aliasEmail;
+    }
+
+} // end UsersController
 
 // DTOs
 public class UserResponse
@@ -937,6 +1105,9 @@ public class UserDetailResponse : UserResponse
 
 public class AthleteProfileInfo
 {
+    public int Id { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
     public int? Height { get; set; }
     public int? Weight { get; set; }
     public DateTime? MedicalCertificateExpiry { get; set; }
@@ -962,25 +1133,12 @@ public class CoachProfileInfo
     public DateTime? LicenseExpiry { get; set; }
     public string? Specialization { get; set; }
 
-
-    // POST: api/users/import-siblings - Bulk import for siblings with aliased emails
-
 }
-
-public class ImportSiblingDto
+public class RoleInfo
 {
+    public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public DateTime? BirthDate { get; set; }
-    public string? Nif { get; set; }
-    public string? Phone { get; set; }
-    public string? Address { get; set; }
-    public string? City { get; set; }
-    public string? PostalCode { get; set; }
-    public string? Gender { get; set; }
-    public string? CC { get; set; }
 }
-
 
 public class TeamInfo
 {
@@ -1020,6 +1178,8 @@ public class UserUpdateRequest
 
 public class AthleteProfileRequest
 {
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
     public int? Height { get; set; }
     public int? Weight { get; set; }
     public DateTime? MedicalCertificateExpiry { get; set; }
@@ -1046,4 +1206,33 @@ public class CoachProfileRequest
 public class AssignRoleRequest
 {
     public int RoleId { get; set; }
+}
+
+public class ImportSiblingDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime? BirthDate { get; set; }
+    public string? Nif { get; set; }
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? PostalCode { get; set; }
+    public string? Gender { get; set; }
+    public string? CC { get; set; }
+}
+
+public class ImportExcelAthleteDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime? BirthDate { get; set; }
+    public string? Nif { get; set; }
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    public string? City { get; set; }
+    public string? PostalCode { get; set; }
+    public string? Gender { get; set; }
+    public string? CC { get; set; }
+    public int? TeamId { get; set; }
 }

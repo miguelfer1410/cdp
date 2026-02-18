@@ -10,6 +10,13 @@ public class AthleteProfile
     [Required]
     public int UserId { get; set; }
 
+    // Name of the athlete (may differ from the account holder, e.g. parent's account with multiple children)
+    [MaxLength(100)]
+    public string? FirstName { get; set; }
+
+    [MaxLength(100)]
+    public string? LastName { get; set; }
+
     public int? Height { get; set; } // in cm
 
     public int? Weight { get; set; } // in kg

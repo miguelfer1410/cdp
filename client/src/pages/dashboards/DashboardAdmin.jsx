@@ -29,7 +29,7 @@ const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'peopl
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('hero');
+    const [activeTab, setActiveTab] = useState(DEFAULT_NAV_ORDER[0]);
     const [loading, setLoading] = useState(true);
     const [navOrder, setNavOrder] = useState(DEFAULT_NAV_ORDER);
     const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
@@ -161,7 +161,6 @@ const DashboardAdmin = () => {
                 {activeTab === 'sports' && <SportsManager />}
                 {activeTab === 'partners' && <PartnersManager />}
                 {activeTab === 'teams' && <TeamsManager />}
-                {activeTab === 'people' && <PeopleManager />}
                 {activeTab === 'people' && <PeopleManager />}
                 {activeTab === 'calendar' && <CalendarManager />}
                 {activeTab === 'fees' && <FeeManager />}

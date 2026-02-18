@@ -64,6 +64,12 @@ const Login = () => {
       localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
       localStorage.setItem('userEmail', data.email);
       localStorage.setItem('userId', data.id);
+      // Store all linked users (siblings sharing same email) for athlete tab switching
+      if (data.linkedUsers && data.linkedUsers.length > 0) {
+        localStorage.setItem('linkedUsers', JSON.stringify(data.linkedUsers));
+      } else {
+        localStorage.removeItem('linkedUsers');
+      }
 
       // Redirect based on role
       switch (primaryRole.toLowerCase()) {

@@ -1,0 +1,45 @@
+Found 44 teams:
+ID: 1054, Name: EQUIPA TESTE, Sport: Basquetebol, Category: EQUIPA TESTE
+ID: 1010, Name: Mini 10 (mista), Sport: Basquetebol, Category: Mini 10
+ID: 1011, Name: Mini 12 (mista), Sport: Basquetebol, Category: Mini 12
+ID: 1012, Name: Mini 8 (mista), Sport: Basquetebol, Category: Mini 8
+ID: 1013, Name: Seniores (feminino), Sport: Basquetebol, Category: Seniores
+ID: 1015, Name: Seniores A (masculino), Sport: Basquetebol, Category: Seniores A
+ID: 1016, Name: Seniores B (masculino), Sport: Basquetebol, Category: Seniores B
+ID: 1017, Name: Sub 14 A (feminino), Sport: Basquetebol, Category: Sub 14 A
+ID: 1018, Name: Sub 14 A (masculino), Sport: Basquetebol, Category: Sub 14 A
+ID: 1019, Name: Sub 14 B (masculino), Sport: Basquetebol, Category: Sub 14 B
+ID: 1021, Name: Sub 16 (feminino), Sport: Basquetebol, Category: Sub 16
+ID: 1022, Name: Sub 16 A (masculino), Sport: Basquetebol, Category: Sub 16 A
+ID: 1023, Name: Sub 16 B (masculino), Sport: Basquetebol, Category: Sub 16 B
+ID: 1024, Name: Sub 18 A (feminino), Sport: Basquetebol, Category: Sub 18 A
+ID: 1025, Name: Sub 18 A (masculino), Sport: Basquetebol, Category: Sub 18 A
+ID: 1028, Name: Benjamins, Sport: Futsal, Category: Benjamins
+ID: 1027, Name: Infantis A (masculino), Sport: Futsal, Category: Infantis A
+ID: 1003, Name: Iniciados A (masculino), Sport: Futsal, Category: Iniciados A
+ID: 1007, Name: Juniores (masculino), Sport: Futsal, Category: Juniores
+ID: 1009, Name: Juvenis (masculino), Sport: Futsal, Category: Juvenis
+ID: 1030, Name: Petizes, Sport: Futsal, Category: Petizes
+ID: 1031, Name: Seniores, Sport: Futsal, Category: Seniores
+ID: 1029, Name: Traquinas, Sport: Futsal, Category: Traquinas
+ID: 1035, Name: Bambis, Sport: H¾quei em Patins, Category: Bambis
+ID: 1039, Name: Benjamins, Sport: H¾quei em Patins, Category: Benjamins
+ID: 1034, Name: Escolares, Sport: H¾quei em Patins, Category: Escolares
+ID: 1036, Name: Seniores A, Sport: H¾quei em Patins, Category: Seniores A
+ID: 1037, Name: Seniores B, Sport: H¾quei em Patins, Category: Seniores B
+ID: 1033, Name: Sub-15, Sport: H¾quei em Patins, Category: Sub-15
+ID: 1032, Name: Sub-17, Sport: H¾quei em Patins, Category: Sub-17
+ID: 1038, Name: Sub-19, Sport: H¾quei em Patins, Category: Sub-19
+ID: 1043, Name: Cadetes (feminino), Sport: Voleibol, Category: Cadetes
+ID: 1045, Name: Infantis (masculino), Sport: Voleibol, Category: Infantis
+ID: 1046, Name: Infantis A (feminino, Sport: Voleibol, Category: Infantis A
+ID: 1047, Name: Infantis B (feminino), Sport: Voleibol, Category: Infantis B
+ID: 1044, Name: Iniciados (feminino), Sport: Voleibol, Category: Iniciados
+ID: 1041, Name: Juniores A (feminino), Sport: Voleibol, Category: Juniores A
+ID: 1050, Name: Juniores A (masculino), Sport: Voleibol, Category: Juniores A 
+ID: 1051, Name: Juvenis (feminino), Sport: Voleibol, Category: Juvenis
+ID: 1042, Name: Juvenis (masculino), Sport: Voleibol, Category: Juvenis
+ID: 1048, Name: Minis A (misto), Sport: Voleibol, Category: Minis A
+ID: 1052, Name: Seniores (masculino), Sport: Voleibol, Category: Seniores
+ID: 1040, Name: Seniores A (feminino), Sport: Voleibol, Category: Seniores A
+ID: 1049, Name: Seniores B (feminino), Sport: Voleibol, Category: Seniores B

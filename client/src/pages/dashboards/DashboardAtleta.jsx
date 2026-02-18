@@ -10,14 +10,26 @@ const DashboardAtleta = () => {
     const [teamData, setTeamData] = useState(null);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingTab, setLoadingTab] = useState(false);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
+    // Linked users (siblings sharing the same parent email)
+    const [linkedUsers] = useState(() => {
+        try {
+            const stored = localStorage.getItem('linkedUsers');
+            return stored ? JSON.parse(stored) : [];
+        } catch { return []; }
+    });
+    const [selectedUserId, setSelectedUserId] = useState(() => {
+        return parseInt(localStorage.getItem('userId')) || null;
+    });
+
     // Payment State
     const [paymentReference, setPaymentReference] = useState(null);
-    const [paymentStatus, setPaymentStatus] = useState('unpaid'); // 'unpaid', 'pending', 'paid'
+    const [paymentStatus, setPaymentStatus] = useState('unpaid');
     const [generatingReference, setGeneratingReference] = useState(false);
     const [quotaAmount, setQuotaAmount] = useState(null);
 
@@ -27,16 +39,12 @@ const DashboardAtleta = () => {
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:5285/api/payment/reference', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(err.message || 'Erro ao gerar referência');
             }
-
             const data = await response.json();
             setPaymentReference(data);
             setPaymentStatus('pending');
@@ -52,88 +60,84 @@ const DashboardAtleta = () => {
         window.location.reload();
     };
 
+    // Fetch quota only once on mount
     useEffect(() => {
         window.scrollTo(0, 0);
-
-        const fetchData = async () => {
+        const fetchQuota = async () => {
             try {
-                const userId = localStorage.getItem('userId');
                 const token = localStorage.getItem('token');
-
-                if (!userId || !token) {
-                    throw new Error('User not authenticated');
-                }
-
-                // Fetch Quota Amount
-                try {
-                    const quotaResponse = await fetch('http://localhost:5285/api/payment/quota', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (quotaResponse.ok) {
-                        const quotaData = await quotaResponse.json();
-                        console.log(quotaData);
-                        setQuotaAmount(quotaData.amount);
-                        setPaymentStatus(quotaData.status); // 'paid', 'pending', 'unpaid'
-                        if (quotaData.existingPayment) {
-                            setPaymentReference(quotaData.existingPayment);
-                        }
-                    }
-                } catch (qErr) {
-                    console.error("Error fetching quota:", qErr);
-                }
-
-                const userResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                const quotaResponse = await fetch('http://localhost:5285/api/payment/quota', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-
-                if (!userResponse.ok) {
-                    throw new Error('Failed to fetch athlete data');
+                if (quotaResponse.ok) {
+                    const quotaData = await quotaResponse.json();
+                    setQuotaAmount(quotaData.amount);
+                    setPaymentStatus(quotaData.status);
+                    if (quotaData.existingPayment) setPaymentReference(quotaData.existingPayment);
                 }
+            } catch (qErr) {
+                console.error('Error fetching quota:', qErr);
+            }
+        };
+        fetchQuota();
+    }, []);
 
+    // Fetch user data whenever the selected tab (userId) changes
+    useEffect(() => {
+        if (!selectedUserId) return;
+
+        const fetchUserData = async () => {
+            if (!athleteData) setLoading(true);
+            else setLoadingTab(true);
+
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) throw new Error('User not authenticated');
+
+                // Fetch the selected user's profile
+                const userResponse = await fetch(`http://localhost:5285/api/users/${selectedUserId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!userResponse.ok) throw new Error('Failed to fetch athlete data');
                 const userData = await userResponse.json();
                 setAthleteData(userData);
 
-                const primaryTeam = userData.athleteProfile?.teams?.[0];
-                if (primaryTeam && primaryTeam.id) {
-                    const teamResponse = await fetch(`http://localhost:5285/api/teams/${primaryTeam.id}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (teamResponse.ok) {
-                        const teamData = await teamResponse.json();
-                        setTeamData(teamData);
-
-                        const today = new Date().toISOString();
-                        const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${primaryTeam.id}&startDate=${today}`, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-
-                        if (eventsResponse.ok) {
-                            const eventsData = await eventsResponse.json();
-                            const sortedEvents = eventsData
-                                .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
-                                .slice(0, 3);
-                            setEvents(sortedEvents);
-                        }
+                // Fetch team + events for their profile
+                const teamId = userData.athleteProfile?.teams?.[0]?.id;
+                if (teamId) {
+                    const [teamResponse, eventsResponse] = await Promise.all([
+                        fetch(`http://localhost:5285/api/teams/${teamId}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        }),
+                        fetch(`http://localhost:5285/api/events?teamId=${teamId}&startDate=${new Date().toISOString()}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        })
+                    ]);
+                    setTeamData(teamResponse.ok ? await teamResponse.json() : null);
+                    if (eventsResponse.ok) {
+                        const eventsData = await eventsResponse.json();
+                        setEvents(eventsData
+                            .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
+                            .slice(0, 3)
+                        );
+                    } else {
+                        setEvents([]);
                     }
+                } else {
+                    setTeamData(null);
+                    setEvents([]);
                 }
-
             } catch (err) {
                 console.error('Error fetching data:', err);
                 setError(err.message);
             } finally {
                 setLoading(false);
+                setLoadingTab(false);
             }
         };
 
-        fetchData();
-    }, []);
+        fetchUserData();
+    }, [selectedUserId]);
 
     if (loading) return <div className="dashboard-loading">A carregar...</div>;
     if (error) return <div className="dashboard-error">Erro: {error}</div>;
@@ -165,12 +169,35 @@ const DashboardAtleta = () => {
 
     return (
         <div className="dashboard-wrapper">
+            {/* Athlete Tabs - shown when there are multiple linked users (siblings) */}
+            {linkedUsers.length > 1 && (
+                <div className="athlete-tabs">
+                    <div className="container athlete-tabs-container">
+                        {linkedUsers.map((lu) => (
+                            <button
+                                key={lu.id}
+                                onClick={() => setSelectedUserId(lu.id)}
+                                className={`athlete-tab ${selectedUserId === lu.id ? 'active' : ''}`}
+                            >
+                                <i className="fas fa-user"></i>
+                                {`${lu.firstName} ${lu.lastName}`.trim() || `Atleta ${lu.id}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <section className="profile-header">
                 <div className="container">
                     <div className="profile-content">
                         <img src="https://images.unsplash.com/vector-1742875355318-00d715aec3e8?q=80&w=880&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt={athleteData.fullName} className="profile-avatar" />
                         <div className="profile-info">
-                            <h1>{athleteData.fullName}</h1>
+                            <h1>
+                                {athleteData.athleteProfile
+                                    ? `${athleteData.athleteProfile.firstName || ''} ${athleteData.athleteProfile.lastName || ''}`.trim() || athleteData.fullName
+                                    : athleteData.fullName
+                                }
+                            </h1>
                             <div className="profile-meta">
                                 <div className="profile-meta-item">
                                     <i className="fas fa-basketball-ball"></i>

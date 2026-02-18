@@ -637,8 +637,8 @@ public class PaymentController : ControllerBase
             totalAmount += parsedFee;
         }
 
-        // Sport Fees
-        if (user.AthleteProfile != null && user.AthleteProfile.AthleteTeams != null)
+        // Sport Fees - from the single athlete profile
+        if (user.AthleteProfile?.AthleteTeams != null)
         {
             foreach (var athleteTeam in user.AthleteProfile.AthleteTeams)
             {

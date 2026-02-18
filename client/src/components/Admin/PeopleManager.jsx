@@ -37,6 +37,9 @@ const PeopleManager = () => {
         hasMemberProfile: false,
         hasCoachProfile: false,
         athleteProfile: {
+            id: null,
+            firstName: '',
+            lastName: '',
             teamId: ''
         },
         memberProfile: {
@@ -65,7 +68,8 @@ const PeopleManager = () => {
     ];
 
     // Check if details step should be shown
-    const hasAnyProfile = formData.hasAthleteProfile || formData.hasMemberProfile || formData.hasCoachProfile;
+    const hasAthleteProfile = formData.hasAthleteProfile;
+    const hasAnyProfile = hasAthleteProfile || formData.hasMemberProfile || formData.hasCoachProfile;
 
     // Active steps (skip details if no profiles selected)
     const activeSteps = useMemo(() => {
@@ -93,7 +97,7 @@ const PeopleManager = () => {
 
     // Auto-select "User" role when Athlete or Coach profile is selected
     useEffect(() => {
-        if ((formData.hasAthleteProfile || formData.hasCoachProfile) && roles.length > 0) {
+        if ((hasAthleteProfile || formData.hasCoachProfile) && roles.length > 0) {
             const userRole = roles.find(role => role.name === 'User');
             if (userRole && !formData.selectedRoles.includes(userRole.id)) {
                 setFormData(prev => ({
@@ -102,7 +106,7 @@ const PeopleManager = () => {
                 }));
             }
         }
-    }, [formData.hasAthleteProfile, formData.hasCoachProfile, roles]);
+    }, [hasAthleteProfile, formData.hasCoachProfile, roles]);
 
     const fetchUsers = async () => {
         try {
@@ -193,8 +197,10 @@ const PeopleManager = () => {
         setFormData({
             email: '', firstName: '', lastName: '', phone: '', birthDate: '', nif: '',
             address: '', postalCode: '', city: '',
-            hasAthleteProfile: false, hasMemberProfile: false, hasCoachProfile: false,
-            athleteProfile: { teamId: '' },
+            hasAthleteProfile: false,
+            hasMemberProfile: false,
+            hasCoachProfile: false,
+            athleteProfile: { id: null, firstName: '', lastName: '', teamId: '' },
             memberProfile: { membershipStatus: 0, memberSince: '', paymentPreference: '' },
             coachProfile: { sportId: '', teamId: '', licenseNumber: '', licenseLevel: '', licenseExpiry: '', specialization: '' },
             selectedRoles: []
@@ -204,6 +210,14 @@ const PeopleManager = () => {
         setValidationErrors({});
         setStepErrors({});
     };
+
+    // Helper: create a blank athlete profile entry
+    const newAthleteProfileEntry = () => ({
+        id: null,       // null = new (not yet saved)
+        firstName: '',
+        lastName: '',
+        teamId: ''
+    });
 
     // Step-specific validation
     const validateStep = (stepId) => {
@@ -308,8 +322,18 @@ const PeopleManager = () => {
 
             if (response.ok) {
                 const data = await response.json();
+                // Strip +alias from email so admin sees the clean base email
+                const rawEmail = data.email || '';
+                const atIdx = rawEmail.lastIndexOf('@');
+                const localPart = atIdx > 0 ? rawEmail.substring(0, atIdx) : rawEmail;
+                const domain = atIdx > 0 ? rawEmail.substring(atIdx) : '';
+                const plusIdx = localPart.indexOf('+');
+                const baseEmail = plusIdx > -1
+                    ? localPart.substring(0, plusIdx) + domain
+                    : rawEmail;
+
                 setFormData({
-                    email: data.email,
+                    email: baseEmail,
                     firstName: data.firstName,
                     lastName: data.lastName,
                     phone: data.phone || '',
@@ -322,9 +346,11 @@ const PeopleManager = () => {
                     hasMemberProfile: data.hasMemberProfile,
                     hasCoachProfile: data.hasCoachProfile,
                     athleteProfile: data.athleteProfile ? {
-                        teamId: data.athleteProfile.teams && data.athleteProfile.teams.length > 0
-                            ? data.athleteProfile.teams[0].id : ''
-                    } : { teamId: '' },
+                        id: data.athleteProfile.id,
+                        firstName: data.athleteProfile.firstName || '',
+                        lastName: data.athleteProfile.lastName || '',
+                        teamId: data.athleteProfile.teams && data.athleteProfile.teams.length > 0 ? data.athleteProfile.teams[0].id : ''
+                    } : { id: null, firstName: '', lastName: '', teamId: '' },
                     memberProfile: data.memberProfile ? {
                         membershipStatus: data.memberProfile.membershipStatus,
                         memberSince: data.memberProfile.memberSince
@@ -377,10 +403,34 @@ const PeopleManager = () => {
         try {
             const token = localStorage.getItem('token');
 
-            // Step 1: Create or update user
+            // Compute the final email to send:
+            // If editing and the email field was not changed (matches base of original),
+            // keep the original aliased email. If changed, apply the alias to the new base.
+            let finalEmail = formData.email;
+            if (editingUser) {
+                const originalEmail = editingUser.email || '';
+                const atIdx = originalEmail.lastIndexOf('@');
+                const localPart = atIdx > 0 ? originalEmail.substring(0, atIdx) : originalEmail;
+                const domain = atIdx > 0 ? originalEmail.substring(atIdx) : '';
+                const plusIdx = localPart.indexOf('+');
+                const alias = plusIdx > -1 ? localPart.substring(plusIdx) : ''; // e.g. '+joao' or ''
+                const baseOfOriginal = plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : originalEmail;
+
+                if (formData.email.toLowerCase() === baseOfOriginal.toLowerCase()) {
+                    // Email not changed — keep original aliased email
+                    finalEmail = originalEmail;
+                } else if (alias) {
+                    // Email changed — apply alias to new base
+                    const newAtIdx = formData.email.lastIndexOf('@');
+                    const newLocal = newAtIdx > 0 ? formData.email.substring(0, newAtIdx) : formData.email;
+                    const newDomain = newAtIdx > 0 ? formData.email.substring(newAtIdx) : '';
+                    finalEmail = newLocal + alias + newDomain;
+                }
+            }
+
             let userId = editingUser?.id;
             const userPayload = {
-                email: formData.email,
+                email: finalEmail,
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 phone: formData.phone || null,
@@ -409,30 +459,35 @@ const PeopleManager = () => {
                 userId = data.id;
             }
 
-            // Step 2: Manage Athlete Profile
-            if (formData.hasAthleteProfile && !editingUser?.hasAthleteProfile) {
-                await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        height: null,
-                        weight: null,
-                        medicalCertificateExpiry: null,
-                        teamId: formData.athleteProfile.teamId ? parseInt(formData.athleteProfile.teamId) : null
-                    })
-                });
-            } else if (formData.hasAthleteProfile && editingUser?.hasAthleteProfile) {
-                await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        height: null,
-                        weight: null,
-                        medicalCertificateExpiry: null,
-                        teamId: formData.athleteProfile.teamId ? parseInt(formData.athleteProfile.teamId) : null
-                    })
-                });
-            } else if (!formData.hasAthleteProfile && editingUser?.hasAthleteProfile) {
+            // Step 2: Manage Athlete Profile (single)
+            if (formData.hasAthleteProfile) {
+                const ap = formData.athleteProfile;
+                const payload = {
+                    firstName: ap.firstName || null,
+                    lastName: ap.lastName || null,
+                    height: null,
+                    weight: null,
+                    medicalCertificateExpiry: null,
+                    teamId: ap.teamId ? parseInt(ap.teamId) : null
+                };
+
+                if (ap.id) {
+                    // Existing profile — update
+                    await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    // New profile — create
+                    await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(payload)
+                    });
+                }
+            } else if (editingUser?.hasAthleteProfile) {
+                // Profile was removed — delete it
                 await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -797,12 +852,25 @@ const PeopleManager = () => {
             <div className="profile-cards-grid">
                 {/* Athlete Card */}
                 <div
-                    className={`profile-card ${formData.hasAthleteProfile ? 'selected' : ''}`}
-                    onClick={() => setFormData({
-                        ...formData,
-                        hasAthleteProfile: !formData.hasAthleteProfile,
-                        hasMemberProfile: !formData.hasAthleteProfile ? true : formData.hasMemberProfile
-                    })}
+                    className={`profile-card ${hasAthleteProfile ? 'selected' : ''}`}
+                    onClick={() => {
+                        if (hasAthleteProfile) {
+                            // Deselect: clear athlete profile
+                            setFormData({
+                                ...formData,
+                                hasAthleteProfile: false,
+                                athleteProfile: { id: null, firstName: '', lastName: '', teamId: '' },
+                                hasMemberProfile: formData.hasMemberProfile
+                            });
+                        } else {
+                            // Select: enable athlete profile
+                            setFormData({
+                                ...formData,
+                                hasAthleteProfile: true,
+                                hasMemberProfile: true
+                            });
+                        }
+                    }}
                 >
                     <div className="profile-card-icon athlete">
                         <FaRunning />
@@ -812,15 +880,15 @@ const PeopleManager = () => {
                         <p>Pessoa que pratica desporto federado no clube</p>
                     </div>
                     <div className="profile-card-check">
-                        {formData.hasAthleteProfile && <FaCheck />}
+                        {hasAthleteProfile && <FaCheck />}
                     </div>
                 </div>
 
                 {/* Member Card */}
                 <div
-                    className={`profile-card ${formData.hasMemberProfile ? 'selected' : ''} ${formData.hasAthleteProfile ? 'locked' : ''}`}
+                    className={`profile-card ${formData.hasMemberProfile ? 'selected' : ''} ${hasAthleteProfile ? 'locked' : ''}`}
                     onClick={() => {
-                        if (!formData.hasAthleteProfile) {
+                        if (!hasAthleteProfile) {
                             setFormData({ ...formData, hasMemberProfile: !formData.hasMemberProfile });
                         }
                     }}
@@ -831,7 +899,7 @@ const PeopleManager = () => {
                     <div className="profile-card-info">
                         <h4>Sócio</h4>
                         <p>Membro associado do clube com quotas</p>
-                        {formData.hasAthleteProfile && (
+                        {hasAthleteProfile && (
                             <span className="auto-tag">Automático — todos os atletas são sócios</span>
                         )}
                     </div>
@@ -873,23 +941,42 @@ const PeopleManager = () => {
                 <p>Complete a informação específica de cada perfil selecionado.</p>
             </div>
 
-            {/* Athlete Details */}
-            {formData.hasAthleteProfile && (
+            {/* Athlete Details - Single Profile */}
+            {hasAthleteProfile && (
                 <div className="detail-section">
                     <div className="detail-section-header">
-                        <div className="detail-section-icon athlete"><FaRunning /></div>
-                        <h4>Dados de Atleta</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div className="detail-section-icon athlete"><FaRunning /></div>
+                            <h4>Perfil de Atleta</h4>
+                        </div>
                     </div>
                     <div className="detail-section-body">
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Nome do Atleta</label>
+                                <input
+                                    type="text"
+                                    placeholder="João"
+                                    value={formData.athleteProfile.firstName}
+                                    onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, firstName: e.target.value } })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Apelido do Atleta</label>
+                                <input
+                                    type="text"
+                                    placeholder="Silva"
+                                    value={formData.athleteProfile.lastName}
+                                    onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, lastName: e.target.value } })}
+                                />
+                            </div>
+                        </div>
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Equipa</label>
                                 <select
                                     value={formData.athleteProfile.teamId}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        athleteProfile: { ...formData.athleteProfile, teamId: e.target.value }
-                                    })}
+                                    onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, teamId: e.target.value } })}
                                 >
                                     <option value="">Sem equipa atribuída</option>
                                     {teams.map(team => (
@@ -900,171 +987,174 @@ const PeopleManager = () => {
                                 </select>
                             </div>
                         </div>
-                        <p className="detail-note">Dados adicionais como altura, peso e atestado médico podem ser preenchidos mais tarde no perfil do atleta.</p>
                     </div>
                 </div>
             )}
 
             {/* Member Details */}
-            {formData.hasMemberProfile && (
-                <div className="detail-section">
-                    <div className="detail-section-header">
-                        <div className="detail-section-icon member"><FaIdCard /></div>
-                        <h4>Dados de Sócio</h4>
-                    </div>
-                    <div className="detail-section-body">
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Estado *</label>
-                                <select
-                                    className={validationErrors.membershipStatus ? 'error' : ''}
-                                    value={formData.memberProfile.membershipStatus}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        memberProfile: { ...formData.memberProfile, membershipStatus: e.target.value }
-                                    })}
-                                >
-                                    <option value="0">Pendente</option>
-                                    <option value="1">Ativo</option>
-                                    <option value="2">Inativo</option>
-                                </select>
-                                {validationErrors.membershipStatus && <span className="error-message">{validationErrors.membershipStatus}</span>}
+            {
+                formData.hasMemberProfile && (
+                    <div className="detail-section">
+                        <div className="detail-section-header">
+                            <div className="detail-section-icon member"><FaIdCard /></div>
+                            <h4>Dados de Sócio</h4>
+                        </div>
+                        <div className="detail-section-body">
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Estado *</label>
+                                    <select
+                                        className={validationErrors.membershipStatus ? 'error' : ''}
+                                        value={formData.memberProfile.membershipStatus}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            memberProfile: { ...formData.memberProfile, membershipStatus: e.target.value }
+                                        })}
+                                    >
+                                        <option value="0">Pendente</option>
+                                        <option value="1">Ativo</option>
+                                        <option value="2">Inativo</option>
+                                    </select>
+                                    {validationErrors.membershipStatus && <span className="error-message">{validationErrors.membershipStatus}</span>}
+                                </div>
+                                <div className="form-group">
+                                    <label>Sócio Desde *</label>
+                                    <input
+                                        type="date"
+                                        className={validationErrors.memberSince ? 'error' : ''}
+                                        value={formData.memberProfile.memberSince}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            memberProfile: { ...formData.memberProfile, memberSince: e.target.value }
+                                        })}
+                                    />
+                                    {validationErrors.memberSince && <span className="error-message">{validationErrors.memberSince}</span>}
+                                </div>
                             </div>
-                            <div className="form-group">
-                                <label>Sócio Desde *</label>
-                                <input
-                                    type="date"
-                                    className={validationErrors.memberSince ? 'error' : ''}
-                                    value={formData.memberProfile.memberSince}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        memberProfile: { ...formData.memberProfile, memberSince: e.target.value }
-                                    })}
-                                />
-                                {validationErrors.memberSince && <span className="error-message">{validationErrors.memberSince}</span>}
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Preferência de Pagamento</label>
+                                    <select
+                                        value={formData.memberProfile.paymentPreference}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            memberProfile: { ...formData.memberProfile, paymentPreference: e.target.value }
+                                        })}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        <option value="Monthly">Mensal</option>
+                                        <option value="Annual">Anual</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Preferência de Pagamento</label>
-                                <select
-                                    value={formData.memberProfile.paymentPreference}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        memberProfile: { ...formData.memberProfile, paymentPreference: e.target.value }
-                                    })}
-                                >
-                                    <option value="">Selecione...</option>
-                                    <option value="Monthly">Mensal</option>
-                                    <option value="Annual">Anual</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Coach Details */}
-            {formData.hasCoachProfile && (
-                <div className="detail-section">
-                    <div className="detail-section-header">
-                        <div className="detail-section-icon coach"><FaChalkboardTeacher /></div>
-                        <h4>Dados de Treinador</h4>
+            {
+                formData.hasCoachProfile && (
+                    <div className="detail-section">
+                        <div className="detail-section-header">
+                            <div className="detail-section-icon coach"><FaChalkboardTeacher /></div>
+                            <h4>Dados de Treinador</h4>
+                        </div>
+                        <div className="detail-section-body">
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Modalidade *</label>
+                                    <select
+                                        className={validationErrors.coachSport ? 'error' : ''}
+                                        value={formData.coachProfile.sportId}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            coachProfile: { ...formData.coachProfile, sportId: e.target.value }
+                                        })}
+                                    >
+                                        <option value="">Selecione a modalidade...</option>
+                                        {sports.map(sport => (
+                                            <option key={sport.id} value={sport.id}>{sport.name}</option>
+                                        ))}
+                                    </select>
+                                    {validationErrors.coachSport && <span className="error-message">{validationErrors.coachSport}</span>}
+                                </div>
+                                <div className="form-group">
+                                    <label>Equipa Principal</label>
+                                    <select
+                                        value={formData.coachProfile.teamId}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            coachProfile: { ...formData.coachProfile, teamId: e.target.value }
+                                        })}
+                                    >
+                                        <option value="">Sem equipa atribuída</option>
+                                        {teams.map(team => (
+                                            <option key={team.id} value={team.id}>
+                                                {team.name} - {team.sportName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Nº Cédula</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Número da cédula"
+                                        value={formData.coachProfile.licenseNumber}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            coachProfile: { ...formData.coachProfile, licenseNumber: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Nível de Cédula *</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nível 1, Nível 2, etc."
+                                        className={validationErrors.coachLicenseLevel ? 'error' : ''}
+                                        value={formData.coachProfile.licenseLevel}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            coachProfile: { ...formData.coachProfile, licenseLevel: e.target.value }
+                                        })}
+                                    />
+                                    {validationErrors.coachLicenseLevel && <span className="error-message">{validationErrors.coachLicenseLevel}</span>}
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Validade Cédula</label>
+                                    <input
+                                        type="date"
+                                        value={formData.coachProfile.licenseExpiry}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            coachProfile: { ...formData.coachProfile, licenseExpiry: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Especialização</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: Formação, Competição..."
+                                        value={formData.coachProfile.specialization}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            coachProfile: { ...formData.coachProfile, specialization: e.target.value }
+                                        })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="detail-section-body">
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Modalidade *</label>
-                                <select
-                                    className={validationErrors.coachSport ? 'error' : ''}
-                                    value={formData.coachProfile.sportId}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        coachProfile: { ...formData.coachProfile, sportId: e.target.value }
-                                    })}
-                                >
-                                    <option value="">Selecione a modalidade...</option>
-                                    {sports.map(sport => (
-                                        <option key={sport.id} value={sport.id}>{sport.name}</option>
-                                    ))}
-                                </select>
-                                {validationErrors.coachSport && <span className="error-message">{validationErrors.coachSport}</span>}
-                            </div>
-                            <div className="form-group">
-                                <label>Equipa Principal</label>
-                                <select
-                                    value={formData.coachProfile.teamId}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        coachProfile: { ...formData.coachProfile, teamId: e.target.value }
-                                    })}
-                                >
-                                    <option value="">Sem equipa atribuída</option>
-                                    {teams.map(team => (
-                                        <option key={team.id} value={team.id}>
-                                            {team.name} - {team.sportName}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Nº Cédula</label>
-                                <input
-                                    type="text"
-                                    placeholder="Número da cédula"
-                                    value={formData.coachProfile.licenseNumber}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        coachProfile: { ...formData.coachProfile, licenseNumber: e.target.value }
-                                    })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Nível de Cédula *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Nível 1, Nível 2, etc."
-                                    className={validationErrors.coachLicenseLevel ? 'error' : ''}
-                                    value={formData.coachProfile.licenseLevel}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        coachProfile: { ...formData.coachProfile, licenseLevel: e.target.value }
-                                    })}
-                                />
-                                {validationErrors.coachLicenseLevel && <span className="error-message">{validationErrors.coachLicenseLevel}</span>}
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Validade Cédula</label>
-                                <input
-                                    type="date"
-                                    value={formData.coachProfile.licenseExpiry}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        coachProfile: { ...formData.coachProfile, licenseExpiry: e.target.value }
-                                    })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Especialização</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ex: Formação, Competição..."
-                                    value={formData.coachProfile.specialization}
-                                    onChange={(e) => setFormData({
-                                        ...formData,
-                                        coachProfile: { ...formData.coachProfile, specialization: e.target.value }
-                                    })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 
     const renderPermissionsStep = () => (
@@ -1167,11 +1257,16 @@ const PeopleManager = () => {
                                 <span className="summary-value" style={{ color: '#6b7280' }}>Sem perfis atribuídos</span>
                             </div>
                         )}
-                        {formData.hasAthleteProfile && (
+                        {hasAthleteProfile && (
                             <div className="summary-profile-block">
                                 <span className="profile-badge athlete"><FaRunning /> Atleta</span>
                                 <div className="summary-details">
-                                    <span>Equipa: {formData.athleteProfile.teamId ? getTeamName(formData.athleteProfile.teamId) : 'Sem equipa'}</span>
+                                    <span>
+                                        {formData.athleteProfile.firstName || formData.athleteProfile.lastName
+                                            ? `${formData.athleteProfile.firstName} ${formData.athleteProfile.lastName}`.trim()
+                                            : 'Nome não definido'}
+                                        {formData.athleteProfile.teamId ? ` — ${getTeamName(formData.athleteProfile.teamId)}` : ''}
+                                    </span>
                                 </div>
                             </div>
                         )}
@@ -1336,7 +1431,14 @@ const PeopleManager = () => {
                             {sortedUsers.map((user) => (
                                 <tr key={user.id}>
                                     <td className="user-name">{user.fullName}</td>
-                                    <td>{user.email}</td>
+                                    <td>{(() => {
+                                        const raw = user.email || '';
+                                        const atIdx = raw.lastIndexOf('@');
+                                        const localPart = atIdx > 0 ? raw.substring(0, atIdx) : raw;
+                                        const domain = atIdx > 0 ? raw.substring(atIdx) : '';
+                                        const plusIdx = localPart.indexOf('+');
+                                        return plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : raw;
+                                    })()}</td>
                                     <td>{user.phone || '-'}</td>
                                     <td className="profiles-cell">
                                         {getProfileBadges(user).map((badge, idx) => (

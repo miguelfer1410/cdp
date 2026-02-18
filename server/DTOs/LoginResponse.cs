@@ -9,4 +9,13 @@ public class LoginResponse
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
+    // All users sharing the same base email (for sibling/child athlete accounts)
+    public List<LinkedUserInfo> LinkedUsers { get; set; } = new();
+}
+
+public class LinkedUserInfo
+{
+    public int Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
 }

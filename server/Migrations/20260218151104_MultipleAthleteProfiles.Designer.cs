@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218151104_MultipleAthleteProfiles")]
+    partial class MultipleAthleteProfiles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,8 +58,7 @@ namespace CdpApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("AthleteProfiles");
                 });
@@ -596,14 +598,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 18, 15, 46, 2, 732, DateTimeKind.Utc).AddTicks(5320),
+                            CreatedAt = new DateTime(2026, 2, 18, 15, 11, 4, 281, DateTimeKind.Utc).AddTicks(5998),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 18, 15, 46, 2, 732, DateTimeKind.Utc).AddTicks(5322),
+                            CreatedAt = new DateTime(2026, 2, 18, 15, 11, 4, 281, DateTimeKind.Utc).AddTicks(6000),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -846,12 +848,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 18, 15, 46, 2, 859, DateTimeKind.Utc).AddTicks(9824),
+                            CreatedAt = new DateTime(2026, 2, 18, 15, 11, 4, 401, DateTimeKind.Utc).AddTicks(2831),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$P2cLmzp5e7lCQR77s1Vr0O7/px83krXhwLd0j2GyZFXEOuqzLuAkO"
+                            PasswordHash = "$2a$11$qMHikwx5RivDaXo4KSvWw.TyRpt8ocps143a0cjQfWoDkY6ykJBjy"
                         });
                 });
 
@@ -885,7 +887,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 18, 15, 46, 2, 860, DateTimeKind.Utc).AddTicks(130),
+                            AssignedAt = new DateTime(2026, 2, 18, 15, 11, 4, 401, DateTimeKind.Utc).AddTicks(3361),
                             RoleId = 2,
                             UserId = 1
                         });
@@ -894,8 +896,8 @@ namespace CdpApi.Migrations
             modelBuilder.Entity("CdpApi.Models.AthleteProfile", b =>
                 {
                     b.HasOne("CdpApi.Models.User", "User")
-                        .WithOne("AthleteProfile")
-                        .HasForeignKey("CdpApi.Models.AthleteProfile", "UserId")
+                        .WithMany("AthleteProfiles")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1140,7 +1142,7 @@ namespace CdpApi.Migrations
 
             modelBuilder.Entity("CdpApi.Models.User", b =>
                 {
-                    b.Navigation("AthleteProfile");
+                    b.Navigation("AthleteProfiles");
 
                     b.Navigation("CoachProfile");
 
