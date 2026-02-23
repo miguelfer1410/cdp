@@ -15,7 +15,7 @@ const Noticias = () => {
 
   const fetchSports = async () => {
     try {
-      const response = await fetch('http://51.178.43.232:5285/api/sports');
+      const response = await fetch('http://localhost:5285/api/sports');
       if (response.ok) {
         const data = await response.json();
         // Add sports names to categories, keeping 'Todas' and 'Clube' at the beginning
@@ -29,7 +29,7 @@ const Noticias = () => {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch('http://51.178.43.232:5285/api/news');
+      const response = await fetch('http://localhost:5285/api/news');
       if (response.ok) {
         const data = await response.json();
         setAllNews(data);
@@ -44,7 +44,7 @@ const Noticias = () => {
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return '/CDP_logo.png';
     if (imageUrl.startsWith('http')) return imageUrl;
-    return `http://51.178.43.232:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+    return `http://localhost:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
   };
 
   const formatDate = (dateString) => {

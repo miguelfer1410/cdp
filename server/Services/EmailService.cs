@@ -252,7 +252,7 @@ namespace server.Services
                                         </p>
                                         
                                         <div style='text-align: center; margin: 35px 0;'>
-                                            <a href='http://51.178.43.232:3000/dashboard/atleta' style='background: linear-gradient(135deg, #003380, #00509e); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1em; display: inline-block;'>
+                                            <a href='http://localhost:3000/dashboard/atleta' style='background: linear-gradient(135deg, #003380, #00509e); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1em; display: inline-block;'>
                                                 Ver Detalhes no Dashboard
                                             </a>
                                         </div>

@@ -11,7 +11,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://51.178.43.232:5285/api';
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
 
     useEffect(() => {
         if (isOpen && user) {

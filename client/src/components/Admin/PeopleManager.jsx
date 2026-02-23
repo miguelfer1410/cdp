@@ -142,7 +142,7 @@ const PeopleManager = () => {
             params.append('page', page);
             params.append('pageSize', pageSize);
 
-            const response = await fetch(`http://51.178.43.232:5285/api/users?${params}`, {
+            const response = await fetch(`http://localhost:5285/api/users?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -163,7 +163,7 @@ const PeopleManager = () => {
     const fetchRoles = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/roles', {
+            const response = await fetch('http://localhost:5285/api/roles', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -178,7 +178,7 @@ const PeopleManager = () => {
     const fetchSports = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/sports/all', {
+            const response = await fetch('http://localhost:5285/api/sports/all', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -193,7 +193,7 @@ const PeopleManager = () => {
     const fetchTeams = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/teams/all', {
+            const response = await fetch('http://localhost:5285/api/teams/all', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -341,7 +341,7 @@ const PeopleManager = () => {
         setEditingUser(user);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/users/${user.id}`, {
+            const response = await fetch(`http://localhost:5285/api/users/${user.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -404,7 +404,7 @@ const PeopleManager = () => {
         if (!window.confirm('Tem a certeza que deseja desativar este utilizador?')) return;
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/users/${id}`, {
+            const response = await fetch(`http://localhost:5285/api/users/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -467,14 +467,14 @@ const PeopleManager = () => {
             };
 
             if (editingUser) {
-                const response = await fetch(`http://51.178.43.232:5285/api/users/${userId}`, {
+                const response = await fetch(`http://localhost:5285/api/users/${userId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(userPayload)
                 });
                 if (!response.ok) throw new Error('Erro ao atualizar utilizador');
             } else {
-                const response = await fetch('http://51.178.43.232:5285/api/users', {
+                const response = await fetch('http://localhost:5285/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ ...userPayload, password: 'TempPassword123!' })
@@ -498,14 +498,14 @@ const PeopleManager = () => {
 
                 if (ap.id) {
                     // Existing profile — update
-                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/athlete-profile`, {
+                    await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(payload)
                     });
                 } else {
                     // New profile — create
-                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/athlete-profile`, {
+                    await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(payload)
@@ -513,7 +513,7 @@ const PeopleManager = () => {
                 }
             } else if (editingUser?.hasAthleteProfile) {
                 // Profile was removed — delete it
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/athlete-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -521,7 +521,7 @@ const PeopleManager = () => {
 
             // Step 3: Manage Member Profile
             if (formData.hasMemberProfile && !editingUser?.hasMemberProfile) {
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/member-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -531,7 +531,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (formData.hasMemberProfile && editingUser?.hasMemberProfile) {
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/member-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -541,7 +541,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (!formData.hasMemberProfile && editingUser?.hasMemberProfile) {
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/member-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -549,7 +549,7 @@ const PeopleManager = () => {
 
             // Step 4: Manage Coach Profile
             if (formData.hasCoachProfile && !editingUser?.hasCoachProfile && formData.coachProfile.sportId) {
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/coach-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/coach-profile`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -562,7 +562,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (formData.hasCoachProfile && editingUser?.hasCoachProfile && formData.coachProfile.sportId) {
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/coach-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/coach-profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -575,7 +575,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (!formData.hasCoachProfile && editingUser?.hasCoachProfile) {
-                await fetch(`http://51.178.43.232:5285/api/users/${userId}/coach-profile`, {
+                await fetch(`http://localhost:5285/api/users/${userId}/coach-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -588,7 +588,7 @@ const PeopleManager = () => {
 
                 const rolesToAdd = newRoles.filter(r => !currentRoles.includes(r));
                 for (const roleId of rolesToAdd) {
-                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/roles`, {
+                    await fetch(`http://localhost:5285/api/users/${userId}/roles`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ roleId })
@@ -597,14 +597,14 @@ const PeopleManager = () => {
 
                 const rolesToRemove = currentRoles.filter(r => !newRoles.includes(r));
                 for (const roleId of rolesToRemove) {
-                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/roles/${roleId}`, {
+                    await fetch(`http://localhost:5285/api/users/${userId}/roles/${roleId}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                 }
             } else {
                 for (const roleId of formData.selectedRoles) {
-                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/roles`, {
+                    await fetch(`http://localhost:5285/api/users/${userId}/roles`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ roleId })

@@ -285,7 +285,7 @@ public class UsersController : ControllerBase
             // and we don't want to spam them with activation emails for every child
             if (emailToUse.Equals(request.Email, StringComparison.OrdinalIgnoreCase))
             {
-                var clientUrl = _configuration["ClientUrl"] ?? "http://51.178.43.232:3000";
+                var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
                 var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
                 await _emailService.SendAccountActivationEmailAsync(request.Email, user.FirstName, activationLink);
             }
@@ -350,7 +350,7 @@ public class UsersController : ControllerBase
 
         try
         {
-            var clientUrl = _configuration["ClientUrl"] ?? "http://51.178.43.232:3000";
+            var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
             var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
             await _emailService.SendAccountActivationEmailAsync(user.Email, user.FirstName, activationLink);
             return Ok(new { message = $"Email de ativação reenviado para {user.Email}" });

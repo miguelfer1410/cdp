@@ -256,7 +256,7 @@ public class AuthService : IAuthService
         // Create reset link
         // Use IConfiguration to get the base URL if possible or hardcode for now based on user context
         // Ideally this should be in appsettings
-        var clientUrl = "http://51.178.43.232:3000"; // Assuming default React port
+        var clientUrl = "http://localhost:3000"; // Assuming default React port
         var resetLink = $"{clientUrl}/reset-password?token={token}";
 
         // Send Email

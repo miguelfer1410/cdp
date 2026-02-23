@@ -39,7 +39,7 @@ const NewsManager = () => {
     const fetchNews = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/news/admin/all', {
+            const response = await fetch('http://localhost:5285/api/news/admin/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -86,8 +86,8 @@ const NewsManager = () => {
 
         try {
             const url = editingNews
-                ? `http://51.178.43.232:5285/api/news/${editingNews.id}`
-                : 'http://51.178.43.232:5285/api/news';
+                ? `http://localhost:5285/api/news/${editingNews.id}`
+                : 'http://localhost:5285/api/news';
 
             const method = editingNews ? 'PUT' : 'POST';
 
@@ -121,7 +121,7 @@ const NewsManager = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/news/${id}`, {
+            const response = await fetch(`http://localhost:5285/api/news/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -226,7 +226,7 @@ const NewsManager = () => {
     const getImageUrl = (imageUrl) => {
         if (!imageUrl) return null;
         if (imageUrl.startsWith('http')) return imageUrl;
-        return `http://51.178.43.232:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+        return `http://localhost:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
     };
 
     const formatDate = (dateString) => {

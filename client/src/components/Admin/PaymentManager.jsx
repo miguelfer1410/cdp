@@ -20,7 +20,7 @@ const PaymentManager = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/payment/admin/athletes-status?month=${currentMonth}&year=${currentYear}`, {
+            const response = await fetch(`http://localhost:5285/api/payment/admin/athletes-status?month=${currentMonth}&year=${currentYear}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -75,7 +75,7 @@ const PaymentManager = () => {
                 status: newStatus // "Completed", "Pending", "Failed"
             };
 
-            const response = await fetch('http://51.178.43.232:5285/api/payment/admin/manual-payment', {
+            const response = await fetch('http://localhost:5285/api/payment/admin/manual-payment', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

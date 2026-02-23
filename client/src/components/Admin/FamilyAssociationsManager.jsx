@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaBell, FaEye, FaCheckCircle, FaClock, FaUserFriends } from 'react-icons/fa';
 import './FamilyAssociationsManager.css';
 
-const API_BASE = 'http://51.178.43.232:5285';
+const API_BASE = 'http://localhost:5285';
 
 const FamilyAssociationsManager = () => {
     const [requests, setRequests] = useState([]);

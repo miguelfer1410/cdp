@@ -38,7 +38,7 @@ const TeamsManager = () => {
     const fetchTeams = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/teams/all', {
+            const response = await fetch('http://localhost:5285/api/teams/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -58,7 +58,7 @@ const TeamsManager = () => {
     const fetchSports = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/sports/all', {
+            const response = await fetch('http://localhost:5285/api/sports/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -76,7 +76,7 @@ const TeamsManager = () => {
     const fetchTeamDetails = async (teamId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/teams/${teamId}`, {
+            const response = await fetch(`http://localhost:5285/api/teams/${teamId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -96,7 +96,7 @@ const TeamsManager = () => {
     const fetchAvailableAthletes = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/users?profileType=athlete&isActive=true', {
+            const response = await fetch('http://localhost:5285/api/users?profileType=athlete&isActive=true', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -162,8 +162,8 @@ const TeamsManager = () => {
 
         try {
             const url = editingTeam
-                ? `http://51.178.43.232:5285/api/teams/${editingTeam.id}`
-                : 'http://51.178.43.232:5285/api/teams';
+                ? `http://localhost:5285/api/teams/${editingTeam.id}`
+                : 'http://localhost:5285/api/teams';
 
             const response = await fetch(url, {
                 method: editingTeam ? 'PUT' : 'POST',
@@ -198,7 +198,7 @@ const TeamsManager = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/teams/${viewingTeam.id}/athletes/${athleteProfileId}`, {
+            const response = await fetch(`http://localhost:5285/api/teams/${viewingTeam.id}/athletes/${athleteProfileId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -226,7 +226,7 @@ const TeamsManager = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/teams/${id}`, {
+            const response = await fetch(`http://localhost:5285/api/teams/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -329,7 +329,7 @@ const TeamsManager = () => {
         setSubmitting(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/teams/${viewingTeam.id}/athletes`, {
+            const response = await fetch(`http://localhost:5285/api/teams/${viewingTeam.id}/athletes`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -44,7 +44,7 @@ const DashboardAtleta = () => {
         setGeneratingReference(true);
         try {
             const token = localStorage.getItem('token');
-            let url = `http://51.178.43.232:5285/api/payment/reference?userId=${selectedUserId}`;
+            let url = `http://localhost:5285/api/payment/reference?userId=${selectedUserId}`;
             if (periodYear) url += `&year=${periodYear}`;
             if (periodMonth) url += `&month=${periodMonth}`;
             const response = await fetch(url, {
@@ -83,7 +83,7 @@ const DashboardAtleta = () => {
                 if (!token) throw new Error('User not authenticated');
 
                 // 1. Fetch User Profile
-                const userResponse = await fetch(`http://51.178.43.232:5285/api/users/${selectedUserId}`, {
+                const userResponse = await fetch(`http://localhost:5285/api/users/${selectedUserId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!userResponse.ok) throw new Error('Failed to fetch athlete data');
@@ -92,7 +92,7 @@ const DashboardAtleta = () => {
 
                 // 2. Fetch Quota for this user
                 try {
-                    const quotaResponse = await fetch(`http://51.178.43.232:5285/api/payment/quota?userId=${selectedUserId}`, {
+                    const quotaResponse = await fetch(`http://localhost:5285/api/payment/quota?userId=${selectedUserId}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (quotaResponse.ok) {
@@ -115,7 +115,7 @@ const DashboardAtleta = () => {
 
                 // 3b. Fetch Payment History
                 try {
-                    const historyResponse = await fetch(`http://51.178.43.232:5285/api/payment/history?userId=${selectedUserId}`, {
+                    const historyResponse = await fetch(`http://localhost:5285/api/payment/history?userId=${selectedUserId}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (historyResponse.ok) {
@@ -133,10 +133,10 @@ const DashboardAtleta = () => {
                 const teamId = userData.athleteProfile?.teams?.[0]?.id;
                 if (teamId) {
                     const [teamResponse, eventsResponse] = await Promise.all([
-                        fetch(`http://51.178.43.232:5285/api/teams/${teamId}`, {
+                        fetch(`http://localhost:5285/api/teams/${teamId}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         }),
-                        fetch(`http://51.178.43.232:5285/api/events?teamId=${teamId}&startDate=${new Date().toISOString()}`, {
+                        fetch(`http://localhost:5285/api/events?teamId=${teamId}&startDate=${new Date().toISOString()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         })
                     ]);

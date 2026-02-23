@@ -25,7 +25,7 @@ const PartnersManager = () => {
     const fetchPartners = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/partners/all', {
+            const response = await fetch('http://localhost:5285/api/partners/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -61,8 +61,8 @@ const PartnersManager = () => {
 
         try {
             const url = editingPartner
-                ? `http://51.178.43.232:5285/api/partners/${editingPartner.id}`
-                : 'http://51.178.43.232:5285/api/partners';
+                ? `http://localhost:5285/api/partners/${editingPartner.id}`
+                : 'http://localhost:5285/api/partners';
 
             const method = editingPartner ? 'PUT' : 'POST';
 
@@ -96,7 +96,7 @@ const PartnersManager = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/partners/${id}`, {
+            const response = await fetch(`http://localhost:5285/api/partners/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -156,7 +156,7 @@ const PartnersManager = () => {
     const getImageUrl = (logoUrl) => {
         if (!logoUrl) return null;
         if (logoUrl.startsWith('http')) return logoUrl;
-        return `http://51.178.43.232:5285${logoUrl.startsWith('/') ? logoUrl : '/' + logoUrl}`;
+        return `http://localhost:5285${logoUrl.startsWith('/') ? logoUrl : '/' + logoUrl}`;
     };
 
     if (loading) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUserFriends, FaCheckCircle, FaClock, FaEye } from 'react-icons/fa';
 import './FamilyAssociationModal.css';
 
-const API_BASE = 'http://51.178.43.232:5285';
+const API_BASE = 'http://localhost:5285';
 
 const FamilyAssociationModal = ({ isOpen, onClose }) => {
     const [form, setForm] = useState({

@@ -13,7 +13,7 @@ const Modalidades = () => {
 
   const fetchModalidades = async () => {
     try {
-      const response = await fetch('http://51.178.43.232:5285/api/sports');
+      const response = await fetch('http://localhost:5285/api/sports');
       if (response.ok) {
         const data = await response.json();
         setModalidades(data);
@@ -28,7 +28,7 @@ const Modalidades = () => {
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop';
     if (imageUrl.startsWith('http')) return imageUrl;
-    return `http://51.178.43.232:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+    return `http://localhost:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
   };
 
   // Informações detalhadas estáticas para cada modalidade

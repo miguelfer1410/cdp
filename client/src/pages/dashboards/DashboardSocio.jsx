@@ -71,7 +71,7 @@ const DashboardSocio = () => {
                 }
 
                 // Fetch user profile
-                const userResponse = await fetch('http://51.178.43.232:5285/api/user/profile', {
+                const userResponse = await fetch('http://localhost:5285/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -95,7 +95,7 @@ const DashboardSocio = () => {
 
                 if (userData.membershipStatus === 'Active') {
                     // Fetch payment summary
-                    const paymentResponse = await fetch('http://51.178.43.232:5285/api/payment/summary', {
+                    const paymentResponse = await fetch('http://localhost:5285/api/payment/summary', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -110,7 +110,7 @@ const DashboardSocio = () => {
                     }
 
                     // Fetch payment history
-                    const historyResponse = await fetch('http://51.178.43.232:5285/api/payment/history', {
+                    const historyResponse = await fetch('http://localhost:5285/api/payment/history', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,

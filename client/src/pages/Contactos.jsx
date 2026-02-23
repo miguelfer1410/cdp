@@ -31,7 +31,7 @@ const Contactos = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://51.178.43.232:5285/api/contact', {
+      const response = await fetch('http://localhost:5285/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

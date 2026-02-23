@@ -26,7 +26,7 @@ const SportsManager = () => {
     const fetchSports = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/sports/all', {
+            const response = await fetch('http://localhost:5285/api/sports/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -63,8 +63,8 @@ const SportsManager = () => {
 
         try {
             const url = editingSport
-                ? `http://51.178.43.232:5285/api/sports/${editingSport.id}`
-                : 'http://51.178.43.232:5285/api/sports';
+                ? `http://localhost:5285/api/sports/${editingSport.id}`
+                : 'http://localhost:5285/api/sports';
 
             const method = editingSport ? 'PUT' : 'POST';
 
@@ -98,7 +98,7 @@ const SportsManager = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/sports/${id}`, {
+            const response = await fetch(`http://localhost:5285/api/sports/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -160,7 +160,7 @@ const SportsManager = () => {
     const getImageUrl = (imageUrl) => {
         if (!imageUrl) return null;
         if (imageUrl.startsWith('http')) return imageUrl;
-        return `http://51.178.43.232:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+        return `http://localhost:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
     };
 
     if (loading) {

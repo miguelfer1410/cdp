@@ -22,7 +22,7 @@ const HeroBannerManager = () => {
     const fetchBanners = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://51.178.43.232:5285/api/herobanner/all', {
+            const response = await fetch('http://localhost:5285/api/herobanner/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -54,8 +54,8 @@ const HeroBannerManager = () => {
 
         try {
             const url = editingBanner
-                ? `http://51.178.43.232:5285/api/herobanner/${editingBanner.id}`
-                : 'http://51.178.43.232:5285/api/herobanner';
+                ? `http://localhost:5285/api/herobanner/${editingBanner.id}`
+                : 'http://localhost:5285/api/herobanner';
 
             const method = editingBanner ? 'PUT' : 'POST';
 
@@ -89,7 +89,7 @@ const HeroBannerManager = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://51.178.43.232:5285/api/herobanner/${id}`, {
+            const response = await fetch(`http://localhost:5285/api/herobanner/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -142,7 +142,7 @@ const HeroBannerManager = () => {
     const getImageUrl = (imageUrl) => {
         if (!imageUrl) return null;
         if (imageUrl.startsWith('http')) return imageUrl;
-        return `http://51.178.43.232:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
+        return `http://localhost:5285${imageUrl.startsWith('/') ? imageUrl : '/' + imageUrl}`;
     };
 
     if (loading) {

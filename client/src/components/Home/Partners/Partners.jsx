@@ -11,7 +11,7 @@ const Partners = () => {
 
   const fetchPartners = async () => {
     try {
-      const response = await fetch('http://51.178.43.232:5285/api/partners');
+      const response = await fetch('http://localhost:5285/api/partners');
       if (response.ok) {
         const data = await response.json();
         setPartners(data);
@@ -26,7 +26,7 @@ const Partners = () => {
   const getImageUrl = (logoUrl) => {
     if (!logoUrl) return null;
     if (logoUrl.startsWith('http')) return logoUrl;
-    return `http://51.178.43.232:5285${logoUrl.startsWith('/') ? logoUrl : '/' + logoUrl}`;
+    return `http://localhost:5285${logoUrl.startsWith('/') ? logoUrl : '/' + logoUrl}`;
   };
 
   if (loading) {

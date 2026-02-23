@@ -59,7 +59,7 @@ const DashboardTreinador = () => {
             }
 
             // Fetch Coach Data
-            const userResponse = await fetch(`http://51.178.43.232:5285/api/users/${userId}`, {
+            const userResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -74,7 +74,7 @@ const DashboardTreinador = () => {
 
             // Fetch Team Data if coach has a team assigned
             if (userData.coachProfile?.teamId) {
-                const teamResponse = await fetch(`http://51.178.43.232:5285/api/teams/${userData.coachProfile.teamId}`, {
+                const teamResponse = await fetch(`http://localhost:5285/api/teams/${userData.coachProfile.teamId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -87,7 +87,7 @@ const DashboardTreinador = () => {
                     const today = new Date().toISOString();
 
                     // Fetch Upcoming Events for the team
-                    const eventsResponse = await fetch(`http://51.178.43.232:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${today}`, {
+                    const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${today}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -103,7 +103,7 @@ const DashboardTreinador = () => {
                     }
 
                     // Fetch Last Training Statistics
-                    const pastTrainingsResponse = await fetch(`http://51.178.43.232:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${today}`, {
+                    const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${today}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
@@ -114,7 +114,7 @@ const DashboardTreinador = () => {
                             const lastTraining = pastTrainings[pastTrainings.length - 1];
 
                             // Fetch attendance for this training
-                            const attResponse = await fetch(`http://51.178.43.232:5285/api/attendance/event/${lastTraining.id}`, {
+                            const attResponse = await fetch(`http://localhost:5285/api/attendance/event/${lastTraining.id}`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
 
