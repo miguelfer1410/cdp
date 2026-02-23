@@ -4,6 +4,7 @@ import './DashboardAtleta.css';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
 import CalendarModal from '../../components/CalendarModal/CalendarModal';
+import FamilyAssociationModal from '../../components/FamilyAssociationModal/FamilyAssociationModal';
 
 const DashboardAtleta = () => {
     const navigate = useNavigate();
@@ -14,6 +15,7 @@ const DashboardAtleta = () => {
     const [loadingTab, setLoadingTab] = useState(false);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
@@ -33,13 +35,19 @@ const DashboardAtleta = () => {
     const [paymentStatus, setPaymentStatus] = useState('unpaid');
     const [generatingReference, setGeneratingReference] = useState(false);
     const [quotaAmount, setQuotaAmount] = useState(null);
+    const [paymentPreference, setPaymentPreference] = useState('Monthly');
+    const [nextPeriod, setNextPeriod] = useState(null); // { month, year }
+    const [paymentHistory, setPaymentHistory] = useState([]);
+    const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
 
-    const handleGenerateReference = async () => {
+    const handleGenerateReference = async (periodMonth = null, periodYear = null) => {
         setGeneratingReference(true);
         try {
             const token = localStorage.getItem('token');
-            // Pass the selectedUserId to generate reference for the correct athlete
-            const response = await fetch(`http://localhost:5285/api/payment/reference?userId=${selectedUserId}`, {
+            let url = `http://51.178.43.232:5285/api/payment/reference?userId=${selectedUserId}`;
+            if (periodYear) url += `&year=${periodYear}`;
+            if (periodMonth) url += `&month=${periodMonth}`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -49,7 +57,7 @@ const DashboardAtleta = () => {
             }
             const data = await response.json();
             setPaymentReference(data);
-            setPaymentStatus('pending');
+            setPaymentStatus('Pendente');
         } catch (err) {
             console.error(err);
             alert(err.message);
@@ -59,7 +67,6 @@ const DashboardAtleta = () => {
     };
 
     const checkPaymentStatus = async () => {
-        // We could just re-fetch, but reload is a simple way to reset everything for now
         window.location.reload();
     };
 
@@ -76,7 +83,7 @@ const DashboardAtleta = () => {
                 if (!token) throw new Error('User not authenticated');
 
                 // 1. Fetch User Profile
-                const userResponse = await fetch(`http://localhost:5285/api/users/${selectedUserId}`, {
+                const userResponse = await fetch(`http://51.178.43.232:5285/api/users/${selectedUserId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!userResponse.ok) throw new Error('Failed to fetch athlete data');
@@ -85,17 +92,19 @@ const DashboardAtleta = () => {
 
                 // 2. Fetch Quota for this user
                 try {
-                    const quotaResponse = await fetch(`http://localhost:5285/api/payment/quota?userId=${selectedUserId}`, {
+                    const quotaResponse = await fetch(`http://51.178.43.232:5285/api/payment/quota?userId=${selectedUserId}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (quotaResponse.ok) {
                         const quotaData = await quotaResponse.json();
                         setQuotaAmount(quotaData.amount);
                         setPaymentStatus(quotaData.status);
-                        // If there's an existing payment, set it; otherwise clear it
                         setPaymentReference(quotaData.existingPayment || null);
+                        setPaymentPreference(quotaData.paymentPreference || 'Monthly');
+                        if (quotaData.nextPeriodYear) {
+                            setNextPeriod({ month: quotaData.nextPeriodMonth, year: quotaData.nextPeriodYear });
+                        }
                     } else {
-                        // Reset quota state on error
                         setQuotaAmount(0);
                         setPaymentStatus('-');
                         setPaymentReference(null);
@@ -104,14 +113,30 @@ const DashboardAtleta = () => {
                     console.error('Error fetching quota:', qErr);
                 }
 
+                // 3b. Fetch Payment History
+                try {
+                    const historyResponse = await fetch(`http://51.178.43.232:5285/api/payment/history?userId=${selectedUserId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (historyResponse.ok) {
+                        const historyData = await historyResponse.json();
+                        setPaymentHistory(historyData);
+                    } else {
+                        setPaymentHistory([]);
+                    }
+                } catch (hErr) {
+                    console.error('Error fetching payment history:', hErr);
+                    setPaymentHistory([]);
+                }
+
                 // 3. Fetch Team + Events
                 const teamId = userData.athleteProfile?.teams?.[0]?.id;
                 if (teamId) {
                     const [teamResponse, eventsResponse] = await Promise.all([
-                        fetch(`http://localhost:5285/api/teams/${teamId}`, {
+                        fetch(`http://51.178.43.232:5285/api/teams/${teamId}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         }),
-                        fetch(`http://localhost:5285/api/events?teamId=${teamId}&startDate=${new Date().toISOString()}`, {
+                        fetch(`http://51.178.43.232:5285/api/events?teamId=${teamId}&startDate=${new Date().toISOString()}`, {
                             headers: { 'Authorization': `Bearer ${token}` }
                         })
                     ]);
@@ -292,7 +317,7 @@ const DashboardAtleta = () => {
                                         Ver Calendário <i className="fas fa-arrow-right"></i>
                                     </button>
                                 </div>
-
+                                {/* 
                                 <div className="events-list">
                                     {events.length > 0 ? (
                                         events.map(event => (
@@ -329,6 +354,7 @@ const DashboardAtleta = () => {
                                         </div>
                                     )}
                                 </div>
+                                */}
                             </div>
 
                             <div className="dashboard-card">
@@ -466,6 +492,14 @@ const DashboardAtleta = () => {
                                         <i className="fas fa-envelope"></i>
                                         Mensagens
                                     </a>
+                                    <button
+                                        className="action-btn"
+                                        onClick={() => setIsFamilyModalOpen(true)}
+                                        style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                                    >
+                                        <i className="fas fa-user-friends"></i>
+                                        Associar Familiar
+                                    </button>
                                 </div>
                             </div>
 
@@ -486,48 +520,111 @@ const DashboardAtleta = () => {
                                 </div>
 
                                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                                    {paymentStatus === 'paid' ? (
-                                        <div className="payment-reference-box" style={{ background: '#ecfdf5', padding: '15px', borderRadius: '8px', border: '1px solid #10b981' }}>
-                                            <div style={{ color: '#059669', fontSize: '3rem', marginBottom: '10px' }}>
-                                                <i className="fas fa-check-circle"></i>
+                                    {paymentStatus === 'Regularizada' ? (
+                                        /* ── PAID ── */
+                                        <div>
+                                            <div className="payment-reference-box" style={{ background: '#ecfdf5', padding: '18px', borderRadius: '10px', border: '1px solid #6ee7b7', marginBottom: '14px' }}>
+                                                <div style={{ color: '#059669', fontSize: '2.8rem', marginBottom: '8px' }}>
+                                                    <i className="fas fa-check-circle"></i>
+                                                </div>
+                                                <h4 style={{ color: '#059669', margin: '0 0 4px 0' }}>Quotas em Dia</h4>
+                                                <p style={{ fontSize: '0.88rem', color: '#047857', margin: 0 }}>
+                                                    {paymentPreference === 'Annual'
+                                                        ? `A quota anual de ${quotaAmount?.toFixed(2)} € foi paga com sucesso.`
+                                                        : `O pagamento deste mês (${quotaAmount?.toFixed(2)} €) foi concluído com sucesso.`}
+                                                </p>
                                             </div>
-                                            <h4 style={{ color: '#059669', margin: '0 0 5px 0' }}>Quotas em Dia</h4>
-                                            <p style={{ fontSize: '0.9rem', color: '#047857' }}>
-                                                O pagamento deste mês foi concluído com sucesso.
-                                            </p>
+
+                                            {nextPeriod && (
+                                                <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '14px' }}>
+                                                    <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '10px' }}>
+                                                        <i className="fas fa-info-circle" style={{ marginRight: '5px', color: '#003380' }}></i>
+                                                        Quer adiantar o pagamento do próximo período?
+                                                    </p>
+                                                    <button
+                                                        className="action-btn"
+                                                        onClick={() => handleGenerateReference(nextPeriod.month, nextPeriod.year)}
+                                                        disabled={generatingReference}
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            background: 'var(--primary-color)',
+                                                            color: 'white',
+                                                            borderColor: 'var(--primary-color)',
+                                                            width: '100%',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
+                                                            opacity: generatingReference ? 0.7 : 1
+                                                        }}
+                                                    >
+                                                        {generatingReference ? (
+                                                            <><i className="fas fa-spinner fa-spin"></i> A gerar...</>
+                                                        ) : (
+                                                            <><i className="fas fa-credit-card"></i>
+                                                                {paymentPreference === 'Annual'
+                                                                    ? `Pagar ${nextPeriod.year}`
+                                                                    : `Pagar ${new Date(nextPeriod.year, (nextPeriod.month || 1) - 1).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}`
+                                                                }</>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ) : paymentStatus === 'pending' && paymentReference ? (
-                                        <div className="payment-reference-box" style={{ background: '#f0f9ff', padding: '15px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                                            <h4 style={{ color: '#003380', margin: '0 0 10px 0' }}>Referência Multibanco</h4>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px', textAlign: 'left', maxWidth: '250px', margin: '0 auto' }}>
-                                                <span style={{ color: '#666' }}>Entidade:</span>
-                                                <span style={{ fontWeight: 'bold' }}>{paymentReference.entity}</span>
-                                                <span style={{ color: '#666' }}>Referência:</span>
-                                                <span style={{ fontWeight: 'bold' }}>{paymentReference.reference}</span>
-                                                <span style={{ color: '#666' }}>Valor:</span>
-                                                <span style={{ fontWeight: 'bold', color: '#003380' }}>{quotaAmount} €</span>
+                                    ) : paymentStatus === 'Pendente' && paymentReference ? (
+                                        /* ── PENDING ── */
+                                        <div className="payment-reference-box" style={{ background: '#f0f9ff', padding: '18px', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+                                            <div style={{ color: '#d97706', fontSize: '1.6rem', marginBottom: '6px' }}>
+                                                <i className="fas fa-clock"></i>
                                             </div>
-                                            <div style={{ marginTop: '15px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                                                <button
-                                                    onClick={() => checkPaymentStatus(athleteData?.memberProfile?.id /* Ideally we need payment ID here, but for now user might just refresh */)}
-                                                    className="action-btn"
-                                                    style={{ fontSize: '0.8rem', padding: '5px 10px' }}
-                                                >
-                                                    <i className="fas fa-sync-alt"></i> Atualizar Estado
-                                                </button>
+                                            <h4 style={{ color: '#003380', margin: '0 0 4px 0' }}>Pagamento Pendente</h4>
+                                            {paymentReference.description && (
+                                                <p style={{ fontSize: '0.82rem', color: '#555', margin: '0 0 12px 0' }}>
+                                                    {paymentReference.description}
+                                                </p>
+                                            )}
+                                            <div style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: 'auto 1fr',
+                                                gap: '8px 12px',
+                                                textAlign: 'left',
+                                                maxWidth: '260px',
+                                                margin: '0 auto 14px auto',
+                                                background: '#fff',
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e0eeff'
+                                            }}>
+                                                <span style={{ color: '#888', fontSize: '0.85rem' }}>Entidade:</span>
+                                                <span style={{ fontWeight: '700', fontSize: '0.95rem', letterSpacing: '1px' }}>{paymentReference.entity}</span>
+                                                <span style={{ color: '#888', fontSize: '0.85rem' }}>Referência:</span>
+                                                <span style={{ fontWeight: '700', fontSize: '0.95rem', letterSpacing: '1px' }}>{paymentReference.reference}</span>
+                                                <span style={{ color: '#888', fontSize: '0.85rem' }}>Valor:</span>
+                                                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#003380' }}>
+                                                    {(paymentReference.amount ?? quotaAmount)?.toFixed(2)} €
+                                                </span>
                                             </div>
-                                            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '10px' }}>
-                                                Pagamento a aguardar confirmação.
+                                            <button
+                                                onClick={checkPaymentStatus}
+                                                className="action-btn"
+                                                style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', gap: '6px', alignItems: 'center' }}
+                                            >
+                                                <i className="fas fa-sync-alt"></i> Verificar Pagamento
+                                            </button>
+                                            <p style={{ fontSize: '0.78rem', color: '#888', marginTop: '10px', marginBottom: 0 }}>
+                                                A referência mantém-se ativa até ao pagamento ser confirmado.
                                             </p>
                                         </div>
                                     ) : (
+                                        /* ── UNPAID ── */
                                         <>
                                             <p style={{ marginBottom: '15px', color: '#666' }}>
-                                                Quota Mensal: <strong>{quotaAmount !== null ? `${quotaAmount.toFixed(2)} €` : 'A calcular...'}</strong>
+                                                Quota {paymentPreference === 'Annual' ? 'Anual' : 'Mensal'}:{' '}
+                                                <strong style={{ color: '#003380' }}>
+                                                    {quotaAmount !== null ? `${quotaAmount.toFixed(2)} €` : 'A calcular...'}
+                                                </strong>
                                             </p>
                                             <button
                                                 className="action-btn"
-                                                onClick={handleGenerateReference}
+                                                onClick={() => handleGenerateReference()}
                                                 disabled={generatingReference || quotaAmount === null}
                                                 style={{
                                                     display: 'inline-flex',
@@ -536,18 +633,112 @@ const DashboardAtleta = () => {
                                                     borderColor: 'var(--primary-color)',
                                                     width: '100%',
                                                     justifyContent: 'center',
+                                                    gap: '8px',
                                                     opacity: (generatingReference || quotaAmount === null) ? 0.7 : 1
                                                 }}
                                             >
                                                 {generatingReference ? (
-                                                    <><i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> A gerar...</>
+                                                    <><i className="fas fa-spinner fa-spin"></i> A gerar...</>
                                                 ) : (
-                                                    <><i className="fas fa-credit-card" style={{ marginRight: '8px' }}></i> Pagar Quotas</>
+                                                    <><i className="fas fa-credit-card"></i> Gerar Referência de Pagamento</>
                                                 )}
                                             </button>
                                         </>
                                     )}
                                 </div>
+                            </div>
+
+
+                            {/* Payment History Card */}
+                            <div className="dashboard-card">
+                                <div className="dashboard-card-header">
+                                    <h2><i className="fas fa-history"></i> Histórico de Pagamentos</h2>
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                        <button
+                                            onClick={() => setHistoryYear(y => y - 1)}
+                                            style={{ background: 'none', border: '1px solid #ddd', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', color: '#666', fontSize: '0.8rem' }}
+                                        ><i className="fas fa-chevron-left"></i></button>
+                                        <span style={{ fontWeight: '700', fontSize: '0.95rem', color: '#003380', minWidth: '38px', textAlign: 'center' }}>{historyYear}</span>
+                                        <button
+                                            onClick={() => setHistoryYear(y => Math.min(y + 1, new Date().getFullYear()))}
+                                            disabled={historyYear >= new Date().getFullYear()}
+                                            style={{ background: 'none', border: '1px solid #ddd', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', color: '#666', fontSize: '0.8rem', opacity: historyYear >= new Date().getFullYear() ? 0.4 : 1 }}
+                                        ><i className="fas fa-chevron-right"></i></button>
+                                    </div>
+                                </div>
+
+                                {(() => {
+                                    const yearPayments = paymentHistory.filter(p => p.periodYear === historyYear);
+                                    if (paymentHistory.length === 0) {
+                                        return (
+                                            <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
+                                                <i className="fas fa-receipt" style={{ fontSize: '2rem', marginBottom: '10px', display: 'block', opacity: 0.3 }}></i>
+                                                Sem histórico de pagamentos.
+                                            </div>
+                                        );
+                                    }
+                                    if (yearPayments.length === 0) {
+                                        return (
+                                            <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
+                                                Sem pagamentos registados para {historyYear}.
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.87rem' }}>
+                                                <thead>
+                                                    <tr style={{ backgroundColor: '#f4f7ff', borderBottom: '2px solid #e2e8f4' }}>
+                                                        <th style={{ padding: '10px 14px', textAlign: 'left', color: '#444', fontWeight: '600', whiteSpace: 'nowrap' }}>Período</th>
+                                                        <th style={{ padding: '10px 14px', textAlign: 'right', color: '#444', fontWeight: '600' }}>Valor</th>
+                                                        <th style={{ padding: '10px 14px', textAlign: 'center', color: '#444', fontWeight: '600' }}>Estado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {yearPayments.map((payment, idx) => {
+                                                        const isPaid = payment.status === 'Completed';
+                                                        const isPending = payment.status === 'Pending';
+                                                        const badgeCss = isPaid
+                                                            ? { background: '#ecfdf5', color: '#059669', border: '1px solid #6ee7b7' }
+                                                            : isPending
+                                                                ? { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' }
+                                                                : { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' };
+                                                        const badgeLabel = isPaid ? 'Pago' : isPending ? 'Pendente' : 'Não Pago';
+                                                        const badgeIcon = isPaid ? 'fa-check-circle' : isPending ? 'fa-clock' : 'fa-times-circle';
+                                                        return (
+                                                            <tr key={payment.id}
+                                                                style={{ borderBottom: '1px solid #f0f4ff', backgroundColor: idx % 2 === 0 ? '#fff' : '#fafcff', transition: 'background 0.15s' }}
+                                                            >
+                                                                <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
+                                                                    {payment.month}
+                                                                </td>
+                                                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#003380' }}>
+                                                                    {payment.amount?.toFixed(2)} €
+                                                                </td>
+                                                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                                                                    <span style={{
+                                                                        ...badgeCss,
+                                                                        borderRadius: '20px',
+                                                                        padding: '3px 10px',
+                                                                        fontSize: '0.78rem',
+                                                                        fontWeight: '600',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '4px',
+                                                                        whiteSpace: 'nowrap'
+                                                                    }}>
+                                                                        <i className={`fas ${badgeIcon}`}></i>
+                                                                        {badgeLabel}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>
@@ -571,6 +762,11 @@ const DashboardAtleta = () => {
                 isOpen={isCalendarModalOpen}
                 onClose={() => setIsCalendarModalOpen(false)}
                 teamId={primaryTeam?.id}
+            />
+
+            <FamilyAssociationModal
+                isOpen={isFamilyModalOpen}
+                onClose={() => setIsFamilyModalOpen(false)}
             />
         </div >
     );

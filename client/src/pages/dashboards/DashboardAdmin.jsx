@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort, FaEuroSign } from 'react-icons/fa';
+import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort, FaEuroSign, FaBell } from 'react-icons/fa';
 import HeroBannerManager from '../../components/Admin/HeroBannerManager';
 import NewsManager from '../../components/Admin/NewsManager';
 import SportsManager from '../../components/Admin/SportsManager';
@@ -12,6 +12,7 @@ import './DashboardAdmin.css';
 import PeopleManager from '../../components/Admin/PeopleManager';
 import FeeManager from '../../components/Admin/FeeManager';
 import PaymentManager from '../../components/Admin/PaymentManager';
+import FamilyAssociationsManager from '../../components/Admin/FamilyAssociationsManager';
 
 const NAV_ITEMS_CONFIG = {
     hero: { id: 'hero', label: 'Banner', icon: <FaImages /> },
@@ -20,12 +21,13 @@ const NAV_ITEMS_CONFIG = {
     partners: { id: 'partners', label: 'Parceiros', icon: <FaHandshake /> },
     teams: { id: 'teams', label: 'Equipas', icon: <FaUsers /> },
     people: { id: 'people', label: 'Pessoas', icon: <FaUserFriends /> },
-    calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> },
+    //calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> },
     fees: { id: 'fees', label: 'Config. Quotas', icon: <FaEuroSign /> },
-    payments: { id: 'payments', label: 'Pagamentos', icon: <FaEuroSign /> }
+    payments: { id: 'payments', label: 'Pagamentos', icon: <FaEuroSign /> },
+    requests: { id: 'requests', label: 'Requisições', icon: <FaBell /> }
 };
 
-const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people', 'calendar', 'fees', 'payments'];
+const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people'/*, 'calendar'*/, 'fees', 'payments', 'requests'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
@@ -183,6 +185,7 @@ const DashboardAdmin = () => {
                 {activeTab === 'calendar' && <CalendarManager />}
                 {activeTab === 'fees' && <FeeManager />}
                 {activeTab === 'payments' && <PaymentManager />}
+                {activeTab === 'requests' && <FamilyAssociationsManager />}
             </div>
 
             <NavReorderModal

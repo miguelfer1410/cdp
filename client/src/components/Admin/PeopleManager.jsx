@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaUsers, FaRunning, FaIdCard, FaChalkboardTeacher, FaUserShield, FaSort, FaSortUp, FaSortDown, FaCheck, FaArrowRight, FaArrowLeft, FaUser, FaClipboardList, FaLock, FaEye, FaTimes, FaFileExcel } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaUsers, FaRunning, FaIdCard, FaChalkboardTeacher, FaUserShield, FaSort, FaSortUp, FaSortDown, FaCheck, FaArrowRight, FaArrowLeft, FaUser, FaClipboardList, FaLock, FaEye, FaTimes, FaFileExcel, FaUserFriends } from 'react-icons/fa';
+import FamilyLinkModal from './FamilyLinkModal';
 import './PeopleManager.css';
 
 const PeopleManager = () => {
@@ -26,6 +27,12 @@ const PeopleManager = () => {
         search: ''
     });
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+    const [showFamilyModal, setShowFamilyModal] = useState(false);
+    const [selectedFamilyUser, setSelectedFamilyUser] = useState(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const [totalCount, setTotalCount] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
     const [formData, setFormData] = useState({
         email: '',
         firstName: '',
@@ -85,11 +92,18 @@ const PeopleManager = () => {
     const currentStepId = activeSteps[currentStep]?.id;
 
     useEffect(() => {
+        setPage(1); // Reset to first page when filters change
+    }, [filters]);
+
+    useEffect(() => {
         fetchUsers();
+    }, [filters, page, pageSize]);
+
+    useEffect(() => {
         fetchRoles();
         fetchSports();
         fetchTeams();
-    }, [filters]);
+    }, []);
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -121,17 +135,23 @@ const PeopleManager = () => {
             if (filters.roleId) params.append('roleId', filters.roleId);
             if (filters.isActive !== null) params.append('isActive', filters.isActive);
             if (filters.teamId) params.append('teamId', filters.teamId);
-            if (filters.teamId) params.append('teamId', filters.teamId);
             if (filters.sportId) params.append('sportId', filters.sportId);
             if (filters.search) params.append('search', filters.search);
 
-            const response = await fetch(`http://localhost:5285/api/users?${params}`, {
+            // Add pagination params
+            params.append('page', page);
+            params.append('pageSize', pageSize);
+
+            const response = await fetch(`http://51.178.43.232:5285/api/users?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+
             if (response.ok) {
                 const data = await response.json();
-                setUsers(data);
+                setUsers(data.items || []);
+                setTotalCount(data.totalCount || 0);
+                setTotalPages(data.totalPages || 0);
             }
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -143,7 +163,7 @@ const PeopleManager = () => {
     const fetchRoles = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/roles', {
+            const response = await fetch('http://51.178.43.232:5285/api/roles', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -158,7 +178,7 @@ const PeopleManager = () => {
     const fetchSports = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/sports/all', {
+            const response = await fetch('http://51.178.43.232:5285/api/sports/all', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -173,7 +193,7 @@ const PeopleManager = () => {
     const fetchTeams = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/teams/all', {
+            const response = await fetch('http://51.178.43.232:5285/api/teams/all', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -321,7 +341,7 @@ const PeopleManager = () => {
         setEditingUser(user);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/users/${user.id}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/users/${user.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -384,7 +404,7 @@ const PeopleManager = () => {
         if (!window.confirm('Tem a certeza que deseja desativar este utilizador?')) return;
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/users/${id}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/users/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -447,14 +467,14 @@ const PeopleManager = () => {
             };
 
             if (editingUser) {
-                const response = await fetch(`http://localhost:5285/api/users/${userId}`, {
+                const response = await fetch(`http://51.178.43.232:5285/api/users/${userId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(userPayload)
                 });
                 if (!response.ok) throw new Error('Erro ao atualizar utilizador');
             } else {
-                const response = await fetch('http://localhost:5285/api/users', {
+                const response = await fetch('http://51.178.43.232:5285/api/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ ...userPayload, password: 'TempPassword123!' })
@@ -478,14 +498,14 @@ const PeopleManager = () => {
 
                 if (ap.id) {
                     // Existing profile — update
-                    await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
+                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/athlete-profile`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(payload)
                     });
                 } else {
                     // New profile — create
-                    await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
+                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/athlete-profile`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(payload)
@@ -493,7 +513,7 @@ const PeopleManager = () => {
                 }
             } else if (editingUser?.hasAthleteProfile) {
                 // Profile was removed — delete it
-                await fetch(`http://localhost:5285/api/users/${userId}/athlete-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/athlete-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -501,7 +521,7 @@ const PeopleManager = () => {
 
             // Step 3: Manage Member Profile
             if (formData.hasMemberProfile && !editingUser?.hasMemberProfile) {
-                await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/member-profile`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -511,7 +531,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (formData.hasMemberProfile && editingUser?.hasMemberProfile) {
-                await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/member-profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -521,7 +541,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (!formData.hasMemberProfile && editingUser?.hasMemberProfile) {
-                await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/member-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -529,7 +549,7 @@ const PeopleManager = () => {
 
             // Step 4: Manage Coach Profile
             if (formData.hasCoachProfile && !editingUser?.hasCoachProfile && formData.coachProfile.sportId) {
-                await fetch(`http://localhost:5285/api/users/${userId}/coach-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/coach-profile`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -542,7 +562,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (formData.hasCoachProfile && editingUser?.hasCoachProfile && formData.coachProfile.sportId) {
-                await fetch(`http://localhost:5285/api/users/${userId}/coach-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/coach-profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
@@ -555,7 +575,7 @@ const PeopleManager = () => {
                     })
                 });
             } else if (!formData.hasCoachProfile && editingUser?.hasCoachProfile) {
-                await fetch(`http://localhost:5285/api/users/${userId}/coach-profile`, {
+                await fetch(`http://51.178.43.232:5285/api/users/${userId}/coach-profile`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -568,7 +588,7 @@ const PeopleManager = () => {
 
                 const rolesToAdd = newRoles.filter(r => !currentRoles.includes(r));
                 for (const roleId of rolesToAdd) {
-                    await fetch(`http://localhost:5285/api/users/${userId}/roles`, {
+                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/roles`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ roleId })
@@ -577,14 +597,14 @@ const PeopleManager = () => {
 
                 const rolesToRemove = currentRoles.filter(r => !newRoles.includes(r));
                 for (const roleId of rolesToRemove) {
-                    await fetch(`http://localhost:5285/api/users/${userId}/roles/${roleId}`, {
+                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/roles/${roleId}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                 }
             } else {
                 for (const roleId of formData.selectedRoles) {
-                    await fetch(`http://localhost:5285/api/users/${userId}/roles`, {
+                    await fetch(`http://51.178.43.232:5285/api/users/${userId}/roles`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ roleId })
@@ -1435,67 +1455,119 @@ const PeopleManager = () => {
                     </button>
                 </div>
             ) : (
-                <div className="users-table-container">
-                    <table className="users-table">
-                        <thead>
-                            <tr>
-                                <th onClick={() => handleSort('fullName')} style={{ cursor: 'pointer' }}>
-                                    <div className="th-content">Nome {getSortIcon('fullName')}</div>
-                                </th>
-                                <th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>
-                                    <div className="th-content">Email {getSortIcon('email')}</div>
-                                </th>
-                                <th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>
-                                    <div className="th-content">Telefone {getSortIcon('phone')}</div>
-                                </th>
-                                <th onClick={() => handleSort('profiles')} style={{ cursor: 'pointer' }}>
-                                    <div className="th-content">Perfis {getSortIcon('profiles')}</div>
-                                </th>
-                                <th onClick={() => handleSort('sport')} style={{ cursor: 'pointer' }}>
-                                    <div className="th-content">Modalidade {getSortIcon('sport')}</div>
-                                </th>
-                                <th onClick={() => handleSort('team')} style={{ cursor: 'pointer' }}>
-                                    <div className="th-content">Equipa {getSortIcon('team')}</div>
-                                </th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedUsers.map((user) => (
-                                <tr key={user.id}>
-                                    <td className="user-name">{user.fullName}</td>
-                                    <td>{(() => {
-                                        const raw = user.email || '';
-                                        const atIdx = raw.lastIndexOf('@');
-                                        const localPart = atIdx > 0 ? raw.substring(0, atIdx) : raw;
-                                        const domain = atIdx > 0 ? raw.substring(atIdx) : '';
-                                        const plusIdx = localPart.indexOf('+');
-                                        return plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : raw;
-                                    })()}</td>
-                                    <td>{user.phone || '-'}</td>
-                                    <td className="profiles-cell">
-                                        {getProfileBadges(user).map((badge, idx) => (
-                                            <span key={idx} className={`profile-badge ${badge.type}`}>
-                                                {badge.icon} {badge.label}
-                                            </span>
-                                        ))}
-                                        {getProfileBadges(user).length === 0 && '-'}
-                                    </td>
-                                    <td>{user.sport || '-'}</td>
-                                    <td>{user.currentTeam || '-'}</td>
-                                    <td className="actions-cell">
-                                        <button className="action-btn edit" onClick={() => handleEdit(user)} title="Editar">
-                                            <FaEdit />
-                                        </button>
-                                        <button className="action-btn delete" onClick={() => handleDelete(user.id)} title="Desativar">
-                                            <FaTrash />
-                                        </button>
-                                    </td>
+                <>
+                    <div className="users-table-container">
+                        <table className="users-table">
+                            <thead>
+                                <tr>
+                                    <th onClick={() => handleSort('fullName')} style={{ cursor: 'pointer' }}>
+                                        <div className="th-content">Nome {getSortIcon('fullName')}</div>
+                                    </th>
+                                    <th onClick={() => handleSort('email')} style={{ cursor: 'pointer' }}>
+                                        <div className="th-content">Email {getSortIcon('email')}</div>
+                                    </th>
+                                    <th onClick={() => handleSort('phone')} style={{ cursor: 'pointer' }}>
+                                        <div className="th-content">Telefone {getSortIcon('phone')}</div>
+                                    </th>
+                                    <th onClick={() => handleSort('profiles')} style={{ cursor: 'pointer' }}>
+                                        <div className="th-content">Perfis {getSortIcon('profiles')}</div>
+                                    </th>
+                                    <th onClick={() => handleSort('sport')} style={{ cursor: 'pointer' }}>
+                                        <div className="th-content">Modalidade {getSortIcon('sport')}</div>
+                                    </th>
+                                    <th onClick={() => handleSort('team')} style={{ cursor: 'pointer' }}>
+                                        <div className="th-content">Equipa {getSortIcon('team')}</div>
+                                    </th>
+                                    <th>Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {sortedUsers.map((user) => (
+                                    <tr key={user.id}>
+                                        <td className="user-name">{user.fullName}</td>
+                                        <td>{(() => {
+                                            const raw = user.email || '';
+                                            const atIdx = raw.lastIndexOf('@');
+                                            const localPart = atIdx > 0 ? raw.substring(0, atIdx) : raw;
+                                            const domain = atIdx > 0 ? raw.substring(atIdx) : '';
+                                            const plusIdx = localPart.indexOf('+');
+                                            return plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : raw;
+                                        })()}</td>
+                                        <td>{user.phone || '-'}</td>
+                                        <td className="profiles-cell">
+                                            {getProfileBadges(user).map((badge, idx) => (
+                                                <span key={idx} className={`profile-badge ${badge.type}`}>
+                                                    {badge.icon} {badge.label}
+                                                </span>
+                                            ))}
+                                            {getProfileBadges(user).length === 0 && '-'}
+                                        </td>
+                                        <td>{user.sport || '-'}</td>
+                                        <td>{user.currentTeam || '-'}</td>
+                                        <td className="actions-cell">
+                                            <button className="action-btn family" onClick={() => { setSelectedFamilyUser(user); setShowFamilyModal(true); }} title="Associar Familiar">
+                                                <FaUserFriends />
+                                            </button>
+                                            <button className="action-btn edit" onClick={() => handleEdit(user)} title="Editar">
+                                                <FaEdit />
+                                            </button>
+                                            <button className="action-btn delete" onClick={() => handleDelete(user.id)} title="Desativar">
+                                                <FaTrash />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="pagination-container">
+                            <div className="pagination-info">
+                                A mostrar {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, totalCount)} de {totalCount} pessoas
+                            </div>
+                            <div className="pagination-controls">
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={page === 1}
+                                >
+                                    <FaArrowLeft /> Anterior
+                                </button>
+
+                                <div className="pagination-pages">
+                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                        // Logic to show a window of pages around current page
+                                        let pageNum;
+                                        if (totalPages <= 5) pageNum = i + 1;
+                                        else if (page <= 3) pageNum = i + 1;
+                                        else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+                                        else pageNum = page - 2 + i;
+
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                className={`page-number ${page === pageNum ? 'active' : ''}`}
+                                                onClick={() => setPage(pageNum)}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <button
+                                    className="pagination-btn"
+                                    onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={page === totalPages}
+                                >
+                                    Seguinte <FaArrowRight />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Wizard Modal */}
@@ -1582,7 +1654,15 @@ const PeopleManager = () => {
                         </div>
                     </div>
                 </div>
+
             )}
+
+            {/* Family Association Modal */}
+            <FamilyLinkModal
+                isOpen={showFamilyModal}
+                onClose={() => { setShowFamilyModal(false); setSelectedFamilyUser(null); }}
+                user={selectedFamilyUser}
+            />
         </div>
     );
 };

@@ -6,6 +6,7 @@ import CalendarModal from '../../components/CalendarModal/CalendarModal';
 import CalendarManager from '../../components/Admin/CalendarManager';
 import EventAttendanceModal from '../../components/Attendance/EventAttendanceModal';
 import GameCallUpModal from '../../components/Game/GameCallUpModal';
+import FamilyAssociationModal from '../../components/FamilyAssociationModal/FamilyAssociationModal';
 
 const DashboardTreinador = () => {
     const navigate = useNavigate();
@@ -26,6 +27,7 @@ const DashboardTreinador = () => {
     // Game Call-up Modal State
     const [isCallUpModalOpen, setIsCallUpModalOpen] = useState(false);
     const [selectedEventForCallUp, setSelectedEventForCallUp] = useState(null);
+    const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
 
     // Linked profiles (accounts sharing the same base email)
     const [linkedUsers] = useState(() => {
@@ -57,7 +59,7 @@ const DashboardTreinador = () => {
             }
 
             // Fetch Coach Data
-            const userResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
+            const userResponse = await fetch(`http://51.178.43.232:5285/api/users/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -72,7 +74,7 @@ const DashboardTreinador = () => {
 
             // Fetch Team Data if coach has a team assigned
             if (userData.coachProfile?.teamId) {
-                const teamResponse = await fetch(`http://localhost:5285/api/teams/${userData.coachProfile.teamId}`, {
+                const teamResponse = await fetch(`http://51.178.43.232:5285/api/teams/${userData.coachProfile.teamId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -85,7 +87,7 @@ const DashboardTreinador = () => {
                     const today = new Date().toISOString();
 
                     // Fetch Upcoming Events for the team
-                    const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${today}`, {
+                    const eventsResponse = await fetch(`http://51.178.43.232:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${today}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -101,7 +103,7 @@ const DashboardTreinador = () => {
                     }
 
                     // Fetch Last Training Statistics
-                    const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${today}`, {
+                    const pastTrainingsResponse = await fetch(`http://51.178.43.232:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${today}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
@@ -112,7 +114,7 @@ const DashboardTreinador = () => {
                             const lastTraining = pastTrainings[pastTrainings.length - 1];
 
                             // Fetch attendance for this training
-                            const attResponse = await fetch(`http://localhost:5285/api/attendance/event/${lastTraining.id}`, {
+                            const attResponse = await fetch(`http://51.178.43.232:5285/api/attendance/event/${lastTraining.id}`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
 
@@ -428,6 +430,14 @@ const DashboardTreinador = () => {
                                         <i className="fas fa-envelope"></i>
                                         Mensagens
                                     </a>
+                                    <button
+                                        className="action-btn"
+                                        onClick={() => setIsFamilyModalOpen(true)}
+                                        style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                                    >
+                                        <i className="fas fa-user-friends"></i>
+                                        Associar Familiar
+                                    </button>
                                 </div>
                             </div>
 
@@ -509,6 +519,11 @@ const DashboardTreinador = () => {
                 }}
                 event={selectedEventForCallUp}
                 teamId={coachData?.coachProfile?.teamId}
+            />
+
+            <FamilyAssociationModal
+                isOpen={isFamilyModalOpen}
+                onClose={() => setIsFamilyModalOpen(false)}
             />
         </div>
     );

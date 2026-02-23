@@ -32,6 +32,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<GameCallUp> GameCallUps { get; set; }
     public DbSet<SystemSetting> SystemSettings { get; set; }
+    public DbSet<FamilyAssociationRequest> FamilyAssociationRequests { get; set; }
+    public DbSet<UserFamilyLink> UserFamilyLinks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -270,6 +272,41 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // FamilyAssociationRequest configuration
+        modelBuilder.Entity<FamilyAssociationRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Requester)
+                .WithMany()
+                .HasForeignKey(e => e.RequesterId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.RequestedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.Status).HasDefaultValue(FamilyAssociationRequestStatus.Pending);
+        });
+
+        // UserFamilyLink configuration
+        modelBuilder.Entity<UserFamilyLink>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Prevent duplicate links
+            entity.HasIndex(e => new { e.UserId, e.LinkedUserId }).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.LinkedUser)
+                .WithMany()
+                .HasForeignKey(e => e.LinkedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // Seed data: Roles

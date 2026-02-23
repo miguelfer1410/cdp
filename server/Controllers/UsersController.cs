@@ -31,7 +31,9 @@ public class UsersController : ControllerBase
         [FromQuery] bool? isActive = null,
         [FromQuery] int? teamId = null,
         [FromQuery] int? sportId = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
     {
         var query = _context.Users
             .Include(u => u.AthleteProfile)
@@ -99,9 +101,14 @@ public class UsersController : ControllerBase
                 u.Email.ToLower().Contains(searchLower));
         }
 
+        // Get total count before pagination
+        var totalCount = await query.CountAsync();
+
         var users = await query
             .OrderBy(u => u.FirstName)
             .ThenBy(u => u.LastName)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var response = users.Select(u => new UserResponse
@@ -137,7 +144,16 @@ public class UsersController : ControllerBase
                 : (u.CoachProfile != null ? u.CoachProfile.Sport?.Name : null)
         }).ToList();
 
-        return Ok(response);
+        var result = new PaginatedResponse<UserResponse>
+        {
+            Items = response,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+        };
+
+        return Ok(result);
     }
 
     // GET: api/users/{id} - Get user by ID with full details
@@ -269,7 +285,7 @@ public class UsersController : ControllerBase
             // and we don't want to spam them with activation emails for every child
             if (emailToUse.Equals(request.Email, StringComparison.OrdinalIgnoreCase))
             {
-                var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
+                var clientUrl = _configuration["ClientUrl"] ?? "http://51.178.43.232:3000";
                 var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
                 await _emailService.SendAccountActivationEmailAsync(request.Email, user.FirstName, activationLink);
             }
@@ -334,7 +350,7 @@ public class UsersController : ControllerBase
 
         try
         {
-            var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
+            var clientUrl = _configuration["ClientUrl"] ?? "http://51.178.43.232:3000";
             var activationLink = $"{clientUrl}/ativar-conta?token={activationToken}";
             await _emailService.SendAccountActivationEmailAsync(user.Email, user.FirstName, activationLink);
             return Ok(new { message = $"Email de ativação reenviado para {user.Email}" });
@@ -1092,7 +1108,114 @@ public class UsersController : ControllerBase
         return aliasEmail;
     }
 
+
+    // ─── Family Links ─────────────────────────────────────────────────────────────
+
+    /// <summary>Get all explicit family links for a given user (admin only).</summary>
+    [HttpGet("{id}/family-links")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<FamilyLinkResponse>>> GetFamilyLinks(int id)
+    {
+        var links = await _context.UserFamilyLinks
+            .Where(l => l.UserId == id || l.LinkedUserId == id)
+            .Include(l => l.User)
+            .Include(l => l.LinkedUser)
+            .ToListAsync();
+
+        var result = links.Select(l =>
+        {
+            var other = l.UserId == id ? l.LinkedUser : l.User;
+            return new FamilyLinkResponse
+            {
+                LinkId = l.Id,
+                UserId = other.Id,
+                FullName = $"{other.FirstName} {other.LastName}".Trim(),
+                Email = other.Email,
+                CreatedAt = l.CreatedAt
+            };
+        });
+
+        return Ok(result);
+    }
+
+    /// <summary>Create a bidirectional family link between two users (admin only).</summary>
+    [HttpPost("{id}/family-links")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AddFamilyLink(int id, [FromBody] FamilyLinkDto dto)
+    {
+        if (id == dto.LinkedUserId)
+            return BadRequest(new { message = "Não pode associar um utilizador a si próprio." });
+
+        var userExists = await _context.Users.AnyAsync(u => u.Id == id);
+        var linkedExists = await _context.Users.AnyAsync(u => u.Id == dto.LinkedUserId);
+        if (!userExists || !linkedExists)
+            return NotFound(new { message = "Utilizador não encontrado." });
+
+        // Check if link already exists (either direction)
+        var exists = await _context.UserFamilyLinks.AnyAsync(l =>
+            (l.UserId == id && l.LinkedUserId == dto.LinkedUserId) ||
+            (l.UserId == dto.LinkedUserId && l.LinkedUserId == id));
+
+        if (exists)
+            return Conflict(new { message = "Estes utilizadores já estão associados." });
+
+        // Create one row (AuthService queries both directions)
+        var link = new UserFamilyLink
+        {
+            UserId = id,
+            LinkedUserId = dto.LinkedUserId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.UserFamilyLinks.Add(link);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Associação familiar criada.", linkId = link.Id });
+    }
+
+    /// <summary>Remove a family link by link ID (admin only).</summary>
+    [HttpDelete("{id}/family-links/{linkId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RemoveFamilyLink(int id, int linkId)
+    {
+        var link = await _context.UserFamilyLinks
+            .FirstOrDefaultAsync(l => l.Id == linkId && (l.UserId == id || l.LinkedUserId == id));
+
+        if (link == null)
+            return NotFound(new { message = "Associação não encontrada." });
+
+        _context.UserFamilyLinks.Remove(link);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Associação removida." });
+    }
+
 } // end UsersController
+
+// ─── Family Link DTOs ────────────────────────────────────────────────────────
+
+public class FamilyLinkDto
+{
+    public int LinkedUserId { get; set; }
+}
+
+public class FamilyLinkResponse
+{
+    public int LinkId { get; set; }
+    public int UserId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class PaginatedResponse<T>
+{
+    public IEnumerable<T> Items { get; set; } = new List<T>();
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+}
 
 // DTOs
 public class UserResponse
@@ -1245,6 +1368,9 @@ public class ImportSiblingDto
     public string? Gender { get; set; }
     public string? CC { get; set; }
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 public class ImportExcelAthleteDto
 {

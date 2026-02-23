@@ -64,7 +64,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
     const fetchEvents = async () => {
         try {
             const token = localStorage.getItem('token');
-            let url = 'http://localhost:5285/api/events';
+            let url = 'http://51.178.43.232:5285/api/events';
             if (restrictedTeamId) {
                 url += `?teamId=${restrictedTeamId}`;
             }
@@ -88,7 +88,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
     const fetchSports = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/sports/all', {
+            const response = await fetch('http://51.178.43.232:5285/api/sports/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -106,7 +106,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
     const fetchTeams = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/teams/all', {
+            const response = await fetch('http://51.178.43.232:5285/api/teams/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -124,7 +124,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
     const fetchTrainingSchedules = async () => {
         try {
             const token = localStorage.getItem('token');
-            let url = 'http://localhost:5285/api/trainingschedules';
+            let url = 'http://51.178.43.232:5285/api/trainingschedules';
             if (restrictedTeamId) {
                 url += `?teamId=${restrictedTeamId}`;
             }
@@ -154,8 +154,8 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
         try {
             const url = editingSchedule
-                ? `http://localhost:5285/api/trainingschedules/${editingSchedule.id}`
-                : 'http://localhost:5285/api/trainingschedules';
+                ? `http://51.178.43.232:5285/api/trainingschedules/${editingSchedule.id}`
+                : 'http://51.178.43.232:5285/api/trainingschedules';
 
             const response = await fetch(url, {
                 method: editingSchedule ? 'PUT' : 'POST',
@@ -189,7 +189,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/trainingschedules/${id}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/trainingschedules/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -213,7 +213,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/trainingschedules/${scheduleId}/generate`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/trainingschedules/${scheduleId}/generate`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -347,8 +347,8 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
         try {
             const url = editingEvent
-                ? `http://localhost:5285/api/events/${editingEvent.id}`
-                : 'http://localhost:5285/api/events';
+                ? `http://51.178.43.232:5285/api/events/${editingEvent.id}`
+                : 'http://51.178.43.232:5285/api/events';
 
             const response = await fetch(url, {
                 method: editingEvent ? 'PUT' : 'POST',
@@ -378,7 +378,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/events/${editingEvent.id}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/events/${editingEvent.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

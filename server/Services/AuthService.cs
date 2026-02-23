@@ -123,6 +123,38 @@ public class AuthService : IAuthService
                 .ToList();
         }
 
+        // Also fetch explicitly linked family members (different emails, created by admin)
+        var explicitLinks = await _context.UserFamilyLinks
+            .Where(l => l.UserId == user.Id || l.LinkedUserId == user.Id)
+            .Include(l => l.User).ThenInclude(u => u.AthleteProfile)
+            .Include(l => l.User).ThenInclude(u => u.CoachProfile)
+            .Include(l => l.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.AthleteProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.CoachProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .ToListAsync();
+
+        foreach (var link in explicitLinks)
+        {
+            // Pick the "other" user (not the one logging in)
+            var other = link.UserId == user.Id ? link.LinkedUser : link.User;
+            if (other == null || !other.IsActive) continue;
+
+            // Skip if already in the list (via email alias)
+            if (linkedUsers.Any(lu => lu.Id == other.Id)) continue;
+
+            linkedUsers.Add(new LinkedUserInfo
+            {
+                Id = other.Id,
+                FirstName = other.FirstName,
+                LastName = other.LastName,
+                DashboardType = other.AthleteProfile != null ? "atleta"
+                    : other.CoachProfile != null ? "treinador"
+                    : other.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
+                    : "user"
+            });
+        }
+
         // Re-generate token with new roles
         var token = GenerateJwtToken(user, roles);
         var expirationHours = _configuration.GetValue<int>("JwtSettings:ExpirationHours", 24);
@@ -224,7 +256,7 @@ public class AuthService : IAuthService
         // Create reset link
         // Use IConfiguration to get the base URL if possible or hardcode for now based on user context
         // Ideally this should be in appsettings
-        var clientUrl = "http://localhost:3000"; // Assuming default React port
+        var clientUrl = "http://51.178.43.232:3000"; // Assuming default React port
         var resetLink = $"{clientUrl}/reset-password?token={token}";
 
         // Send Email

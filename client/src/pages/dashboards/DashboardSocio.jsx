@@ -21,10 +21,12 @@ import {
     FaMapMarkerAlt,
     FaTrophy,
     FaCalendarCheck,
-    FaArrowRight
+    FaArrowRight,
+    FaUserFriends
 } from 'react-icons/fa';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import BecomeMember from '../../components/BecomeMember/BecomeMember';
+import FamilyAssociationModal from '../../components/FamilyAssociationModal/FamilyAssociationModal';
 import './DashboardSocio.css';
 
 const DashboardSocio = () => {
@@ -35,6 +37,7 @@ const DashboardSocio = () => {
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
 
     // Linked profiles (accounts sharing the same base email)
     const [linkedUsers] = useState(() => {
@@ -68,7 +71,7 @@ const DashboardSocio = () => {
                 }
 
                 // Fetch user profile
-                const userResponse = await fetch('http://localhost:5285/api/user/profile', {
+                const userResponse = await fetch('http://51.178.43.232:5285/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -92,7 +95,7 @@ const DashboardSocio = () => {
 
                 if (userData.membershipStatus === 'Active') {
                     // Fetch payment summary
-                    const paymentResponse = await fetch('http://localhost:5285/api/payment/summary', {
+                    const paymentResponse = await fetch('http://51.178.43.232:5285/api/payment/summary', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -107,7 +110,7 @@ const DashboardSocio = () => {
                     }
 
                     // Fetch payment history
-                    const historyResponse = await fetch('http://localhost:5285/api/payment/history', {
+                    const historyResponse = await fetch('http://51.178.43.232:5285/api/payment/history', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -517,6 +520,14 @@ const DashboardSocio = () => {
                                         <FaReceipt />
                                         Ver Recibos
                                     </Link>
+                                    <button
+                                        className="action-btn"
+                                        onClick={() => setIsFamilyModalOpen(true)}
+                                        style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                                    >
+                                        <FaUserFriends />
+                                        Associar Familiar
+                                    </button>
                                 </div>
                             </div>
 
@@ -609,6 +620,11 @@ const DashboardSocio = () => {
                 onClose={handleCloseModal}
                 userData={userData}
                 onSave={handleSaveProfile}
+            />
+
+            <FamilyAssociationModal
+                isOpen={isFamilyModalOpen}
+                onClose={() => setIsFamilyModalOpen(false)}
             />
         </div>
     );

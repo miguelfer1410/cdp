@@ -21,7 +21,7 @@ const CalendarModal = ({ isOpen, onClose, teamId }) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/events?teamId=${teamId}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/events?teamId=${teamId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

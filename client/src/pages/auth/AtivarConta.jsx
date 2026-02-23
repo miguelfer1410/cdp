@@ -55,7 +55,7 @@ const AtivarConta = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5285/api/auth/reset-password', {
+            const response = await fetch('http://51.178.43.232:5285/api/auth/reset-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

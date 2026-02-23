@@ -1,0 +1,21 @@
+  Determining projects to restore...
+C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj : warning NU1900: Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.
+  All projects are up-to-date for restore.
+C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj : warning NU1900: Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.
+C:\Users\migue\Documents\GitHub\cdp\server\Controllers\UsersController.cs(1254,66): error CS0116: A namespace cannot directly contain members such as fields, methods or statements [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+C:\Users\migue\Documents\GitHub\cdp\server\Controllers\UsersController.cs(1281,34): error CS0116: A namespace cannot directly contain members such as fields, methods or statements [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+C:\Users\migue\Documents\GitHub\cdp\server\Controllers\UsersController.cs(1316,34): error CS0116: A namespace cannot directly contain members such as fields, methods or statements [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+C:\Users\migue\Documents\GitHub\cdp\server\Services\AuthService.cs(312,69): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+
+Build FAILED.
+
+C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj : warning NU1900: Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.
+C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj : warning NU1900: Error occurred while getting package vulnerability data: Unable to load the service index for source https://api.nuget.org/v3/index.json.
+C:\Users\migue\Documents\GitHub\cdp\server\Services\AuthService.cs(312,69): warning CS8625: Cannot convert null literal to non-nullable reference type. [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+C:\Users\migue\Documents\GitHub\cdp\server\Controllers\UsersController.cs(1254,66): error CS0116: A namespace cannot directly contain members such as fields, methods or statements [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+C:\Users\migue\Documents\GitHub\cdp\server\Controllers\UsersController.cs(1281,34): error CS0116: A namespace cannot directly contain members such as fields, methods or statements [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+C:\Users\migue\Documents\GitHub\cdp\server\Controllers\UsersController.cs(1316,34): error CS0116: A namespace cannot directly contain members such as fields, methods or statements [C:\Users\migue\Documents\GitHub\cdp\server\CdpApi.csproj]
+    3 Warning(s)
+    3 Error(s)
+
+Time Elapsed 00:00:01.29

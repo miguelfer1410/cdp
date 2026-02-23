@@ -1,0 +1,184 @@
+.fam-manager {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.fam-manager-header {
+    margin-bottom: 24px;
+}
+
+.fam-manager-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.fam-manager-title svg {
+    font-size: 1.5rem;
+    color: #003380;
+}
+
+.fam-manager-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.fam-manager-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    background: #f0f4ff;
+    border-left: 4px solid #003380;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 0;
+}
+
+.fam-manager-tabs {
+    display: flex;
+    gap: 12px;
+    margin: 24px 0;
+    border-bottom: 2px solid #eef0f6;
+}
+
+.fam-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    border-bottom: 3px solid transparent;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.fam-tab-btn:hover {
+    color: #003380;
+}
+
+.fam-tab-btn.active {
+    color: #003380;
+    border-bottom-color: #003380;
+}
+
+.fam-tab-badge {
+    background: #dc2626;
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.fam-manager-table-wrapper {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.fam-manager-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.fam-manager-table thead tr {
+    background: #f8fafc;
+    border-bottom: 2px solid #eef0f6;
+}
+
+.fam-manager-table th {
+    padding: 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.fam-manager-table td {
+    padding: 16px;
+    font-size: 0.95rem;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.fam-requester-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.fam-requester-name {
+    font-weight: 600;
+}
+
+.fam-requester-email {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.fam-family-name {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.fam-message {
+    font-size: 0.9rem;
+    color: #475569;
+    max-width: 300px;
+}
+
+.fam-no-msg {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.fam-seen-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #003380;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.fam-seen-btn:hover {
+    background: #002255;
+}
+
+.fam-seen-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.fam-manager-loading,
+.fam-manager-empty {
+    padding: 64px;
+    text-align: center;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.fam-manager-empty svg {
+    font-size: 3rem;
+    color: #cbd5e1;
+}

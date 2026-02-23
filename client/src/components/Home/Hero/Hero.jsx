@@ -10,7 +10,7 @@ const Hero = () => {
   useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const response = await fetch('http://localhost:5285/api/herobanner');
+        const response = await fetch('http://51.178.43.232:5285/api/herobanner');
         if (response.ok) {
           const data = await response.json();
           console.log('Banners carregados:', data);
@@ -87,7 +87,7 @@ const Hero = () => {
       {!isHeroSlide && banners[currentIndex - 1] && (
         <div className="hero-slide hero-banner">
           <img
-            src={`http://localhost:5285${banners[currentIndex - 1].imageUrl}`}
+            src={`http://51.178.43.232:5285${banners[currentIndex - 1].imageUrl}`}
             alt={`Banner ${currentIndex}`}
             className="hero-banner-image"
           />

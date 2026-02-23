@@ -60,7 +60,7 @@ const EditProfileModal = ({ isOpen, onClose, userData, onSave }) => {
                 city: formData.city
             };
 
-            const response = await fetch(`http://localhost:5285/api/users/${userId}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/users/${userId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

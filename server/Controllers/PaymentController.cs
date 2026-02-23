@@ -284,19 +284,16 @@ public class PaymentController : ControllerBase
 
     [HttpGet("history")]
     [Authorize]
-    public async Task<ActionResult<List<PaymentHistoryResponse>>> GetPaymentHistory()
+    public async Task<ActionResult<List<PaymentHistoryResponse>>> GetPaymentHistory([FromQuery] int? userId)
     {
         try
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-            {
-                return Unauthorized(new { message = "Invalid user token" });
-            }
+            var targetUserId = await GetAuthorizedUserIdAsync(userId);
+            if (targetUserId == null) return Unauthorized(new { message = "Unauthorized access" });
 
             var user = await _context.Users
                 .Include(u => u.MemberProfile)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == targetUserId);
             
             if (user == null)
             {
@@ -308,21 +305,29 @@ public class PaymentController : ControllerBase
                 return BadRequest(new { message = "User does not have a member profile" });
             }
 
-            // Get last 12 payments for this member profile
+            // Get all payments for this member profile ordered by period (newest first)
             var payments = await _context.Payments
                 .Where(p => p.MemberProfileId == user.MemberProfile.Id)
-                .OrderByDescending(p => p.PaymentDate)
-                .Take(12)
+                .OrderByDescending(p => p.PeriodYear)
+                .ThenByDescending(p => p.PeriodMonth)
+                .ThenByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
             var paymentHistory = payments.Select(p => new PaymentHistoryResponse
             {
                 Id = p.Id,
-                Month = GetMonthName(p.PaymentDate),
+                Month = GetMonthName(p.PeriodMonth.HasValue
+                    ? new DateTime(p.PeriodYear ?? p.PaymentDate.Year, p.PeriodMonth.Value, 1)
+                    : p.PaymentDate),
                 PaymentDate = p.PaymentDate,
                 Amount = p.Amount,
                 Status = p.Status,
-                Description = p.Description
+                Description = p.Description,
+                PeriodMonth = p.PeriodMonth,
+                PeriodYear = p.PeriodYear ?? p.PaymentDate.Year,
+                Entity = p.Entity,
+                Reference = p.Reference,
+                PaymentMethod = p.PaymentMethod
             }).ToList();
 
             return Ok(paymentHistory);
@@ -334,6 +339,7 @@ public class PaymentController : ControllerBase
                 new { message = "An error occurred while retrieving payment history" });
         }
     }
+
 
     private string GetMonthName(DateTime date)
     {
@@ -417,77 +423,105 @@ public class PaymentController : ControllerBase
             // Determine current period (Annual vs Monthly)
             int? currentMonth = null;
             int currentYear = DateTime.UtcNow.Year;
+            bool isAnnual = user.MemberProfile.PaymentPreference == "Annual";
 
-            if (user.MemberProfile.PaymentPreference == "Annual")
-            {
-                // currentMonth remains null
-            }
-            else
+            if (!isAnnual)
             {
                 currentMonth = DateTime.UtcNow.Month;
             }
 
-            // Check if there is an existing pending payment for this exact period & user
-            // We need to verify if we have a payment wrapper for this
-            // Simplification: Check EasypayPaymentHistory for Pending status matching entity/ref?
-            // Actually locally we might not store the "Period" in the payment table explicitly in a queryable way 
-            // if it's just in description. 
-            // BUT, we can check if there's a recent pending payment for this user with same amount?
-            // For now, let's just return the generic status. 
-            // Ideally we should lookup "PaymentRequests" table if we had one.
-            // As a fallback, we check if the user has a valid payment for this period in history:
-            
             bool isPaid = false;
-            if (user.MemberProfile.PaymentPreference == "Annual")
+            if (isAnnual)
             {
-                isPaid = await _context.Payments.AnyAsync(p => 
-                    p.MemberProfileId == user.MemberProfile.Id && 
-                    p.Status == "Completed" && 
+                isPaid = await _context.Payments.AnyAsync(p =>
+                    p.MemberProfileId == user.MemberProfile.Id &&
+                    p.Status == "Completed" &&
                     p.PeriodYear == currentYear &&
                     p.PeriodMonth == null);
             }
             else
             {
-                isPaid = await _context.Payments.AnyAsync(p => 
-                    p.MemberProfileId == user.MemberProfile.Id && 
-                    p.Status == "Completed" && 
+                isPaid = await _context.Payments.AnyAsync(p =>
+                    p.MemberProfileId == user.MemberProfile.Id &&
+                    p.Status == "Completed" &&
                     p.PeriodYear == currentYear &&
                     p.PeriodMonth == currentMonth);
             }
 
             string status = isPaid ? "Regularizada" : "Por Regularizar";
-            object paymentDetails = null;
+            object? paymentDetails = null;
+
+            // Compute next period (for after paying)
+            int? nextPeriodMonth = null;
+            int nextPeriodYear = currentYear;
+            if (isAnnual)
+            {
+                nextPeriodYear = currentYear + 1;
+            }
+            else
+            {
+                var next = new DateTime(currentYear, currentMonth!.Value, 1).AddMonths(1);
+                nextPeriodMonth = next.Month;
+                nextPeriodYear  = next.Year;
+            }
 
             if (!isPaid)
             {
-                // Check if we have ANY pending payment for this user
-                // The user wants it to stick around until paid
-                var existingPendingPayment = await _context.Payments
-                    .Where(p => p.MemberProfileId == user.MemberProfile.Id && 
+                // Look for a pending payment for THIS specific period first
+                Payment? existingPendingPayment;
+                if (isAnnual)
+                {
+                    existingPendingPayment = await _context.Payments
+                        .Where(p => p.MemberProfileId == user.MemberProfile.Id &&
+                                    p.Status == "Pending" &&
+                                    p.PeriodYear == currentYear &&
+                                    p.PeriodMonth == null)
+                        .OrderByDescending(p => p.CreatedAt)
+                        .FirstOrDefaultAsync();
+                }
+                else
+                {
+                    existingPendingPayment = await _context.Payments
+                        .Where(p => p.MemberProfileId == user.MemberProfile.Id &&
+                                    p.Status == "Pending" &&
+                                    p.PeriodYear == currentYear &&
+                                    p.PeriodMonth == currentMonth)
+                        .OrderByDescending(p => p.CreatedAt)
+                        .FirstOrDefaultAsync();
+                }
+
+                // Fallback: any pending payment
+                existingPendingPayment ??= await _context.Payments
+                    .Where(p => p.MemberProfileId == user.MemberProfile.Id &&
                                 p.Status == "Pending")
                     .OrderByDescending(p => p.CreatedAt)
                     .FirstOrDefaultAsync();
-                
+
                 if (existingPendingPayment != null)
                 {
-                     // Return it even if amount is slightly different (e.g. if quota changed after generation)
-                     status = "Pendente";
-                     paymentDetails = new 
-                     {
-                        entity = existingPendingPayment.Entity,
-                        reference = existingPendingPayment.Reference,
-                        amount = existingPendingPayment.Amount,
-                        id = existingPendingPayment.Id
-                     };
+                    status = "Pendente";
+                    paymentDetails = new
+                    {
+                        entity      = existingPendingPayment.Entity,
+                        reference   = existingPendingPayment.Reference,
+                        amount      = existingPendingPayment.Amount,
+                        id          = existingPendingPayment.Id,
+                        periodMonth = existingPendingPayment.PeriodMonth,
+                        periodYear  = existingPendingPayment.PeriodYear,
+                        description = existingPendingPayment.Description
+                    };
                 }
             }
 
-            return Ok(new 
-            { 
-                amount = totalAmount,
-                status = status,
-                periodMonth = currentMonth,
-                periodYear = currentYear,
+            return Ok(new
+            {
+                amount          = totalAmount,
+                status          = status,
+                periodMonth     = currentMonth,
+                periodYear      = currentYear,
+                paymentPreference = user.MemberProfile.PaymentPreference ?? "Monthly",
+                nextPeriodMonth = nextPeriodMonth,
+                nextPeriodYear  = nextPeriodYear,
                 existingPayment = paymentDetails
             });
         }

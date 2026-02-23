@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260223101441_AddFamilyAssociationRequest")]
+    partial class AddFamilyAssociationRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -643,14 +646,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 23, 10, 33, 34, 314, DateTimeKind.Utc).AddTicks(5462),
+                            CreatedAt = new DateTime(2026, 2, 23, 10, 14, 40, 544, DateTimeKind.Utc).AddTicks(9337),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 23, 10, 33, 34, 314, DateTimeKind.Utc).AddTicks(5464),
+                            CreatedAt = new DateTime(2026, 2, 23, 10, 14, 40, 544, DateTimeKind.Utc).AddTicks(9339),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -893,42 +896,13 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 23, 10, 33, 34, 449, DateTimeKind.Utc).AddTicks(7763),
+                            CreatedAt = new DateTime(2026, 2, 23, 10, 14, 40, 665, DateTimeKind.Utc).AddTicks(8539),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$PpMqDJaN7Mfs5WrsF8Ro6OutWR1jIfNNWUpcKhcgjgdWhxmsUTU8K"
+                            PasswordHash = "$2a$11$jtJU6Svlb6jx9bZazJ/05uogPADXzWIlE/QDHVH0QSUFjW0wg.Cwe"
                         });
-                });
-
-            modelBuilder.Entity("CdpApi.Models.UserFamilyLink", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<int>("LinkedUserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LinkedUserId");
-
-                    b.HasIndex("UserId", "LinkedUserId")
-                        .IsUnique();
-
-                    b.ToTable("UserFamilyLinks");
                 });
 
             modelBuilder.Entity("CdpApi.Models.UserRole", b =>
@@ -961,7 +935,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 23, 10, 33, 34, 449, DateTimeKind.Utc).AddTicks(8183),
+                            AssignedAt = new DateTime(2026, 2, 23, 10, 14, 40, 665, DateTimeKind.Utc).AddTicks(9053),
                             RoleId = 2,
                             UserId = 1
                         });
@@ -1170,25 +1144,6 @@ namespace CdpApi.Migrations
                     b.Navigation("Creator");
 
                     b.Navigation("Team");
-                });
-
-            modelBuilder.Entity("CdpApi.Models.UserFamilyLink", b =>
-                {
-                    b.HasOne("CdpApi.Models.User", "LinkedUser")
-                        .WithMany()
-                        .HasForeignKey("LinkedUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CdpApi.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("LinkedUser");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CdpApi.Models.UserRole", b =>

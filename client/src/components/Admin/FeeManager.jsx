@@ -19,7 +19,7 @@ const FeeManager = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/fees', {
+            const response = await fetch('http://51.178.43.232:5285/api/fees', {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -52,7 +52,7 @@ const FeeManager = () => {
         setError(null);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/fees/global', {
+            const response = await fetch('http://51.178.43.232:5285/api/fees/global', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ const FeeManager = () => {
         setError(null);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5285/api/fees/sport/${sport.id}`, {
+            const response = await fetch(`http://51.178.43.232:5285/api/fees/sport/${sport.id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

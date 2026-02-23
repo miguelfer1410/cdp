@@ -27,8 +27,8 @@ const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [teamRes, callUpRes] = await Promise.all([
-                fetch(`http://localhost:5285/api/teams/${teamId}`, { headers }),
-                fetch(`http://localhost:5285/api/game-callups/${event.id}`, { headers }),
+                fetch(`http://51.178.43.232:5285/api/teams/${teamId}`, { headers }),
+                fetch(`http://51.178.43.232:5285/api/game-callups/${event.id}`, { headers }),
             ]);
 
             if (!teamRes.ok) throw new Error('Falha ao carregar equipa.');
@@ -79,7 +79,7 @@ const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
                 athleteIds: Array.from(selectedAthletes)
             };
 
-            const response = await fetch('http://localhost:5285/api/game-callups', {
+            const response = await fetch('http://51.178.43.232:5285/api/game-callups', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
