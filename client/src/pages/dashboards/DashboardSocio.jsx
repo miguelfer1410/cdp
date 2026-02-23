@@ -46,7 +46,7 @@ const DashboardSocio = () => {
             return stored ? JSON.parse(stored) : [];
         } catch { return []; }
     });
-    const currentUserId = parseInt(localStorage.getItem('userId')) || null;
+    const [currentUserId, setCurrentUserId] = useState(() => parseInt(localStorage.getItem('userId')) || null);
 
     const handleLinkedTabClick = (lu) => {
         const dashboardRoutes = {
@@ -56,7 +56,11 @@ const DashboardSocio = () => {
             user: '/dashboard-socio'
         };
         localStorage.setItem('userId', lu.id);
-        navigate(dashboardRoutes[lu.dashboardType] || '/dashboard-socio');
+        if (dashboardRoutes[lu.dashboardType] !== '/dashboard-socio') {
+            navigate(dashboardRoutes[lu.dashboardType]);
+        } else {
+            setCurrentUserId(lu.id); // ← fica na mesma página mas recarrega dados
+        }
     };
 
 
@@ -70,8 +74,10 @@ const DashboardSocio = () => {
                     return;
                 }
 
-                // Fetch user profile
-                const userResponse = await fetch('http://localhost:5285/api/user/profile', {
+                setLoading(true);
+                setUserData(null);
+
+                const userResponse = await fetch(`http://localhost:5285/api/users/${currentUserId}`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -88,7 +94,15 @@ const DashboardSocio = () => {
                     throw new Error('Failed to fetch user data');
                 }
 
-                const userData = await userResponse.json();
+                const data = await userResponse.json();
+
+                // ← normalizar: UserDetailResponse tem memberProfile aninhado
+                const statusMap = { 0: 'Pending', 1: 'Active', 2: 'Suspended', 3: 'Cancelled' };
+                const userData = {
+                    ...data,
+                    membershipStatus: statusMap[data.memberProfile?.membershipStatus] ?? 'Pending',
+                    memberSince: data.memberProfile?.memberSince ?? null,
+                };
                 setUserData(userData);
 
                 console.log(userData);
@@ -137,7 +151,7 @@ const DashboardSocio = () => {
         };
 
         fetchData();
-    }, [navigate]);
+    }, [navigate, currentUserId]);
 
     const handleEditProfile = () => {
         setIsEditModalOpen(true);
@@ -218,6 +232,19 @@ const DashboardSocio = () => {
         return months[monthIndex];
     };
 
+    const getDisplayEmail = (email) => {
+        if (!email) return 'N/A';
+        const atIndex = email.lastIndexOf('@');
+        if (atIndex === -1) return email;
+        const localPart = email.substring(0, atIndex);
+        const domain = email.substring(atIndex);
+        const plusIndex = localPart.indexOf('+');
+        if (plusIndex !== -1) {
+            return localPart.substring(0, plusIndex) + domain;
+        }
+        return email;
+    };
+
     const memberData = {
         name: `${userData.firstName} ${userData.lastName}`,
         memberNumber: userData.id.toString().padStart(4, '0'),
@@ -226,12 +253,12 @@ const DashboardSocio = () => {
         yearsAsMember: yearsAsMember,
         currentDiscount: 15,
         eventsParticipated: 0,
-        email: userData.email,
+        email: getDisplayEmail(userData.email),
         phone: userData.phone || 'Não definido',
         address: userData.address || 'Não definido',
         postalCode: userData.postalCode && userData.city ? `${userData.postalCode} ${userData.city}` : 'Não definido',
         nif: userData.nif || 'Não definido',
-        monthlyFee: paymentData?.monthlyFee || 3.00,
+        monthlyFee: paymentData?.monthlyFee || 0,
         nextPayment: paymentData?.nextPaymentDue ? formatDate(paymentData.nextPaymentDue) : 'Não disponível',
         validity: '31/12/2026',
         status: paymentData?.paymentStatus || (userData.isActive ? 'Ativo' : 'Inativo')
@@ -302,6 +329,8 @@ const DashboardSocio = () => {
         { name: 'Cartão de Sócio', size: '156 KB', type: 'PDF' },
         { name: 'Benefícios 2026', size: '1.1 MB', type: 'PDF' }
     ];
+
+
 
     return (
         <div className="dashboard-wrapper">

@@ -18,6 +18,9 @@ public class UserFamilyLink
     /// <summary>The linked family member.</summary>
     [Required]
     public int LinkedUserId { get; set; }
+    
+    [MaxLength(50)]
+    public string? Relationship { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

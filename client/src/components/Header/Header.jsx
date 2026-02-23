@@ -132,7 +132,6 @@ const Header = () => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
               >
                 <FaUser className="user-icon" />
-                <span className="user-name">{userName}</span>
                 <FaChevronDown className={`chevron ${dropdownOpen ? 'open' : ''}`} />
               </button>
 

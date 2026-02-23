@@ -4,6 +4,7 @@ import './FeeManager.css'; // Will create CSS separately
 
 const FeeManager = () => {
     const [memberFee, setMemberFee] = useState(0);
+    const [minorMemberFee, setMinorMemberFee] = useState(0);
     const [sports, setSports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [savingGlobal, setSavingGlobal] = useState(false);
@@ -27,6 +28,7 @@ const FeeManager = () => {
 
             const data = await response.json();
             setMemberFee(data.memberFee);
+            setMinorMemberFee(data.minorMemberFee || 0);
             setSports(data.sports);
         } catch (err) {
             console.error(err);
@@ -38,6 +40,10 @@ const FeeManager = () => {
 
     const handleGlobalFeeChange = (e) => {
         setMemberFee(e.target.value);
+    };
+
+    const handleMinorFeeChange = (e) => {
+        setMinorMemberFee(e.target.value);
     };
 
     const handleSportFeeChange = (id, value) => {
@@ -58,12 +64,15 @@ const FeeManager = () => {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({ amount: parseFloat(memberFee) })
+                body: JSON.stringify({
+                    amount: parseFloat(memberFee),
+                    minorAmount: parseFloat(minorMemberFee)
+                })
             });
 
-            if (!response.ok) throw new Error('Falha ao atualizar quota de sócio.');
+            if (!response.ok) throw new Error('Falha ao atualizar quotas de sócio.');
 
-            setMessage('Quota de sócio atualizada com sucesso!');
+            setMessage('Quotas de sócio atualizadas com sucesso!');
             setTimeout(() => setMessage(''), 3000);
         } catch (err) {
             setError(err.message);
@@ -118,14 +127,31 @@ const FeeManager = () => {
                         <p>Valor base pago por todos os sócios.</p>
                     </div>
                     <div className="fee-card-body">
-                        <div className="input-group">
-                            <span className="currency-symbol">€</span>
-                            <input
-                                type="number"
-                                step="0.50"
-                                value={memberFee}
-                                onChange={handleGlobalFeeChange}
-                            />
+                        <div className="fee-inputs-row">
+                            <div className="fee-input-container">
+                                <label>Geral (Maior de 18 anos)</label>
+                                <div className="input-group">
+                                    <span className="currency-symbol">€</span>
+                                    <input
+                                        type="number"
+                                        step="0.50"
+                                        value={memberFee}
+                                        onChange={handleGlobalFeeChange}
+                                    />
+                                </div>
+                            </div>
+                            <div className="fee-input-container">
+                                <label>Menor (Até 18 anos)</label>
+                                <div className="input-group">
+                                    <span className="currency-symbol">€</span>
+                                    <input
+                                        type="number"
+                                        step="0.50"
+                                        value={minorMemberFee}
+                                        onChange={handleMinorFeeChange}
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <button
                             className="save-btn"

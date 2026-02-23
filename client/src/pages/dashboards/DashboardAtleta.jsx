@@ -130,6 +130,7 @@ const DashboardAtleta = () => {
                 }
 
                 // 3. Fetch Team + Events
+                console.log(userData);
                 const teamId = userData.athleteProfile?.teams?.[0]?.id;
                 if (teamId) {
                     const [teamResponse, eventsResponse] = await Promise.all([
@@ -208,8 +209,18 @@ const DashboardAtleta = () => {
         if (plusIndex !== -1) {
             return localPart.substring(0, plusIndex) + domain;
         }
-
         return email;
+    };
+
+    const getSportIcon = (sport) => {
+        const s = sport?.toLowerCase() || '';
+        if (s.includes('basquetebol')) return 'fas fa-basketball-ball';
+        if (s.includes('futebol')) return 'fas fa-futbol';
+        if (s.includes('voleibol')) return 'fas fa-volleyball-ball';
+        if (s.includes('natação') || s.includes('natacao')) return 'fas fa-swimmer';
+        if (s.includes('andebol')) return 'fas fa-running';
+        if (s.includes('ténis') || s.includes('tenis')) return 'fas fa-table-tennis';
+        return 'fas fa-running';
     };
 
     return (
@@ -266,8 +277,8 @@ const DashboardAtleta = () => {
                             </h1>
                             <div className="profile-meta">
                                 <div className="profile-meta-item">
-                                    <i className="fas fa-basketball-ball"></i>
-                                    <span>Basquetebol</span>
+                                    <i className={getSportIcon(athleteData.sport)}></i>
+                                    <span>{athleteData.sport || 'Sem Modalidade'}</span>
                                 </div>
                                 <div className="profile-meta-item">
                                     <i className="fas fa-users"></i>

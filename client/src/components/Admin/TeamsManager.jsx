@@ -96,7 +96,7 @@ const TeamsManager = () => {
     const fetchAvailableAthletes = async () => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5285/api/users?profileType=athlete&isActive=true', {
+            const response = await fetch('http://localhost:5285/api/users?profileType=athlete&isActive=true&pageSize=1000', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -104,7 +104,7 @@ const TeamsManager = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                setAvailableAthletes(data);
+                setAvailableAthletes(Array.isArray(data) ? data : (data.items ?? []));
             }
         } catch (error) {
             console.error('Error fetching athletes:', error);

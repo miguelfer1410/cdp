@@ -10,6 +10,16 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
     const [searching, setSearching] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const [resultRelationships, setResultRelationships] = useState({}); // {userId: relationship}
+
+    const relationshipOptions = [
+        { value: 'Outro', label: 'Outro' },
+        { value: 'Pai', label: 'Pai' },
+        { value: 'Mãe', label: 'Mãe' },
+        { value: 'Filho(a)', label: 'Filho(a)' },
+        { value: 'Irmão/Irmã', label: 'Irmão/Irmã' },
+        { value: 'Cônjuge', label: 'Cônjuge' }
+    ];
 
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
 
@@ -23,7 +33,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/users/${user.id}/family-links`, {
+            const response = await fetch(`${API_URL}/users/${user.id}/all-linked-members`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -54,8 +64,9 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
             });
             if (response.ok) {
                 const data = await response.json();
+                const items = data.items || [];
                 // Filter out the current user and users already linked
-                const filtered = data.filter(u =>
+                const filtered = items.filter(u =>
                     u.id !== user.id &&
                     !currentLinks.some(link => link.userId === u.id)
                 );
@@ -69,6 +80,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
     };
 
     const handleAddLink = async (linkedUserId) => {
+        const relationship = resultRelationships[linkedUserId] || 'Outro';
         setError(null);
         setSuccess(null);
         try {
@@ -79,7 +91,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ linkedUserId })
+                body: JSON.stringify({ linkedUserId, relationship })
             });
 
             const data = await response.json();
@@ -95,6 +107,42 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
             }
         } catch (err) {
             setError('Erro de conexão com o servidor.');
+        }
+    };
+
+    const handleUpdateRelationship = async (linkId, relationship, targetUserId) => {
+        try {
+            const token = localStorage.getItem('token');
+
+            // If it's an automatic link (linkId === 0), promote to explicit by creating a new link
+            if (linkId === 0) {
+                const response = await fetch(`${API_URL}/users/${user.id}/family-links`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ linkedUserId: targetUserId, relationship })
+                });
+                if (response.ok) fetchCurrentLinks();
+                return;
+            }
+
+            // Otherwise update existing explicit link
+            const response = await fetch(`${API_URL}/users/${user.id}/family-links/${linkId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ relationship })
+            });
+
+            if (response.ok) {
+                fetchCurrentLinks();
+            }
+        } catch (err) {
+            console.error('Error updating relationship:', err);
         }
     };
 
@@ -151,17 +199,33 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
                                         <div className="fam-link-user-info">
                                             <div className="fam-link-avatar"><FaUser /></div>
                                             <div>
-                                                <div className="fam-link-name">{link.fullName}</div>
-                                                <div className="fam-link-email">{link.email}</div>
+                                                <div className="fam-link-name-row">
+                                                    <span className="fam-link-name">{link.fullName}</span>
+                                                </div>
+                                                <select
+                                                    className="fam-link-rel-select"
+                                                    value={link.relationship || 'Outro'}
+                                                    onChange={(e) => handleUpdateRelationship(link.linkId, e.target.value, link.userId)}
+                                                >
+                                                    {relationshipOptions.map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
-                                        <button
-                                            className="fam-link-delete-btn"
-                                            onClick={() => handleRemoveLink(link.linkId)}
-                                            title="Remover Associação"
-                                        >
-                                            <FaTrash />
-                                        </button>
+                                        {link.isExplicit ? (
+                                            <button
+                                                className="fam-link-delete-btn"
+                                                onClick={() => handleRemoveLink(link.linkId)}
+                                                title="Remover Associação"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        ) : (
+                                            <div className="fam-link-alias-info" title="Esta associação é baseada no email (alias)">
+                                                <FaUserFriends />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -199,12 +263,23 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
                                                 <div className="fam-link-email">{result.email}</div>
                                             </div>
                                         </div>
-                                        <button
-                                            className="fam-link-add-btn"
-                                            onClick={() => handleAddLink(result.id)}
-                                        >
-                                            <FaPlus /> Associar
-                                        </button>
+                                        <div className="fam-link-actions">
+                                            <select
+                                                className="fam-link-rel-select-mini"
+                                                value={resultRelationships[result.id] || 'Outro'}
+                                                onChange={(e) => setResultRelationships(prev => ({ ...prev, [result.id]: e.target.value }))}
+                                            >
+                                                {relationshipOptions.map(opt => (
+                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                className="fam-link-add-btn"
+                                                onClick={() => handleAddLink(result.id)}
+                                            >
+                                                <FaPlus /> Associar
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

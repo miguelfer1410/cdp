@@ -165,6 +165,7 @@ public class UsersController : ControllerBase
             .Include(u => u.AthleteProfile)
                 .ThenInclude(a => a.AthleteTeams)
                     .ThenInclude(at => at.Team)
+                        .ThenInclude(t => t.Sport)
             .Include(u => u.MemberProfile)
             .Include(u => u.CoachProfile)
                 .ThenInclude(c => c.Sport)
@@ -237,7 +238,10 @@ public class UsersController : ControllerBase
             }).ToList(),
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
-            LastLogin = user.LastLogin
+            LastLogin = user.LastLogin,
+            Sport = user.AthleteProfile != null
+                ? user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
+                : (user.CoachProfile != null ? user.CoachProfile.Sport?.Name : null)
         };
 
         return Ok(response);
@@ -277,6 +281,7 @@ public class UsersController : ControllerBase
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+        /*
 
         try
         {
@@ -294,11 +299,13 @@ public class UsersController : ControllerBase
                 Console.WriteLine($"Info: Activation email skipped for alias {emailToUse} (original: {request.Email})");
             }
         }
+        
         catch (Exception ex)
         {
             // Log error but don't fail user creation
             Console.WriteLine($"Warning: Failed to send activation email to {user.Email}: {ex.Message}");
         }
+        */
 
         var response = new UserResponse
         {
@@ -319,7 +326,10 @@ public class UsersController : ControllerBase
             Roles = new List<RoleInfo>(),
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
-            LastLogin = user.LastLogin
+            LastLogin = user.LastLogin,
+            Sport = user.AthleteProfile != null
+                ? user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
+                : (user.CoachProfile != null ? user.CoachProfile.Sport?.Name : null)
         };
 
         return CreatedAtAction(nameof(GetUser), new { id = user.Id }, response);
@@ -347,7 +357,7 @@ public class UsersController : ControllerBase
 
         return NoContent();
 
-
+        /*
         try
         {
             var clientUrl = _configuration["ClientUrl"] ?? "http://localhost:3000";
@@ -359,6 +369,7 @@ public class UsersController : ControllerBase
         {
             return StatusCode(500, new { message = $"Erro ao enviar email: {ex.Message}" });
         }
+        */
 
     }
 
@@ -552,7 +563,6 @@ public class UsersController : ControllerBase
 
     // POST: api/users/{id}/member-profile
     [HttpPost("{id}/member-profile")]
-    [Authorize]
     public async Task<IActionResult> CreateMemberProfile(int id, [FromBody] MemberProfileRequest request)
     {
         var user = await _context.Users.Include(u => u.MemberProfile).FirstOrDefaultAsync(u => u.Id == id);
@@ -1111,6 +1121,99 @@ public class UsersController : ControllerBase
 
     // ─── Family Links ─────────────────────────────────────────────────────────────
 
+    private string? GetReciprocalRelationship(string? relationship)
+    {
+        if (string.IsNullOrEmpty(relationship)) return null;
+        return relationship switch
+        {
+            "Pai" => "Filho(a)",
+            "Mãe" => "Filho(a)",
+            "Filho(a)" => "Pai/Mãe",
+            "Irmão/Irmã" => "Irmão/Irmã",
+            "Cônjuge" => "Cônjuge",
+            _ => relationship
+        };
+    }
+
+    /// <summary>Get all linked members (aliases and explicit links) for a user (admin only).</summary>
+    [HttpGet("{id}/all-linked-members")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<FamilyLinkResponse>>> GetAllLinkedMembers(int id)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return NotFound();
+
+        var resultList = new List<FamilyLinkResponse>();
+
+        // 1. Explicit Family Links
+        var explicitLinks = await _context.UserFamilyLinks
+            .Where(l => l.UserId == id || l.LinkedUserId == id)
+            .Include(l => l.User)
+            .Include(l => l.LinkedUser)
+            .ToListAsync();
+
+        foreach (var l in explicitLinks)
+        {
+            var other = l.UserId == id ? l.LinkedUser : l.User;
+            var relationship = l.UserId == id ? l.Relationship : GetReciprocalRelationship(l.Relationship);
+            
+            resultList.Add(new FamilyLinkResponse
+            {
+                LinkId = l.Id,
+                UserId = other.Id,
+                FullName = $"{other.FirstName} {other.LastName}".Trim(),
+                Email = other.Email,
+                Relationship = relationship,
+                CreatedAt = l.CreatedAt,
+                IsExplicit = true
+            });
+        }
+
+        // 2. Email Alias Links
+        var emailLower = user.Email.ToLower();
+        var atIndex = emailLower.LastIndexOf('@');
+        if (atIndex > 0)
+        {
+            var localPart = emailLower.Substring(0, atIndex);
+            var domain = emailLower.Substring(atIndex);
+
+            var plusIndex = localPart.IndexOf('+');
+            var baseLocal = plusIndex > -1 ? localPart.Substring(0, plusIndex) : localPart;
+
+            var aliasedUsers = await _context.Users
+                .Where(u => u.Id != id && u.IsActive && 
+                       u.Email.ToLower().StartsWith(baseLocal) && 
+                       u.Email.ToLower().EndsWith(domain))
+                .ToListAsync();
+
+            foreach (var au in aliasedUsers)
+            {
+                var auLower = au.Email.ToLower();
+                var auAtIndex = auLower.LastIndexOf('@');
+                if (auAtIndex <= 0) continue;
+                
+                var auLocal = auLower.Substring(0, auAtIndex);
+                if (auLocal == baseLocal || auLocal.StartsWith(baseLocal + "+"))
+                {
+                    if (resultList.Any(r => r.UserId == au.Id)) continue;
+
+                    resultList.Add(new FamilyLinkResponse
+                    {
+                        LinkId = 0,
+                        UserId = au.Id,
+                        FullName = $"{au.FirstName} {au.LastName}".Trim(),
+                        Email = au.Email,
+                        Relationship = "Outro",
+                        CreatedAt = au.CreatedAt,
+                        IsExplicit = false
+                    });
+                }
+            }
+        }
+
+        return Ok(resultList);
+    }
+
     /// <summary>Get all explicit family links for a given user (admin only).</summary>
     [HttpGet("{id}/family-links")]
     [Authorize(Roles = "Admin")]
@@ -1131,6 +1234,7 @@ public class UsersController : ControllerBase
                 UserId = other.Id,
                 FullName = $"{other.FirstName} {other.LastName}".Trim(),
                 Email = other.Email,
+                Relationship = l.Relationship,
                 CreatedAt = l.CreatedAt
             };
         });
@@ -1164,6 +1268,7 @@ public class UsersController : ControllerBase
         {
             UserId = id,
             LinkedUserId = dto.LinkedUserId,
+            Relationship = dto.Relationship,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -1171,6 +1276,32 @@ public class UsersController : ControllerBase
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Associação familiar criada.", linkId = link.Id });
+    }
+
+    /// <summary>Update the relationship of an existing family link (admin only).</summary>
+    [HttpPut("{id}/family-links/{linkId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateFamilyLink(int id, int linkId, [FromBody] FamilyLinkDto dto)
+    {
+        var link = await _context.UserFamilyLinks
+            .FirstOrDefaultAsync(l => l.Id == linkId && (l.UserId == id || l.LinkedUserId == id));
+
+        if (link == null)
+            return NotFound(new { message = "Associação não encontrada." });
+
+        if (link.UserId == id)
+        {
+            link.Relationship = dto.Relationship;
+        }
+        else
+        {
+            // If the user being edited is the LinkedUserId, we must store the incoming relationship's reciprocal
+            // because Relationship is UserId -> LinkedUserId
+            link.Relationship = GetReciprocalRelationship(dto.Relationship);
+        }
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Parentesco atualizado." });
     }
 
     /// <summary>Remove a family link by link ID (admin only).</summary>
@@ -1197,6 +1328,7 @@ public class UsersController : ControllerBase
 public class FamilyLinkDto
 {
     public int LinkedUserId { get; set; }
+    public string? Relationship { get; set; }
 }
 
 public class FamilyLinkResponse
@@ -1205,6 +1337,8 @@ public class FamilyLinkResponse
     public int UserId { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? Relationship { get; set; }
+    public bool IsExplicit { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

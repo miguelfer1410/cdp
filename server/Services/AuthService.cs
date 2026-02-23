@@ -151,7 +151,8 @@ public class AuthService : IAuthService
                 DashboardType = other.AthleteProfile != null ? "atleta"
                     : other.CoachProfile != null ? "treinador"
                     : other.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
-                    : "user"
+                    : "user",
+                Relationship = link.Relationship
             });
         }
 

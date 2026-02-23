@@ -3,6 +3,47 @@ import { FaCreditCard, FaCheckCircle, FaGift, FaCalendarAlt, FaUsers, FaTrophy, 
 import './BecomeMember.css';
 
 const BecomeMember = ({ userData }) => {
+    const [fees, setFees] = React.useState({ memberFee: 3, minorMemberFee: 3 });
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchFees = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:5285/api/fees', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setFees({
+                        memberFee: data.memberFee,
+                        minorMemberFee: data.minorMemberFee || data.memberFee
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching fees:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchFees();
+    }, []);
+
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return 18;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    const isMinor = calculateAge(userData.birthDate) < 18;
+    const currentFee = isMinor ? fees.minorMemberFee : fees.memberFee;
+
     const benefits = [
         {
             icon: <FaPercentage />,
@@ -30,6 +71,8 @@ const BecomeMember = ({ userData }) => {
         // TODO: Integrate with Stripe payment
         alert('Integração com Stripe em breve!');
     };
+
+    if (loading) return null;
 
     return (
         <div className="become-member-container">
@@ -70,8 +113,8 @@ const BecomeMember = ({ userData }) => {
 
                     <div className="payment-content">
                         <div className="price-display">
-                            <span className="price-label">Quota Mensal</span>
-                            <span className="price-value">€3,00</span>
+                            <span className="price-label">Quota Mensal {isMinor ? '(Menor)' : ''}</span>
+                            <span className="price-value">€{currentFee.toFixed(2)}</span>
                         </div>
 
                         <div className="payment-info">

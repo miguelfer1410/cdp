@@ -67,6 +67,9 @@ const PeopleManager = () => {
         },
         selectedRoles: []
     });
+    const [linkedMembers, setLinkedMembers] = useState([]);
+
+    const relationships = ['Pai', 'Mãe', 'Filho(a)', 'Irmão/Irmã', 'Cônjuge', 'Outro'];
 
     // Wizard steps definition
     const steps = [
@@ -397,7 +400,50 @@ const PeopleManager = () => {
         } catch (error) {
             console.error('Error fetching user details:', error);
         }
+        fetchLinkedMembers(user.id);
         setShowModal(true);
+    };
+
+    const fetchLinkedMembers = async (userId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5285/api/users/${userId}/all-linked-members`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setLinkedMembers(data);
+            }
+        } catch (error) {
+            console.error('Error fetching linked members:', error);
+        }
+    };
+
+    const handleUpdateReciprocalRelationship = async (otherUserId, linkId, relationship) => {
+        try {
+            const token = localStorage.getItem('token');
+            const userId = editingUser.id;
+
+            if (linkId === 0) {
+                // It's an alias/new link — create explicit link
+                const response = await fetch(`http://localhost:5285/api/users/${userId}/family-links`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ linkedUserId: otherUserId, relationship })
+                });
+                if (response.ok) fetchLinkedMembers(userId);
+            } else {
+                // Update existing link
+                const response = await fetch(`http://localhost:5285/api/users/${userId}/family-links/${linkId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ relationship })
+                });
+                if (response.ok) fetchLinkedMembers(userId);
+            }
+        } catch (error) {
+            console.error('Error updating relationship:', error);
+        }
     };
 
     const handleDelete = async (id) => {
@@ -875,6 +921,42 @@ const PeopleManager = () => {
                     {validationErrors.city && <span className="error-message">{validationErrors.city}</span>}
                 </div>
             </div>
+
+            {editingUser && linkedMembers.length > 0 && (
+                <div className="form-divider" style={{ marginTop: '32px' }}>
+                    <span>Contas Associadas e Parentesco</span>
+                </div>
+            )}
+
+            {editingUser && linkedMembers.length > 0 && (
+                <div className="linked-members-management">
+                    <p className="step-help-text">Estes utilizadores partilham o mesmo email base ou foram associados manualmente.</p>
+                    <div className="linked-members-list">
+                        {linkedMembers.map(member => (
+                            <div key={member.userId} className="linked-member-card">
+                                <div className="member-main-info">
+                                    <div className="member-avatar">
+                                        {member.fullName.charAt(0)}
+                                    </div>
+                                    <div className="member-text">
+                                        <div className="member-name">{member.fullName}</div>
+                                        <div className="member-email">{member.email}</div>
+                                    </div>
+                                </div>
+                                <div className="member-rel-select">
+                                    <label>Parentesco:</label>
+                                    <select
+                                        value={member.relationship || 'Outro'}
+                                        onChange={(e) => handleUpdateReciprocalRelationship(member.userId, member.linkId, e.target.value)}
+                                    >
+                                        {relationships.map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 

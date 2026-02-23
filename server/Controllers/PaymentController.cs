@@ -8,6 +8,7 @@ using CdpApi.Services;
 using server.Services;
 using server.Models;
 using CdpApi.Models;
+using System.Linq;
 
 namespace CdpApi.Controllers;
 
@@ -264,7 +265,7 @@ public class PaymentController : ControllerBase
 
             var summary = new PaymentSummaryResponse
             {
-                MonthlyFee = 3.00m,
+                MonthlyFee = await CalculateQuotaForUser(user),
                 LastPaymentDate = lastPayment?.PaymentDate,
                 NextPaymentDue = nextPaymentDue,
                 PaymentStatus = paymentStatus,
@@ -734,11 +735,118 @@ public class PaymentController : ControllerBase
     {
         decimal totalAmount = 0;
         
-        // Global Member Fee
-        var memberFeeSetting = await _context.SystemSettings.FindAsync("MemberFee");
-        if (memberFeeSetting != null && decimal.TryParse(memberFeeSetting.Value, out var parsedFee))
+        // Determine if user is a minor (under 18)
+        bool isMinor = false;
+        if (user.BirthDate.HasValue)
         {
-            totalAmount += parsedFee;
+            var today = DateTime.UtcNow.Date;
+            var age = today.Year - user.BirthDate.Value.Year;
+            if (user.BirthDate.Value.Date > today.AddYears(-age)) age--;
+            isMinor = age < 18;
+            _logger.LogInformation("Quota calculation for User {UserId}: BirthDate={BirthDate}, Age={Age}, IsMinor={IsMinor}", 
+                user.Id, user.BirthDate.Value.ToShortDateString(), age, isMinor);
+        }
+        else
+        {
+            _logger.LogWarning("Quota calculation for User {UserId}: BirthDate is NULL", user.Id);
+        }
+
+        // Parent-Member Exemption Rule:
+        // If two or more siblings have BOTH father and mother as active members, they are exempt from global member fee.
+        bool isExemptFromGlobalFee = false;
+        
+        // 1. Find all parents of this user
+        var parentsLinks = await _context.UserFamilyLinks
+            .Where(l => (l.UserId == user.Id || l.LinkedUserId == user.Id))
+            .Include(l => l.User).ThenInclude(u => u.MemberProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.MemberProfile)
+            .ToListAsync();
+
+        var fathers = new List<User>();
+        var mothers = new List<User>();
+
+        foreach (var l in parentsLinks)
+        {
+            var other = l.UserId == user.Id ? l.LinkedUser : l.User;
+            // rel is the relationship of 'other' to 'user'
+            // If l.UserId == user.Id, l.Relationship is what 'user' IS to 'other'.
+            // So 'other' IS the reciprocal of l.Relationship to 'user'.
+            var rel = l.UserId == user.Id ? GetReciprocalRelationship(l.Relationship) : l.Relationship;
+
+            if (rel == "Pai" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active)
+                fathers.Add(other);
+            else if (rel == "Mãe" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active)
+                mothers.Add(other);
+        }
+
+        // 2. If at least one active father and one active mother are linked
+        if (fathers.Any() && mothers.Any())
+        {
+            _logger.LogInformation("[QUOTA] User {UserId} has both parents as active members. Checking siblings...", user.Id);
+            
+            // 3. Find siblings: users who have both of these parents linked as parents
+            var fatherId = fathers.First().Id;
+            var motherId = mothers.First().Id;
+
+            var fatherChildrenIds = await _context.UserFamilyLinks
+                .Where(l => (l.UserId == fatherId || l.LinkedUserId == fatherId))
+                .Select(l => new { l.UserId, l.LinkedUserId, l.Relationship })
+                .ToListAsync();
+            
+            var childrenOfFather = fatherChildrenIds
+                .Select(l => {
+                    var otherId = l.UserId == fatherId ? l.LinkedUserId : l.UserId;
+                    var rel = l.UserId == fatherId ? GetReciprocalRelationship(l.Relationship) : l.Relationship;
+                    return new { Id = otherId, Relationship = rel };
+                })
+                .Where(x => x.Relationship == "Filho(a)")
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            var motherChildrenIds = await _context.UserFamilyLinks
+                .Where(l => (l.UserId == motherId || l.LinkedUserId == motherId))
+                .Select(l => new { l.UserId, l.LinkedUserId, l.Relationship })
+                .ToListAsync();
+
+            var childrenOfMother = motherChildrenIds
+                .Select(l => {
+                    var otherId = l.UserId == motherId ? l.LinkedUserId : l.UserId;
+                    var rel = l.UserId == motherId ? GetReciprocalRelationship(l.Relationship) : l.Relationship;
+                    return new { Id = otherId, Relationship = rel };
+                })
+                .Where(x => x.Relationship == "Filho(a)")
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            var commonChildren = childrenOfFather.Intersect(childrenOfMother).ToList();
+            
+            _logger.LogInformation("[QUOTA] User {UserId} belongs to a group of {Count} siblings sharing same parent members.", user.Id, commonChildren.Count());
+
+            if (commonChildren.Count() >= 2 && commonChildren.Contains(user.Id))
+            {
+                isExemptFromGlobalFee = true;
+                _logger.LogInformation("[QUOTA] User {UserId} is EXEMPT from global member fee.", user.Id);
+            }
+        }
+
+        if (!isExemptFromGlobalFee)
+        {
+            // Global Member Fee
+            string feeKey = isMinor ? "MinorMemberFee" : "MemberFee";
+            var memberFeeSetting = await _context.SystemSettings.FindAsync(feeKey);
+            
+            // Fallback to "MemberFee" if "MinorMemberFee" is not set but user is minor
+            if (isMinor && memberFeeSetting == null)
+            {
+                memberFeeSetting = await _context.SystemSettings.FindAsync("MemberFee");
+            }
+
+            if (memberFeeSetting != null && decimal.TryParse(memberFeeSetting.Value, out var parsedFee))
+            {
+                totalAmount += parsedFee;
+            }
         }
 
         // Sport Fees - from the single athlete profile
@@ -754,5 +862,18 @@ public class PaymentController : ControllerBase
         }
 
         return totalAmount;
+    }
+    private static string? GetReciprocalRelationship(string? relationship)
+    {
+        if (string.IsNullOrEmpty(relationship)) return null;
+        return relationship switch
+        {
+            "Pai" => "Filho(a)",
+            "Mãe" => "Filho(a)",
+            "Filho(a)" => "Pai/Mãe",
+            "Irmão/Irmã" => "Irmão/Irmã",
+            "Cônjuge" => "Cônjuge",
+            _ => relationship
+        };
     }
 }

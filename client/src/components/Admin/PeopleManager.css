@@ -1425,3 +1425,100 @@
     border-color: #003380;
     color: white;
 }
+
+/* ═══════════════════════════════════════
+   LINKED MEMBERS MANAGEMENT
+   ═══════════════════════════════════════ */
+
+.linked-members-management {
+    margin-top: 1rem;
+}
+
+.step-help-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+}
+
+.linked-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.linked-member-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.linked-member-card:hover {
+    border-color: #cbd5e1;
+    background: #f1f5f9;
+}
+
+.member-main-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.member-avatar {
+    width: 36px;
+    height: 36px;
+    background: #003380;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.member-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.member-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+
+.member-email {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.member-rel-select {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.member-rel-select label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.member-rel-select select {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: white;
+    cursor: pointer;
+}
+
+.member-rel-select select:focus {
+    border-color: #003380;
+    outline: none;
+}

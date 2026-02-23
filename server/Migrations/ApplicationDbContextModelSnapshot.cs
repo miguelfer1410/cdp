@@ -643,14 +643,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 23, 10, 33, 34, 314, DateTimeKind.Utc).AddTicks(5462),
+                            CreatedAt = new DateTime(2026, 2, 23, 15, 0, 36, 157, DateTimeKind.Utc).AddTicks(1026),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 23, 10, 33, 34, 314, DateTimeKind.Utc).AddTicks(5464),
+                            CreatedAt = new DateTime(2026, 2, 23, 15, 0, 36, 157, DateTimeKind.Utc).AddTicks(1028),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -893,12 +893,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 23, 10, 33, 34, 449, DateTimeKind.Utc).AddTicks(7763),
+                            CreatedAt = new DateTime(2026, 2, 23, 15, 0, 36, 278, DateTimeKind.Utc).AddTicks(596),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$PpMqDJaN7Mfs5WrsF8Ro6OutWR1jIfNNWUpcKhcgjgdWhxmsUTU8K"
+                            PasswordHash = "$2a$11$aVm.nqn4L3zLhuUPxd3sbuoKKiPWNnhB5vsPyIZr6MZT5ubnFPe1."
                         });
                 });
 
@@ -917,6 +917,10 @@ namespace CdpApi.Migrations
 
                     b.Property<int>("LinkedUserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Relationship")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -961,7 +965,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 23, 10, 33, 34, 449, DateTimeKind.Utc).AddTicks(8183),
+                            AssignedAt = new DateTime(2026, 2, 23, 15, 0, 36, 278, DateTimeKind.Utc).AddTicks(1010),
                             RoleId = 2,
                             UserId = 1
                         });
