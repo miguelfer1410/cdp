@@ -1,0 +1,455 @@
+.payment-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 51, 128, 0.08);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.payment-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f4ff;
+    background: linear-gradient(135deg, #f8faff 0%, #eef4ff 100%);
+}
+
+.payment-card-header h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #003380;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.payment-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ── Discount badges ─────────────────────────────────────────────────────── */
+.payment-discounts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.payment-discount-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+.payment-discount-badge--green {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.payment-discount-badge--blue {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.payment-discount-badge--purple {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+
+/* ── Inscription alert ───────────────────────────────────────────────────── */
+.payment-inscription-alert {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-left: 4px solid #f97316;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: #9a3412;
+}
+
+.payment-inscription-alert svg {
+    color: #f97316;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.payment-inscription-alert ul {
+    margin: 6px 0 0;
+    padding-left: 16px;
+}
+
+.payment-inscription-alert li {
+    margin-bottom: 3px;
+}
+
+.inscription-note {
+    font-size: 0.78rem;
+    color: #c2410c;
+    margin-left: 4px;
+}
+
+/* ── Status boxes ────────────────────────────────────────────────────────── */
+.payment-status-box {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.payment-status-box h4 {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.payment-status-box p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.payment-status-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.payment-status-box--paid {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+}
+
+.payment-status-box--paid .payment-status-icon {
+    color: #16a34a;
+}
+
+.payment-status-box--paid h4 {
+    color: #15803d;
+}
+
+.payment-status-box--pending {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+}
+
+.payment-status-box--pending .payment-status-icon {
+    color: #ea580c;
+}
+
+.payment-status-box--pending h4 {
+    color: #c2410c;
+}
+
+.payment-status-box--unpaid {
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+}
+
+.payment-status-box--unpaid .payment-status-icon {
+    color: #f59e0b;
+}
+
+.payment-status-box--unpaid h4 {
+    color: #1d4ed8;
+}
+
+/* ── MB reference grid ───────────────────────────────────────────────────── */
+.payment-mb-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.payment-mb-field {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mb-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    font-weight: 600;
+}
+
+.mb-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #003380;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.payment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-size: 0.85rem;
+    padding: 10px 16px;
+}
+
+.payment-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.payment-btn--primary {
+    background: #003380;
+    color: white;
+}
+
+.payment-btn--primary:hover:not(:disabled) {
+    background: #00509e;
+}
+
+.payment-btn--outline {
+    background: transparent;
+    border: 1px solid #003380;
+    color: #003380;
+}
+
+.payment-btn--outline:hover:not(:disabled) {
+    background: #f0f4ff;
+}
+
+.payment-btn--sm {
+    background: #003380;
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+}
+
+/* ── Advance payment row ─────────────────────────────────────────────────── */
+.payment-advance {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f0f4ff;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.84rem;
+    color: #374151;
+}
+
+/* ── Breakdown ───────────────────────────────────────────────────────────── */
+.payment-breakdown-toggle {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 12px;
+}
+
+.breakdown-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #003380;
+    padding: 4px 0;
+}
+
+.breakdown-toggle-btn:hover {
+    color: #00509e;
+}
+
+.breakdown-toggle-btn svg:last-child {
+    margin-left: auto;
+}
+
+.payment-breakdown {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.payment-breakdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 0.84rem;
+    background: #f9fafb;
+}
+
+.payment-breakdown-item.is-discount {
+    background: #f0fdf4;
+}
+
+.payment-breakdown-item.quota-included {
+    background: #eff6ff;
+}
+
+.breakdown-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #374151;
+}
+
+.breakdown-amount {
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+}
+
+.amount-discount {
+    color: #16a34a;
+}
+
+.breakdown-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.breakdown-dot--included {
+    background: #3b82f6;
+}
+
+.breakdown-dot--discount {
+    background: #16a34a;
+}
+
+.breakdown-dot--normal {
+    background: #d1d5db;
+}
+
+.payment-breakdown-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #003380;
+    border-top: 2px solid #e5e7eb;
+    padding: 10px 10px 0;
+    margin-top: 4px;
+}
+
+.payment-breakdown-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.74rem;
+    color: #6b7280;
+    margin-top: 8px;
+}
+
+.payment-breakdown-legend span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ── History ─────────────────────────────────────────────────────────────── */
+.payment-history-section {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 12px;
+}
+
+.payment-history {
+    margin-top: 12px;
+}
+
+.payment-history-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem;
+    color: #374151;
+    margin-bottom: 10px;
+}
+
+.payment-history-controls select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.84rem;
+}
+
+.payment-history-empty {
+    font-size: 0.82rem;
+    color: #9ca3af;
+    text-align: center;
+    padding: 16px 0;
+}
+
+.payment-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.payment-history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.83rem;
+}
+
+.history-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+}
+
+.history-desc {
+    color: #9ca3af;
+}
+
+.history-amount {
+    font-weight: 700;
+    color: #003380;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.icon-spin {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .payment-mb-grid {
+        grid-template-columns: 1fr;
+    }
+}

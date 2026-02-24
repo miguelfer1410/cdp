@@ -23,6 +23,22 @@ public class AthleteTeam
 
     public bool IsCaptain { get; set; } = false;
 
+    // ── Escalão ─────────────────────────────────────────────────────────
+    /// <summary>
+    /// Escalão do atleta nesta equipa.
+    /// Exemplos: "Escalão 1", "Escalão 2", "Minis", "Sénior", "Sub-12", "Sub-14"
+    /// Determina o preço da mensalidade (FeeEscalao1 vs FeeEscalao2 no Sport).
+    /// </summary>
+    [MaxLength(50)]
+    public string? Escalao { get; set; }
+
+    // ── Inscrição ────────────────────────────────────────────────────────
+    /// <summary>Indica se a taxa de inscrição já foi paga para esta equipa/época.</summary>
+    public bool InscriptionPaid { get; set; } = false;
+
+    /// <summary>Data em que a taxa de inscrição foi registada como paga.</summary>
+    public DateTime? InscriptionPaidDate { get; set; }
+
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? LeftAt { get; set; } // null if still active
