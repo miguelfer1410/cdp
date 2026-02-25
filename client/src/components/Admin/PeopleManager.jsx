@@ -1566,8 +1566,8 @@ const PeopleManager = () => {
                             <tbody>
                                 {sortedUsers.map((user) => (
                                     <tr key={user.id}>
-                                        <td className="user-name">{user.fullName}</td>
-                                        <td>{(() => {
+                                        <td className="user-name" data-label="Nome">{user.fullName}</td>
+                                        <td data-label="Email">{(() => {
                                             const raw = user.email || '';
                                             const atIdx = raw.lastIndexOf('@');
                                             const localPart = atIdx > 0 ? raw.substring(0, atIdx) : raw;
@@ -1575,18 +1575,20 @@ const PeopleManager = () => {
                                             const plusIdx = localPart.indexOf('+');
                                             return plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : raw;
                                         })()}</td>
-                                        <td>{user.phone || '-'}</td>
-                                        <td className="profiles-cell">
-                                            {getProfileBadges(user).map((badge, idx) => (
-                                                <span key={idx} className={`profile-badge ${badge.type}`}>
-                                                    {badge.icon} {badge.label}
-                                                </span>
-                                            ))}
-                                            {getProfileBadges(user).length === 0 && '-'}
+                                        <td data-label="Telefone">{user.phone || '-'}</td>
+                                        <td className="profiles-cell" data-label="Perfis">
+                                            <div className="profile-badges-container">
+                                                {getProfileBadges(user).map((badge, idx) => (
+                                                    <span key={idx} className={`profile-badge ${badge.type}`}>
+                                                        {badge.icon} {badge.label}
+                                                    </span>
+                                                ))}
+                                                {getProfileBadges(user).length === 0 && '-'}
+                                            </div>
                                         </td>
-                                        <td>{user.sport || '-'}</td>
-                                        <td>{user.currentTeam || '-'}</td>
-                                        <td className="actions-cell">
+                                        <td data-label="Modalidade">{user.sport || '-'}</td>
+                                        <td data-label="Equipa">{user.currentTeam || '-'}</td>
+                                        <td className="actions-cell" data-label="Ações">
                                             <button className="action-btn family" onClick={() => { setSelectedFamilyUser(user); setShowFamilyModal(true); }} title="Associar Familiar">
                                                 <FaUserFriends />
                                             </button>
@@ -1693,7 +1695,9 @@ const PeopleManager = () => {
 
                         {/* Step Content */}
                         <div className="modal-body">
-                            {renderStepContent()}
+                            <div key={currentStepId} className="wizard-step-content">
+                                {renderStepContent()}
+                            </div>
                         </div>
 
                         {/* Footer with navigation */}

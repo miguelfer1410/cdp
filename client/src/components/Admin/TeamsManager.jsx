@@ -501,15 +501,15 @@ const TeamsManager = () => {
                         <tbody>
                             {sortedTeams.map(team => (
                                 <tr key={team.id}>
-                                    <td className="team-name">{team.name}</td>
-                                    <td>{team.sportName}</td>
-                                    <td>{team.category || '-'}</td>
-                                    <td>
+                                    <td className="team-name" data-label="Nome">{team.name}</td>
+                                    <td data-label="Modalidade">{team.sportName}</td>
+                                    <td data-label="Escalão">{team.category || '-'}</td>
+                                    <td data-label="Género">
                                         <span className={`gender-badge ${getGenderBadgeClass(team.gender)}`}>
                                             {getGenderLabel(team.gender)}
                                         </span>
                                     </td>
-                                    <td>{team.season || '-'}</td>
+                                    <td data-label="Época">{team.season || '-'}</td>
                                     <td>
                                         <div className="actions-cell">
                                             <button
@@ -661,8 +661,8 @@ const TeamsManager = () => {
 
             {/* Team Details Modal */}
             {showDetailsModal && viewingTeam && (
-                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowDetailsModal(false); setViewingTeam(null); setAddingAthletes(false); } }}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px' }}>
+                <div className="teams-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowDetailsModal(false); setViewingTeam(null); setAddingAthletes(false); } }}>
+                    <div className="teams-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px' }}>
                         <div className="modal-header">
                             <div>
                                 <h2>{viewingTeam.name}</h2>
@@ -678,252 +678,264 @@ const TeamsManager = () => {
                             </button>
                         </div>
 
-                        <div className="modal-form" style={{ paddingBottom: '2rem' }}>
-                            {/* Coaches Section */}
-                            <div className="roster-section">
-                                <h3>Treinadores</h3>
-                                {viewingTeam.coaches && viewingTeam.coaches.length > 0 ? (
-                                    <div className="roster-grid">
-                                        {viewingTeam.coaches.map(coach => (
-                                            <div key={coach.id} className="roster-card">
-                                                <div className="roster-card-avatar">
-                                                    {coach.name.charAt(0)}
-                                                </div>
-                                                <div className="roster-card-info">
-                                                    <span className="roster-card-name">{coach.name}</span>
-                                                    <span className="roster-card-role">{coach.role}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p style={{ color: '#999', fontStyle: 'italic' }}>Sem treinadores atribuídos.</p>
-                                )}
-                            </div>
-
-                            {/* Athletes Section */}
-                            <div className="roster-section">
-                                <h3>
-                                    Atletas ({viewingTeam.athletes ? viewingTeam.athletes.length : 0})
-                                    {!addingAthletes && (
-                                        <button
-                                            className="btn-add"
-                                            style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
-                                            onClick={() => {
-                                                setAddingAthletes(true);
-                                                fetchAvailableAthletes();
-                                                clearSearchFilters();
-                                            }}
-                                        >
-                                            <FaPlus /> Adicionar
-                                        </button>
-                                    )}
-                                </h3>
-
-                                {addingAthletes ? (
-                                    <div className="add-athlete-container">
-                                        <button className="modal-back-btn" onClick={() => {
-                                            setAddingAthletes(false);
-                                            clearSearchFilters();
-                                        }}>
-                                            ← Voltar à lista
-                                        </button>
-
-                                        {/* Advanced Search Section */}
-                                        <div className="advanced-search">
-                                            <div className="search-header">
-                                                <h4>
-                                                    <FaSearch /> Pesquisar Atletas
-                                                </h4>
-                                                {hasActiveFilters && (
-                                                    <button
-                                                        className="clear-filters-btn"
-                                                        onClick={clearSearchFilters}
-                                                    >
-                                                        <FaTimes /> Limpar Filtros
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="search-grid">
-                                                <div className="search-field">
-                                                    <label className="search-label">Nome</label>
-                                                    <div className="search-input-wrapper">
-                                                        <FaSearch className="search-input-icon" />
-                                                        <input
-                                                            type="text"
-                                                            className="search-input-field"
-                                                            placeholder="Procurar por nome..."
-                                                            value={searchFilters.name}
-                                                            onChange={(e) => setSearchFilters({
-                                                                ...searchFilters,
-                                                                name: e.target.value
-                                                            })}
-                                                        />
-                                                        {searchFilters.name && (
-                                                            <button
-                                                                className="clear-input-btn"
-                                                                onClick={() => setSearchFilters({
-                                                                    ...searchFilters,
-                                                                    name: ''
-                                                                })}
-                                                            >
-                                                                <FaTimes />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="search-field">
-                                                    <label className="search-label">NIF</label>
-                                                    <div className="search-input-wrapper">
-                                                        <FaSearch className="search-input-icon" />
-                                                        <input
-                                                            type="text"
-                                                            className="search-input-field"
-                                                            placeholder="Procurar por NIF..."
-                                                            value={searchFilters.nif}
-                                                            onChange={(e) => setSearchFilters({
-                                                                ...searchFilters,
-                                                                nif: e.target.value
-                                                            })}
-                                                        />
-                                                        {searchFilters.nif && (
-                                                            <button
-                                                                className="clear-input-btn"
-                                                                onClick={() => setSearchFilters({
-                                                                    ...searchFilters,
-                                                                    nif: ''
-                                                                })}
-                                                            >
-                                                                <FaTimes />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="search-field">
-                                                    <label className="search-label">Email</label>
-                                                    <div className="search-input-wrapper">
-                                                        <FaSearch className="search-input-icon" />
-                                                        <input
-                                                            type="text"
-                                                            className="search-input-field"
-                                                            placeholder="Procurar por email..."
-                                                            value={searchFilters.email}
-                                                            onChange={(e) => setSearchFilters({
-                                                                ...searchFilters,
-                                                                email: e.target.value
-                                                            })}
-                                                        />
-                                                        {searchFilters.email && (
-                                                            <button
-                                                                className="clear-input-btn"
-                                                                onClick={() => setSearchFilters({
-                                                                    ...searchFilters,
-                                                                    email: ''
-                                                                })}
-                                                            >
-                                                                <FaTimes />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="search-results-info">
-                                                <span className="results-count">
-                                                    {filteredAthletes.length} {filteredAthletes.length === 1 ? 'atleta encontrado' : 'atletas encontrados'}
-                                                </span>
-                                            </div>
+                        <div className="teams-modal-form">
+                            <div key={viewingTeam.id} className="roster-entrance-wrapper">
+                                {/* Coaches Section */}
+                                <div className="roster-section">
+                                    <h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <FaUsers style={{ color: '#003380' }} />
+                                            <span>Treinadores</span>
                                         </div>
-
-                                        {/* Athletes List */}
-                                        <div className="athletes-list">
-                                            {filteredAthletes.map(athlete => (
-                                                <div
-                                                    key={athlete.id}
-                                                    className="athlete-item"
-                                                    onClick={() => toggleAthleteSelection(athlete.athleteProfileId)}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        className="athlete-checkbox"
-                                                        checked={selectedAthletes.includes(athlete.athleteProfileId)}
-                                                        onChange={() => { }}
-                                                    />
-                                                    <div className="athlete-info">
-                                                        <div className="athlete-name">{athlete.fullName}</div>
-                                                        <div className="athlete-details">
-                                                            {athlete.email}
-                                                            {athlete.nif && ` • NIF: ${athlete.nif}`}
+                                    </h3>
+                                    {viewingTeam.coaches && viewingTeam.coaches.length > 0 ? (
+                                        <div className="roster-grid">
+                                            {viewingTeam.coaches.map(coach => (
+                                                <div key={coach.id} className="roster-card">
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                                                        <div className="roster-card-avatar">
+                                                            {coach.name.charAt(0)}
+                                                        </div>
+                                                        <div className="roster-card-info">
+                                                            <span className="roster-card-name">{coach.name}</span>
+                                                            <span className="roster-card-role">{coach.role}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
-                                            {filteredAthletes.length === 0 && (
-                                                <div className="no-results">
-                                                    <div className="no-results-icon">🔍</div>
-                                                    <p>Nenhum atleta encontrado com os critérios de pesquisa.</p>
+                                        </div>
+                                    ) : (
+                                        <p style={{ color: '#999', fontStyle: 'italic', padding: '1rem' }}>Sem treinadores atribuídos.</p>
+                                    )}
+                                </div>
+
+                                {/* Athletes Section */}
+                                <div className="roster-section">
+                                    <h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <FaPlus style={{ color: '#003380' }} />
+                                            <span>Atletas ({viewingTeam.athletes ? viewingTeam.athletes.length : 0})</span>
+                                        </div>
+                                        {!addingAthletes && (
+                                            <button
+                                                className="btn-add"
+                                                style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}
+                                                onClick={() => {
+                                                    setAddingAthletes(true);
+                                                    fetchAvailableAthletes();
+                                                    clearSearchFilters();
+                                                }}
+                                            >
+                                                <FaPlus /> Adicionar Atletas
+                                            </button>
+                                        )}
+                                    </h3>
+
+                                    {addingAthletes ? (
+                                        <div className="add-athlete-container">
+                                            <button className="modal-back-btn" onClick={() => {
+                                                setAddingAthletes(false);
+                                                clearSearchFilters();
+                                            }}>
+                                                ← Voltar à lista da equipa
+                                            </button>
+
+                                            {/* Advanced Search Section */}
+                                            <div className="advanced-search">
+                                                <div className="search-header">
+                                                    <h4>
+                                                        <FaSearch /> Pesquisar Atletas
+                                                    </h4>
                                                     {hasActiveFilters && (
                                                         <button
-                                                            className="btn-add"
+                                                            className="clear-filters-btn"
                                                             onClick={clearSearchFilters}
-                                                            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginTop: '0.5rem' }}
                                                         >
-                                                            Limpar Filtros
+                                                            <FaTimes /> Limpar Filtros
                                                         </button>
                                                     )}
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        {selectedAthletes.length > 0 && (
-                                            <div className="selected-count">
-                                                <span>{selectedAthletes.length} {selectedAthletes.length === 1 ? 'atleta selecionado' : 'atletas selecionados'}</span>
-                                                <button
-                                                    className="btn-submit"
-                                                    onClick={handleAddAthletes}
-                                                    disabled={submitting}
-                                                >
-                                                    {submitting ? 'A guardar...' : 'Adicionar à Equipa'}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="roster-grid">
-                                        {viewingTeam.athletes && viewingTeam.athletes.length > 0 ? (
-                                            viewingTeam.athletes.map(athlete => (
-                                                <div key={athlete.id} className="roster-card">
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                                                        <div className="roster-card-avatar" style={{ background: '#e3f2fd', color: '#1976d2' }}>
-                                                            {athlete.name.charAt(0)}
-                                                        </div>
-                                                        <div className="roster-card-info">
-                                                            <span className="roster-card-name">
-                                                                {athlete.name}
-                                                                {athlete.isCaptain && <span className="captain-badge">👑</span>}
-                                                            </span>
-                                                            <span className="roster-card-role">
-                                                                {athlete.position || 'Atleta'} {athlete.jerseyNumber && `• #${athlete.jerseyNumber}`}
-                                                            </span>
+                                                <div className="search-grid">
+                                                    <div className="search-field">
+                                                        <label className="search-label">Nome</label>
+                                                        <div className="search-input-wrapper">
+                                                            <FaSearch className="search-input-icon" />
+                                                            <input
+                                                                type="text"
+                                                                className="search-input-field"
+                                                                placeholder="Procurar por nome..."
+                                                                value={searchFilters.name}
+                                                                onChange={(e) => setSearchFilters({
+                                                                    ...searchFilters,
+                                                                    name: e.target.value
+                                                                })}
+                                                            />
+                                                            {searchFilters.name && (
+                                                                <button
+                                                                    className="clear-input-btn"
+                                                                    onClick={() => setSearchFilters({
+                                                                        ...searchFilters,
+                                                                        name: ''
+                                                                    })}
+                                                                >
+                                                                    <FaTimes />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        className="btn-remove-athlete"
-                                                        onClick={() => handleRemoveAthlete(athlete.id)}
-                                                        title="Remover da equipa"
+
+                                                    <div className="search-field">
+                                                        <label className="search-label">NIF</label>
+                                                        <div className="search-input-wrapper">
+                                                            <FaSearch className="search-input-icon" />
+                                                            <input
+                                                                type="text"
+                                                                className="search-input-field"
+                                                                placeholder="Procurar por NIF..."
+                                                                value={searchFilters.nif}
+                                                                onChange={(e) => setSearchFilters({
+                                                                    ...searchFilters,
+                                                                    nif: e.target.value
+                                                                })}
+                                                            />
+                                                            {searchFilters.nif && (
+                                                                <button
+                                                                    className="clear-input-btn"
+                                                                    onClick={() => setSearchFilters({
+                                                                        ...searchFilters,
+                                                                        nif: ''
+                                                                    })}
+                                                                >
+                                                                    <FaTimes />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="search-field">
+                                                        <label className="search-label">Email</label>
+                                                        <div className="search-input-wrapper">
+                                                            <FaSearch className="search-input-icon" />
+                                                            <input
+                                                                type="text"
+                                                                className="search-input-field"
+                                                                placeholder="Procurar por email..."
+                                                                value={searchFilters.email}
+                                                                onChange={(e) => setSearchFilters({
+                                                                    ...searchFilters,
+                                                                    email: e.target.value
+                                                                })}
+                                                            />
+                                                            {searchFilters.email && (
+                                                                <button
+                                                                    className="clear-input-btn"
+                                                                    onClick={() => setSearchFilters({
+                                                                        ...searchFilters,
+                                                                        email: ''
+                                                                    })}
+                                                                >
+                                                                    <FaTimes />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="search-results-info">
+                                                    <span className="results-count">
+                                                        {filteredAthletes.length} {filteredAthletes.length === 1 ? 'atleta encontrado' : 'atletas encontrados'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Athletes List */}
+                                            <div className="athletes-list">
+                                                {filteredAthletes.map(athlete => (
+                                                    <div
+                                                        key={athlete.id}
+                                                        className="athlete-item"
+                                                        onClick={() => toggleAthleteSelection(athlete.athleteProfileId)}
                                                     >
-                                                        <FaTrash />
+                                                        <input
+                                                            type="checkbox"
+                                                            className="athlete-checkbox"
+                                                            checked={selectedAthletes.includes(athlete.athleteProfileId)}
+                                                            onChange={() => { }}
+                                                        />
+                                                        <div className="athlete-info">
+                                                            <div className="athlete-name">{athlete.fullName}</div>
+                                                            <div className="athlete-details">
+                                                                {athlete.email}
+                                                                {athlete.nif && ` • NIF: ${athlete.nif}`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {filteredAthletes.length === 0 && (
+                                                    <div className="no-results">
+                                                        <div className="no-results-icon">🔍</div>
+                                                        <p>Nenhum atleta encontrado com os critérios de pesquisa.</p>
+                                                        {hasActiveFilters && (
+                                                            <button
+                                                                className="btn-add"
+                                                                onClick={clearSearchFilters}
+                                                                style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginTop: '0.5rem' }}
+                                                            >
+                                                                Limpar Filtros
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {selectedAthletes.length > 0 && (
+                                                <div className="selected-count">
+                                                    <span>{selectedAthletes.length} {selectedAthletes.length === 1 ? 'atleta selecionado' : 'atletas selecionados'}</span>
+                                                    <button
+                                                        className="btn-submit"
+                                                        onClick={handleAddAthletes}
+                                                        disabled={submitting}
+                                                    >
+                                                        {submitting ? 'A guardar...' : 'Adicionar à Equipa'}
                                                     </button>
                                                 </div>
-                                            ))
-                                        ) : (
-                                            <p style={{ color: '#999', fontStyle: 'italic' }}>Sem atletas na equipa.</p>
-                                        )}
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="roster-grid">
+                                            {viewingTeam.athletes && viewingTeam.athletes.length > 0 ? (
+                                                viewingTeam.athletes.map(athlete => (
+                                                    <div key={athlete.id} className="roster-card">
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                                                            <div className="roster-card-avatar" style={{ background: '#e3f2fd', color: '#1976d2' }}>
+                                                                {athlete.name.charAt(0)}
+                                                            </div>
+                                                            <div className="roster-card-info">
+                                                                <span className="roster-card-name">
+                                                                    {athlete.name}
+                                                                    {athlete.isCaptain && <span className="captain-badge">👑</span>}
+                                                                </span>
+                                                                <span className="roster-card-role">
+                                                                    {athlete.position || 'Atleta'} {athlete.jerseyNumber && `• #${athlete.jerseyNumber}`}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            className="btn-remove-athlete"
+                                                            onClick={() => handleRemoveAthlete(athlete.id)}
+                                                            title="Remover da equipa"
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p style={{ color: '#999', fontStyle: 'italic' }}>Sem atletas na equipa.</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

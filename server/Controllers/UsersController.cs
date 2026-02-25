@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CdpApi.Data;
 using CdpApi.Models;
+using CdpApi.DTOs;
 using server.Services;
 
 namespace CdpApi.Controllers;
@@ -91,14 +92,21 @@ public class UsersController : ControllerBase
             );
         }
 
-        // Search by name or email
+        // Search by name or email (token-based flexible search)
         if (!string.IsNullOrEmpty(search))
         {
-            var searchLower = search.ToLower();
-            query = query.Where(u =>
-                u.FirstName.ToLower().Contains(searchLower) ||
-                u.LastName.ToLower().Contains(searchLower) ||
-                u.Email.ToLower().Contains(searchLower));
+            var searchTokens = search.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in searchTokens)
+            {
+                query = query.Where(u =>
+                    u.FirstName.ToLower().Contains(token) ||
+                    u.LastName.ToLower().Contains(token) ||
+                    u.Email.ToLower().Contains(token) ||
+                    (u.AthleteProfile != null && (
+                        (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                        (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                    )));
+            }
         }
 
         // Get total count before pagination
@@ -204,6 +212,7 @@ public class UsersController : ControllerBase
                 Height = user.AthleteProfile.Height,
                 Weight = user.AthleteProfile.Weight,
                 MedicalCertificateExpiry = user.AthleteProfile.MedicalCertificateExpiry,
+                Escalao = user.AthleteProfile.Escalao,
                 Teams = user.AthleteProfile.AthleteTeams.Select(at => new TeamInfo
                 {
                     Id = at.Team.Id,
@@ -1342,14 +1351,7 @@ public class FamilyLinkResponse
     public DateTime CreatedAt { get; set; }
 }
 
-public class PaginatedResponse<T>
-{
-    public IEnumerable<T> Items { get; set; } = new List<T>();
-    public int TotalCount { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages { get; set; }
-}
+
 
 // DTOs
 public class UserResponse
@@ -1392,6 +1394,7 @@ public class AthleteProfileInfo
     public int? Height { get; set; }
     public int? Weight { get; set; }
     public DateTime? MedicalCertificateExpiry { get; set; }
+    public string? Escalao { get; set; }
     public List<TeamInfo> Teams { get; set; } = new();
 }
 

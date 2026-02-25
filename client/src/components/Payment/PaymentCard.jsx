@@ -241,7 +241,6 @@ const PaymentCard = ({
                 <DiscountBadge discounts={discountsApplied} />
 
                 {/* Inscription alert */}
-                <InscriptionAlert inscriptionInfo={inscriptionInfo} />
 
                 {/* Main status */}
                 {paymentStatus === 'Regularizada' && renderPaid()}

@@ -33,6 +33,10 @@ namespace CdpApi.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Escalao")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("FirstName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -71,10 +75,6 @@ namespace CdpApi.Migrations
 
                     b.Property<int>("AthleteProfileId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Escalao")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("InscriptionPaid")
                         .HasColumnType("bit");
@@ -204,6 +204,45 @@ namespace CdpApi.Migrations
                         .IsUnique();
 
                     b.ToTable("CoachProfiles");
+                });
+
+            modelBuilder.Entity("CdpApi.Models.EscalaoRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("AthleteProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DocumentUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReviewedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteProfileId");
+
+                    b.ToTable("EscalaoRequests");
                 });
 
             modelBuilder.Entity("CdpApi.Models.Event", b =>
@@ -653,14 +692,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 24, 18, 31, 48, 832, DateTimeKind.Utc).AddTicks(1354),
+                            CreatedAt = new DateTime(2026, 2, 25, 15, 36, 44, 859, DateTimeKind.Utc).AddTicks(4624),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 2, 24, 18, 31, 48, 832, DateTimeKind.Utc).AddTicks(1356),
+                            CreatedAt = new DateTime(2026, 2, 25, 15, 36, 44, 859, DateTimeKind.Utc).AddTicks(4626),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -681,24 +720,21 @@ namespace CdpApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("FeeEscalao1Normal")
+                    b.Property<decimal>("FeeDiscount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("FeeEscalao1Sibling")
+                    b.Property<decimal>("FeeEscalao1Normal")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("FeeEscalao2Normal")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("FeeEscalao2Sibling")
+                    b.Property<decimal>("FeeNormalNormal")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal>("InscriptionFeeDiscount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("InscriptionFeeNormal")
                         .HasColumnType("decimal(18,2)");
@@ -924,12 +960,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 2, 24, 18, 31, 49, 4, DateTimeKind.Utc).AddTicks(6208),
+                            CreatedAt = new DateTime(2026, 2, 25, 15, 36, 44, 991, DateTimeKind.Utc).AddTicks(289),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$OOtv2frdFOpreS5c1qvtC.dO1ru/ude5aSUb.nUlYMfAZzHbCVnUS"
+                            PasswordHash = "$2a$11$NqbT6S1d9fF73ih5N0B4ROrgAF.Ir5iY/eb1W/RB5UfWHOHjRYQdC"
                         });
                 });
 
@@ -996,7 +1032,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 2, 24, 18, 31, 49, 4, DateTimeKind.Utc).AddTicks(6843),
+                            AssignedAt = new DateTime(2026, 2, 25, 15, 36, 44, 991, DateTimeKind.Utc).AddTicks(781),
                             RoleId = 2,
                             UserId = 1
                         });
@@ -1075,6 +1111,17 @@ namespace CdpApi.Migrations
                     b.Navigation("Team");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CdpApi.Models.EscalaoRequest", b =>
+                {
+                    b.HasOne("CdpApi.Models.AthleteProfile", "AthleteProfile")
+                        .WithMany()
+                        .HasForeignKey("AthleteProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AthleteProfile");
                 });
 
             modelBuilder.Entity("CdpApi.Models.Event", b =>

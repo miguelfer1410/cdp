@@ -118,20 +118,20 @@ const FamilyAssociationsManager = () => {
                         <tbody>
                             {requests.map(req => (
                                 <tr key={req.id}>
-                                    <td>
+                                    <td data-label="Solicitante">
                                         <div className="fam-requester-cell">
                                             <span className="fam-requester-name">{req.requesterName}</span>
                                             <span className="fam-requester-email">{req.requesterEmail}</span>
                                         </div>
                                     </td>
-                                    <td className="fam-family-name">{req.familyMemberName}</td>
-                                    <td>{req.familyMemberNif || '—'}</td>
-                                    <td>{formatDate(req.familyMemberBirthDate)}</td>
-                                    <td className="fam-message">{req.requesterMessage || <span className="fam-no-msg">Sem mensagem</span>}</td>
-                                    <td>{formatDate(req.requestedAt)}</td>
-                                    {filter === 'Seen' && <td>{formatDate(req.seenAt)}</td>}
+                                    <td data-label="Nome do Familiar" className="fam-family-name">{req.familyMemberName}</td>
+                                    <td data-label="NIF">{req.familyMemberNif || '—'}</td>
+                                    <td data-label="Data de Nascimento">{formatDate(req.familyMemberBirthDate)}</td>
+                                    <td data-label="Mensagem" className="fam-message">{req.requesterMessage || <span className="fam-no-msg">Sem mensagem</span>}</td>
+                                    <td data-label="Data do Pedido">{formatDate(req.requestedAt)}</td>
+                                    {filter === 'Seen' && <td data-label="Visto em">{formatDate(req.seenAt)}</td>}
                                     {filter === 'Pending' && (
-                                        <td>
+                                        <td data-label="Ação">
                                             <button
                                                 className="fam-seen-btn"
                                                 onClick={() => handleMarkSeen(req.id)}

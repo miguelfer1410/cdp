@@ -1,7 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// SUBSTITUIR server/Controllers/FeeController.cs
-// ═══════════════════════════════════════════════════════════════════════════════
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,12 +37,11 @@ namespace CdpApi.Controllers
                     s.Id,
                     s.Name,
                     s.MonthlyFee,
+                    s.FeeNormalNormal,
                     s.FeeEscalao1Normal,
-                    s.FeeEscalao1Sibling,
                     s.FeeEscalao2Normal,
-                    s.FeeEscalao2Sibling,
+                    s.FeeDiscount,
                     s.InscriptionFeeNormal,
-                    s.InscriptionFeeDiscount,
                     s.QuotaIncluded
                 })
                 .ToListAsync();
@@ -107,17 +102,19 @@ namespace CdpApi.Controllers
             var sport = await _context.Sports.FindAsync(id);
             if (sport == null) return NotFound("Modalidade não encontrada.");
 
-            // Legacy field (kept for backward compat)
-            sport.MonthlyFee = request.FeeEscalao2Normal > 0 ? request.FeeEscalao2Normal : request.Amount;
+            sport.FeeNormalNormal    = request.FeeNormalNormal;
+            sport.FeeEscalao1Normal  = request.FeeEscalao1Normal;
+            sport.FeeEscalao2Normal  = request.FeeEscalao2Normal;
+            sport.FeeDiscount        = request.FeeDiscount;
+            sport.InscriptionFeeNormal = request.InscriptionFeeNormal;
+            sport.QuotaIncluded      = request.QuotaIncluded;
 
-            sport.FeeEscalao1Normal    = request.FeeEscalao1Normal;
-            sport.FeeEscalao1Sibling   = request.FeeEscalao1Sibling;
-            sport.FeeEscalao2Normal    = request.FeeEscalao2Normal;
-            sport.FeeEscalao2Sibling   = request.FeeEscalao2Sibling;
-            sport.InscriptionFeeNormal  = request.InscriptionFeeNormal;
-            sport.InscriptionFeeDiscount = request.InscriptionFeeDiscount;
-            sport.QuotaIncluded        = request.QuotaIncluded;
-            sport.UpdatedAt            = DateTime.UtcNow;
+            // Keep legacy field in sync
+            sport.MonthlyFee = request.FeeEscalao2Normal > 0 ? request.FeeEscalao2Normal
+                             : request.FeeNormalNormal   > 0 ? request.FeeNormalNormal
+                             : 0;
+
+            sport.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(new { message = $"Preços de {sport.Name} atualizados." });
@@ -134,14 +131,11 @@ namespace CdpApi.Controllers
 
     public class UpdateSportFeeRequest
     {
-        /// <summary>Legacy / fallback (set equal to FeeEscalao2Normal if not explicitly passed).</summary>
-        public decimal Amount               { get; set; }
-        public decimal FeeEscalao1Normal    { get; set; }
-        public decimal FeeEscalao1Sibling   { get; set; }
-        public decimal FeeEscalao2Normal    { get; set; }
-        public decimal FeeEscalao2Sibling   { get; set; }
-        public decimal InscriptionFeeNormal  { get; set; }
-        public decimal InscriptionFeeDiscount { get; set; }
-        public bool    QuotaIncluded        { get; set; } = true;
+        public decimal FeeNormalNormal   { get; set; }
+        public decimal FeeEscalao1Normal { get; set; }
+        public decimal FeeEscalao2Normal { get; set; }
+        public decimal FeeDiscount       { get; set; }
+        public decimal InscriptionFeeNormal { get; set; }
+        public bool    QuotaIncluded     { get; set; } = true;
     }
 }

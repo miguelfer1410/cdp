@@ -2,6 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { FaSave, FaSpinner, FaEuroSign, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import './FeeManager.css';
 
+// Defined outside FeeManager so React does not remount it on every render
+const FeeInput = ({ label, field, sport, onChange }) => (
+    <div className="fee-input-container">
+        <label>{label}</label>
+        <div className="input-group">
+            <span className="currency-symbol">€</span>
+            <input
+                type="number"
+                step="0.50"
+                min="0"
+                value={sport[field]}
+                onChange={e => onChange(sport.id, field, e.target.value)}
+            />
+        </div>
+    </div>
+);
+
 const FeeManager = () => {
     const [memberFee, setMemberFee] = useState(0);
     const [minorMemberFee, setMinorMemberFee] = useState(0);
@@ -27,12 +44,11 @@ const FeeManager = () => {
             setMinorMemberFee(data.minorMemberFee || 0);
             setSports(data.sports.map(s => ({
                 ...s,
+                feeNormalNormal: s.feeNormalNormal ?? 0,
                 feeEscalao1Normal: s.feeEscalao1Normal ?? 0,
-                feeEscalao1Sibling: s.feeEscalao1Sibling ?? 0,
-                feeEscalao2Normal: s.feeEscalao2Normal ?? s.monthlyFee ?? 0,
-                feeEscalao2Sibling: s.feeEscalao2Sibling ?? 0,
+                feeEscalao2Normal: s.feeEscalao2Normal ?? 0,
+                feeDiscount: s.feeDiscount ?? 0,
                 inscriptionFeeNormal: s.inscriptionFeeNormal ?? 0,
-                inscriptionFeeDiscount: s.inscriptionFeeDiscount ?? 0,
                 quotaIncluded: s.quotaIncluded ?? true
             })));
         } catch (err) {
@@ -45,7 +61,7 @@ const FeeManager = () => {
     const handleSportField = (id, field, value) => {
         setSports(prev => prev.map(s =>
             s.id === id
-                ? { ...s, [field]: field === 'quotaIncluded' ? value : (parseFloat(value) || 0) }
+                ? { ...s, [field]: field === 'quotaIncluded' ? value : value }
                 : s
         ));
     };
@@ -74,13 +90,11 @@ const FeeManager = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
-                    amount: sport.feeEscalao2Normal,
-                    feeEscalao1Normal: sport.feeEscalao1Normal,
-                    feeEscalao1Sibling: sport.feeEscalao1Sibling,
-                    feeEscalao2Normal: sport.feeEscalao2Normal,
-                    feeEscalao2Sibling: sport.feeEscalao2Sibling,
-                    inscriptionFeeNormal: sport.inscriptionFeeNormal,
-                    inscriptionFeeDiscount: sport.inscriptionFeeDiscount,
+                    feeNormalNormal: parseFloat(sport.feeNormalNormal) || 0,
+                    feeEscalao1Normal: parseFloat(sport.feeEscalao1Normal) || 0,
+                    feeEscalao2Normal: parseFloat(sport.feeEscalao2Normal) || 0,
+                    feeDiscount: parseFloat(sport.feeDiscount) || 0,
+                    inscriptionFeeNormal: parseFloat(sport.inscriptionFeeNormal) || 0,
                     quotaIncluded: sport.quotaIncluded,
                 })
             });
@@ -90,6 +104,7 @@ const FeeManager = () => {
         } catch (err) { setError(err.message); }
         finally { setSavingSport(null); }
     };
+
 
     if (loading) return (
         <div className="fee-loading"><FaSpinner className="icon-spin" /> A carregar quotas...</div>
@@ -160,76 +175,14 @@ const FeeManager = () => {
                         </div>
 
                         <div className="fee-card-body fee-card-body--col">
-
                             <div className="fee-section">
-                                <div className="fee-section-label">Mensalidades (Escalão 1)</div>
-                                <div className="fee-row">
-                                    <div className="fee-input-container">
-                                        <label>Normal</label>
-                                        <div className="input-group">
-                                            <span className="currency-symbol">€</span>
-                                            <input type="number" step="0.50" min="0"
-                                                value={sport.feeEscalao1Normal}
-                                                onChange={e => handleSportField(sport.id, 'feeEscalao1Normal', e.target.value)} />
-                                        </div>
-                                    </div>
-                                    <div className="fee-input-container">
-                                        <label>Irmão / 2ª Modalidade</label>
-                                        <div className="input-group">
-                                            <span className="currency-symbol">€</span>
-                                            <input type="number" step="0.50" min="0"
-                                                value={sport.feeEscalao1Sibling}
-                                                onChange={e => handleSportField(sport.id, 'feeEscalao1Sibling', e.target.value)} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="fee-section">
-                                <div className="fee-section-label">Mensalidades (Escalão 2)</div>
-                                <div className="fee-row">
-                                    <div className="fee-input-container">
-                                        <label>Normal</label>
-                                        <div className="input-group">
-                                            <span className="currency-symbol">€</span>
-                                            <input type="number" step="0.50" min="0"
-                                                value={sport.feeEscalao2Normal}
-                                                onChange={e => handleSportField(sport.id, 'feeEscalao2Normal', e.target.value)} />
-                                        </div>
-                                    </div>
-                                    <div className="fee-input-container">
-                                        <label>Irmão / 2ª Modalidade</label>
-                                        <div className="input-group">
-                                            <span className="currency-symbol">€</span>
-                                            <input type="number" step="0.50" min="0"
-                                                value={sport.feeEscalao2Sibling}
-                                                onChange={e => handleSportField(sport.id, 'feeEscalao2Sibling', e.target.value)} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="fee-section">
-                                <div className="fee-section-label">Taxa de Inscrição</div>
-                                <div className="fee-row">
-                                    <div className="fee-input-container">
-                                        <label>Normal</label>
-                                        <div className="input-group">
-                                            <span className="currency-symbol">€</span>
-                                            <input type="number" step="0.50" min="0"
-                                                value={sport.inscriptionFeeNormal}
-                                                onChange={e => handleSportField(sport.id, 'inscriptionFeeNormal', e.target.value)} />
-                                        </div>
-                                    </div>
-                                    <div className="fee-input-container">
-                                        <label>Irmão / 2ª Modalidade</label>
-                                        <div className="input-group">
-                                            <span className="currency-symbol">€</span>
-                                            <input type="number" step="0.50" min="0"
-                                                value={sport.inscriptionFeeDiscount}
-                                                onChange={e => handleSportField(sport.id, 'inscriptionFeeDiscount', e.target.value)} />
-                                        </div>
-                                    </div>
+                                <div className="fee-section-label">Mensalidades</div>
+                                <div className="fee-row fee-row--5cols">
+                                    <FeeInput label="Sem Escalão" field="feeNormalNormal" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Escalão 1" field="feeEscalao1Normal" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Escalão 2" field="feeEscalao2Normal" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Irmão / 2ª Mod." field="feeDiscount" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Inscrição" field="inscriptionFeeNormal" sport={sport} onChange={handleSportField} />
                                 </div>
                             </div>
 

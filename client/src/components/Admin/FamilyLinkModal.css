@@ -9,7 +9,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 10000;
 }
 
 .fam-link-modal {
@@ -20,7 +20,7 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 95vh;
 }
 
 .fam-link-header {
@@ -353,5 +353,59 @@
 @keyframes spin {
     to {
         transform: translateY(-50%) rotate(360deg);
+    }
+}
+
+@media (max-width: 600px) {
+    .fam-link-header {
+        padding: 1rem;
+    }
+
+    .fam-link-body {
+        padding: 1.25rem;
+    }
+
+    .fam-link-item,
+    .fam-link-result-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .fam-link-actions {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .fam-link-rel-select,
+    .fam-link-rel-select-mini {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        margin-top: 0;
+    }
+
+    .fam-link-add-btn,
+    .fam-link-delete-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem;
+    }
+
+    .fam-link-user-info {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 0.75rem;
+        width: 100%;
+    }
+
+    .fam-link-footer {
+        padding: 1rem;
+    }
+
+    .fam-link-done-btn {
+        width: 100%;
+        justify-content: center;
     }
 }

@@ -1,0 +1,376 @@
+/* client/src/components/Admin/EscalaoRequestsManager.css */
+
+.escalao-manager {
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.escalao-manager-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.escalao-manager-header h2 {
+    font-size: 1.4rem;
+    color: #003380;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 4px;
+}
+
+.escalao-manager-header p {
+    color: #64748b;
+    font-size: 0.88rem;
+    margin: 0;
+}
+
+/* Tabs */
+.escalao-manager-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0;
+}
+
+.escalao-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border: none;
+    background: none;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    border-radius: 6px 6px 0 0;
+    transition: color 0.15s;
+}
+
+.escalao-tab:hover {
+    color: #003380;
+}
+
+.escalao-tab.active {
+    color: #003380;
+    border-bottom-color: #003380;
+}
+
+/* States */
+.escalao-manager-loading,
+.escalao-manager-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px;
+    color: #94a3b8;
+    font-size: 1rem;
+}
+
+.escalao-manager-empty svg {
+    font-size: 2.5rem;
+}
+
+.escalao-manager-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.88rem;
+}
+
+/* List */
+.escalao-manager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Request card */
+.escalao-request-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Athlete row */
+.erc-athlete {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.erc-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.erc-name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.erc-email {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.erc-escalao-atual {
+    margin-left: auto;
+    font-size: 0.82rem;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.erc-escalao-atual strong {
+    color: #003380;
+}
+
+/* Meta */
+.erc-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.erc-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+/* Actions */
+.erc-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.erc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.erc-btn--pdf {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.erc-btn--pdf:hover {
+    background: #fee2e2;
+}
+
+.erc-btn--accept {
+    background: #003380;
+    color: white;
+}
+
+.erc-btn--accept:hover:not(:disabled) {
+    background: #00509e;
+}
+
+.erc-btn--reject {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.erc-btn--reject:hover:not(:disabled) {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+.erc-btn--accept-alt {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.erc-btn--accept-alt:hover:not(:disabled) {
+    background: #bae6fd;
+}
+
+.erc-approval-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.erc-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.erc-note-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.erc-note-input:focus {
+    border-color: #003380;
+    box-shadow: 0 0 0 3px rgba(0, 51, 128, 0.1);
+}
+
+.erc-note-input::placeholder {
+    color: #94a3b8;
+}
+
+.erc-resolved-note {
+    font-size: 0.82rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+.erc-resolved-date {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-left: auto;
+}
+
+.icon-spin {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .escalao-manager {
+        padding: 16px;
+    }
+
+    .escalao-manager-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .escalao-manager-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .escalao-tab {
+        padding: 10px 14px;
+        flex-shrink: 0;
+    }
+
+    .erc-athlete {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .erc-escalao-atual {
+        margin-left: 0;
+        width: 100%;
+        text-align: center;
+    }
+
+    .erc-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .erc-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .erc-btn {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .erc-approval-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .erc-resolved-date {
+        margin-left: 0;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .escalao-manager {
+        padding: 12px;
+    }
+
+    .escalao-request-card {
+        padding: 16px;
+    }
+
+    .escalao-manager-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .erc-name {
+        font-size: 0.9rem;
+    }
+}

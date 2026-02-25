@@ -432,20 +432,9 @@ const NewsManager = () => {
                                 </small>
 
                                 {galleryPreviews.length > 0 && (
-                                    <div className="gallery-preview-grid" style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-                                        gap: '12px',
-                                        marginBottom: '15px'
-                                    }}>
+                                    <div className="gallery-preview-grid">
                                         {galleryPreviews.map((preview, index) => (
-                                            <div key={index} style={{
-                                                position: 'relative',
-                                                aspectRatio: '16/9',
-                                                borderRadius: '8px',
-                                                overflow: 'hidden',
-                                                border: '2px solid #e0e0e0'
-                                            }}>
+                                            <div key={index} className="gallery-item">
                                                 <img
                                                     src={preview}
                                                     alt={`Gallery ${index + 1}`}
@@ -453,23 +442,8 @@ const NewsManager = () => {
                                                 />
                                                 <button
                                                     type="button"
+                                                    className="btn-remove-gallery"
                                                     onClick={() => removeGalleryImage(index)}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        top: '4px',
-                                                        right: '4px',
-                                                        background: 'rgba(255, 0, 0, 0.8)',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: '50%',
-                                                        width: '24px',
-                                                        height: '24px',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '14px'
-                                                    }}
                                                     title="Remover"
                                                 >
                                                     ×

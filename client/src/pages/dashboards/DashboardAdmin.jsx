@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort, FaEuroSign, FaBell } from 'react-icons/fa';
+import { FaImages, FaBars, FaTimes, FaNewspaper, FaFutbol, FaHandshake, FaSignOutAlt, FaUsers, FaUserFriends, FaCalendarAlt, FaSort, FaEuroSign, FaBell, FaChartLine } from 'react-icons/fa';
 import HeroBannerManager from '../../components/Admin/HeroBannerManager';
 import NewsManager from '../../components/Admin/NewsManager';
 import SportsManager from '../../components/Admin/SportsManager';
@@ -13,6 +13,8 @@ import PeopleManager from '../../components/Admin/PeopleManager';
 import FeeManager from '../../components/Admin/FeeManager';
 import PaymentManager from '../../components/Admin/PaymentManager';
 import FamilyAssociationsManager from '../../components/Admin/FamilyAssociationsManager';
+import EscalaoRequestsManager from '../../components/Admin/EscalaoRequestsManager';
+import ClubAnalytics from '../../components/Admin/ClubAnalytics';
 
 const NAV_ITEMS_CONFIG = {
     hero: { id: 'hero', label: 'Banner', icon: <FaImages /> },
@@ -24,10 +26,11 @@ const NAV_ITEMS_CONFIG = {
     //calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> },
     fees: { id: 'fees', label: 'Config. Quotas', icon: <FaEuroSign /> },
     payments: { id: 'payments', label: 'Pagamentos', icon: <FaEuroSign /> },
-    requests: { id: 'requests', label: 'Requisições', icon: <FaBell /> }
+    requests: { id: 'requests', label: 'Requisições', icon: <FaBell /> },
+    analytics: { id: 'analytics', label: 'Análise', icon: <FaChartLine /> }
 };
 
-const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people'/*, 'calendar'*/, 'fees', 'payments', 'requests'];
+const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people'/*, 'calendar'*/, 'fees', 'payments', 'requests', 'analytics'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
@@ -43,6 +46,7 @@ const DashboardAdmin = () => {
     const [navOrder, setNavOrder] = useState(DEFAULT_NAV_ORDER);
     const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [requestSubTab, setRequestSubTab] = useState('family'); // 'family' or 'escalao'
 
     useEffect(() => {
         // Load nav order from localStorage
@@ -96,6 +100,29 @@ const DashboardAdmin = () => {
         }
     }, [navigate]);
 
+    const [notifications, setNotifications] = useState({ totalPendingRequests: 0 });
+
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5285/api/admin/notifications', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setNotifications(data);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         sessionStorage.removeItem('adminActiveTab'); // Clear session tab on logout
@@ -106,6 +133,10 @@ const DashboardAdmin = () => {
         setActiveTab(tabId);
         sessionStorage.setItem('adminActiveTab', tabId); // Save active tab to session
         setIsSidebarOpen(false);
+        if (tabId === 'requests') {
+            // Refetch notifications when clicking requests to update badge if they processed something
+            setTimeout(fetchNotifications, 1000);
+        }
     };
 
     const handleSaveNavOrder = (newOrder) => {
@@ -153,9 +184,15 @@ const DashboardAdmin = () => {
                             <button
                                 key={item.id}
                                 className={`admin-nav-item ${activeTab === item.id ? 'active' : ''}`}
-                                onClick={() => setActiveTab(item.id)}
+                                onClick={() => handleNavClick(item.id)}
                             >
-                                {item.icon} {item.label}
+                                <div className="nav-item-icon-wrapper">
+                                    {item.icon}
+                                    {item.id === 'requests' && notifications.totalPendingRequests > 0 && (
+                                        <span className="sidebar-badge"></span>
+                                    )}
+                                </div>
+                                {item.label}
                             </button>
                         );
                     })}
@@ -185,7 +222,28 @@ const DashboardAdmin = () => {
                 {activeTab === 'calendar' && <CalendarManager />}
                 {activeTab === 'fees' && <FeeManager />}
                 {activeTab === 'payments' && <PaymentManager />}
-                {activeTab === 'requests' && <FamilyAssociationsManager />}
+                {activeTab === 'analytics' && <ClubAnalytics />}
+                {activeTab === 'requests' && (
+                    <div className="requests-section">
+                        <div className="admin-sub-tabs">
+                            <button
+                                className={`sub-tab-btn ${requestSubTab === 'family' ? 'active' : ''}`}
+                                onClick={() => setRequestSubTab('family')}
+                            >
+                                <FaUserFriends /> Associação Familiar
+                            </button>
+                            <button
+                                className={`sub-tab-btn ${requestSubTab === 'escalao' ? 'active' : ''}`}
+                                onClick={() => setRequestSubTab('escalao')}
+                            >
+                                <FaSort /> Pedidos de Escalão
+                            </button>
+                        </div>
+                        <div className="sub-tab-content">
+                            {requestSubTab === 'family' ? <FamilyAssociationsManager /> : <EscalaoRequestsManager />}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <NavReorderModal

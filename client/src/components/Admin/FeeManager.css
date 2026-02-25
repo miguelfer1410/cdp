@@ -69,6 +69,12 @@
     gap: 20px;
 }
 
+/* Sport fee cards span full width to accommodate 5 fee inputs */
+.fee-card:not(.fee-card--full) {
+    grid-column: 1 / -1;
+}
+
+
 /* ── Card ───────────────────────────────────────────────── */
 .fee-card {
     background: white;
@@ -210,6 +216,12 @@
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
+}
+
+.fee-row--5cols {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
 }
 
 .fee-row--narrow {

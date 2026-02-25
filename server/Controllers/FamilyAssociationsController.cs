@@ -19,23 +19,54 @@ public class FamilyAssociationsController : ControllerBase
         _context = context;
     }
 
+    // ────────────────────────────────────────────────────────────────────────────
+    // HELPER: resolve which userId the caller is authorised to access
+    // ────────────────────────────────────────────────────────────────────────────
+    private async Task<int?> GetAuthorizedUserIdAsync(int? requestedUserId)
+    {
+        var loggedInIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(loggedInIdClaim) || !int.TryParse(loggedInIdClaim, out int loggedInId))
+            return null;
+
+        if (!requestedUserId.HasValue || requestedUserId.Value == loggedInId)
+            return loggedInId;
+
+        var loggedInUser = await _context.Users.FindAsync(loggedInId);
+        var requestedUser = await _context.Users.FindAsync(requestedUserId.Value);
+        if (loggedInUser == null || requestedUser == null) return null;
+
+        var GetBase = (string email) =>
+        {
+            var atIndex = email.ToLower().LastIndexOf('@');
+            if (atIndex < 0) return email.ToLower();
+            var local = email.Substring(0, atIndex).ToLower();
+            var domain = email.Substring(atIndex).ToLower();
+            var plusIndex = local.IndexOf('+');
+            return (plusIndex >= 0 ? local.Substring(0, plusIndex) : local) + domain;
+        };
+
+        if (GetBase(loggedInUser.Email) != GetBase(requestedUser.Email))
+            return null;
+
+        return requestedUserId.Value;
+    }
+
     // POST: api/family-associations/request
     // Any authenticated user submits a request
     [HttpPost("request")]
     public async Task<IActionResult> SubmitRequest([FromBody] FamilyAssociationRequestDto request)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("sub")?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var requesterId))
-            return Unauthorized(new { message = "Utilizador não autenticado" });
+        var targetUserId = await GetAuthorizedUserIdAsync(request.UserId);
+        if (targetUserId == null)
+            return Unauthorized(new { message = "Não tens permissão para este perfil." });
 
         if (string.IsNullOrWhiteSpace(request.FamilyMemberName))
             return BadRequest(new { message = "Nome do familiar é obrigatório" });
 
         var newRequest = new FamilyAssociationRequest
         {
-            RequesterId = requesterId,
+            RequesterId = targetUserId.Value,
             FamilyMemberName = request.FamilyMemberName.Trim(),
             FamilyMemberNif = request.FamilyMemberNif?.Trim(),
             FamilyMemberBirthDate = request.FamilyMemberBirthDate,
@@ -53,16 +84,14 @@ public class FamilyAssociationsController : ControllerBase
     // GET: api/family-associations/my-requests
     // Returns current user's own submitted requests
     [HttpGet("my-requests")]
-    public async Task<ActionResult<IEnumerable<FamilyRequestResponse>>> GetMyRequests()
+    public async Task<ActionResult<IEnumerable<FamilyRequestResponse>>> GetMyRequests([FromQuery] int? userId)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("sub")?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var requesterId))
-            return Unauthorized(new { message = "Utilizador não autenticado" });
+        var targetUserId = await GetAuthorizedUserIdAsync(userId);
+        if (targetUserId == null)
+            return Unauthorized(new { message = "Não tens permissão para ver estes pedidos." });
 
         var requests = await _context.FamilyAssociationRequests
-            .Where(r => r.RequesterId == requesterId)
+            .Where(r => r.RequesterId == targetUserId.Value)
             .OrderByDescending(r => r.RequestedAt)
             .Select(r => new FamilyRequestResponse
             {
@@ -144,6 +173,7 @@ public class FamilyAssociationRequestDto
     public string? FamilyMemberNif { get; set; }
     public DateTime? FamilyMemberBirthDate { get; set; }
     public string? RequesterMessage { get; set; }
+    public int? UserId { get; set; }
 }
 
 public class FamilyRequestResponse

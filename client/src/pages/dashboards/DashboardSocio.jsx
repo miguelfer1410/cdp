@@ -27,6 +27,7 @@ import {
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import BecomeMember from '../../components/BecomeMember/BecomeMember';
 import FamilyAssociationModal from '../../components/FamilyAssociationModal/FamilyAssociationModal';
+import DocumentsModal from '../../components/DocumentsModal/DocumentsModal';
 import './DashboardSocio.css';
 
 const DashboardSocio = () => {
@@ -35,9 +36,11 @@ const DashboardSocio = () => {
     const [userData, setUserData] = useState(null);
     const [paymentData, setPaymentData] = useState(null);
     const [paymentHistory, setPaymentHistory] = useState([]);
+    const [memberQuota, setMemberQuota] = useState(null);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+    const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
 
     // Linked profiles (accounts sharing the same base email)
     const [linkedUsers] = useState(() => {
@@ -108,19 +111,26 @@ const DashboardSocio = () => {
                 console.log(userData);
 
                 if (userData.membershipStatus === 'Active') {
-                    // Fetch payment summary
-                    const paymentResponse = await fetch('http://localhost:5285/api/payment/summary', {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
+                    // Fetch fees to determine correct quota (minor vs adult)
+                    const feesResponse = await fetch('http://localhost:5285/api/fees', {
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
-
-                    if (paymentResponse.ok) {
-                        const paymentData = await paymentResponse.json();
-                        setPaymentData(paymentData);
-                        console.log(paymentData);
+                    if (feesResponse.ok) {
+                        const feesData = await feesResponse.json();
+                        // Calculate age
+                        let isMinor = false;
+                        if (data.birthDate) {
+                            const today = new Date();
+                            const birth = new Date(data.birthDate);
+                            let age = today.getFullYear() - birth.getFullYear();
+                            const m = today.getMonth() - birth.getMonth();
+                            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                            isMinor = age < 18;
+                        }
+                        const quota = isMinor
+                            ? (feesData.minorMemberFee || feesData.memberFee || 0)
+                            : (feesData.memberFee || 0);
+                        setMemberQuota(quota);
                     }
 
                     // Fetch payment history
@@ -450,7 +460,7 @@ const DashboardSocio = () => {
                                 <div className="payment-summary">
                                     <div className="payment-summary-item">
                                         <p>Quota Mensal</p>
-                                        <h3>€{memberData.monthlyFee.toFixed(2)}</h3>
+                                        <h3>{memberQuota !== null ? `€${Number(memberQuota).toFixed(2)}` : '—'}</h3>
                                     </div>
                                     <div className="payment-summary-item">
                                         <p>Próximo Pagamento</p>
@@ -619,24 +629,72 @@ const DashboardSocio = () => {
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><FaFolder /> Documentos</h2>
+                                    <button
+                                        className="view-all-link"
+                                        onClick={() => setIsDocumentsModalOpen(true)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}
+                                    >
+                                        Ver Todos <FaArrowRight />
+                                    </button>
                                 </div>
 
-                                {documents.map((doc, index) => (
-                                    <div key={index} className="document-item">
-                                        <div className="document-info">
-                                            <div className="document-icon">
-                                                <FaFilePdf />
+                                {documents.map((doc, index) => {
+                                    const isMembershipCard = doc.name === 'Cartão de Sócio';
+                                    const isRegulation = doc.name === 'Regulamento Interno';
+                                    const downloadUrl = isMembershipCard
+                                        ? `http://localhost:5285/api/membershipcard/download?userId=${currentUserId}`
+                                        : isRegulation
+                                            ? 'http://localhost:5285/docs/regulamento_cdpovoa.pdf'
+                                            : '#';
+
+                                    const handleDownload = async (e) => {
+                                        if (downloadUrl === '#') return;
+                                        if (!isMembershipCard) return; // Static links work without fetch
+
+                                        e.preventDefault();
+                                        const token = localStorage.getItem('token');
+                                        try {
+                                            const response = await fetch(downloadUrl, {
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (response.ok) {
+                                                const blob = await response.blob();
+                                                const url = window.URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `Cartao_Socio_${currentUserId}.pdf`;
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                a.remove();
+                                            }
+                                        } catch (err) {
+                                            console.error('Download failed', err);
+                                        }
+                                    };
+
+                                    return (
+                                        <div key={index} className="document-item">
+                                            <div className="document-info">
+                                                <div className="document-icon">
+                                                    <FaFilePdf />
+                                                </div>
+                                                <div>
+                                                    <h4>{doc.name}</h4>
+                                                    <p>{doc.type} • {doc.size}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4>{doc.name}</h4>
-                                                <p>{doc.type} • {doc.size}</p>
-                                            </div>
+                                            <a
+                                                href={downloadUrl}
+                                                target={!isMembershipCard ? "_blank" : undefined}
+                                                rel={!isMembershipCard ? "noopener noreferrer" : undefined}
+                                                className="document-download"
+                                                onClick={handleDownload}
+                                            >
+                                                <FaDownload />
+                                            </a>
                                         </div>
-                                        <Link to="#" className="document-download">
-                                            <FaDownload />
-                                        </Link>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -654,6 +712,12 @@ const DashboardSocio = () => {
             <FamilyAssociationModal
                 isOpen={isFamilyModalOpen}
                 onClose={() => setIsFamilyModalOpen(false)}
+            />
+
+            <DocumentsModal
+                isOpen={isDocumentsModalOpen}
+                onClose={() => setIsDocumentsModalOpen(false)}
+                userId={currentUserId}
             />
         </div>
     );

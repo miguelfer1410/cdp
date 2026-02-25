@@ -1,8 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// SUBSTITUIR o conteúdo de server/Controllers/PaymentController.cs
-// Mantém todos os endpoints existentes + novos campos no quota response
-// ═══════════════════════════════════════════════════════════════════════════════
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -191,46 +186,94 @@ public class PaymentController : ControllerBase
     // GET: api/payment/admin/athletes-status
     [HttpGet("admin/athletes-status")]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<AthletePaymentStatusDto>>> GetAthletePaymentStatuses(
+    public async Task<ActionResult<PaginatedResponse<AthletePaymentStatusDto>>> GetAthletePaymentStatuses(
         [FromQuery] int? month = null,
-        [FromQuery] int? year  = null)
+        [FromQuery] int? year  = null,
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null,
+        [FromQuery] int? teamId = null,
+        [FromQuery] int? sportId = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         var targetYear  = year  ?? DateTime.UtcNow.Year;
         var targetMonth = month ?? DateTime.UtcNow.Month;
 
         try
         {
-            var members = await _context.Users
+            var query = _context.Users
                 .Include(u => u.AthleteProfile)
                     .ThenInclude(ap => ap.AthleteTeams)
                         .ThenInclude(at => at.Team)
                             .ThenInclude(t => t.Sport)
                 .Include(u => u.MemberProfile)
-                .Where(u => u.MemberProfile != null && u.IsActive)
+                .Where(u => u.MemberProfile != null && u.IsActive);
+
+            // Filter by search
+            if (!string.IsNullOrEmpty(search))
+            {
+                var s = search.ToLower();
+                query = query.Where(u => u.FirstName.ToLower().Contains(s) || 
+                                           u.LastName.ToLower().Contains(s) || 
+                                           u.Email.ToLower().Contains(s));
+            }
+
+            // Filter by team
+            if (teamId.HasValue)
+            {
+                query = query.Where(u => u.AthleteProfile != null && 
+                                           u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
+            }
+
+            // Filter by sport
+            if (sportId.HasValue)
+            {
+                query = query.Where(u => u.AthleteProfile != null && 
+                                           u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null));
+            }
+
+            // Load all matching members — status is derived from Payments so we can't filter in SQL
+            var allMembers = await query
+                .OrderBy(u => u.FirstName)
+                .ThenBy(u => u.LastName)
                 .ToListAsync();
 
-            var result = new List<AthletePaymentStatusDto>();
+            var allResults = new List<AthletePaymentStatusDto>();
 
-            foreach (var member in members)
+            foreach (var member in allMembers)
             {
                 int? periodMonth = null;
                 int  periodYear  = targetYear;
                 string paymentPreference = member.MemberProfile!.PaymentPreference ?? "Monthly";
                 if (paymentPreference == "Monthly") periodMonth = targetMonth;
 
-                var existingPayment = await _context.Payments
-                    .Where(p => p.MemberProfileId == member.MemberProfile.Id &&
-                                p.PeriodYear == periodYear &&
-                                p.PeriodMonth == periodMonth)
-                    .OrderByDescending(p => p.CreatedAt)
-                    .FirstOrDefaultAsync();
+                // Split query so EF Core generates correct IS NULL vs = @month
+                Payment? existingPayment;
+                if (paymentPreference == "Annual")
+                {
+                    existingPayment = await _context.Payments
+                        .Where(p => p.MemberProfileId == member.MemberProfile.Id &&
+                                    p.PeriodYear == periodYear &&
+                                    p.PeriodMonth == null)
+                        .OrderByDescending(p => p.CreatedAt)
+                        .FirstOrDefaultAsync();
+                }
+                else
+                {
+                    existingPayment = await _context.Payments
+                        .Where(p => p.MemberProfileId == member.MemberProfile.Id &&
+                                    p.PeriodYear == periodYear &&
+                                    p.PeriodMonth == periodMonth)
+                        .OrderByDescending(p => p.CreatedAt)
+                        .FirstOrDefaultAsync();
+                }
 
-                string status = "Unpaid";
+                string derivedStatus = "Unpaid";
                 PaymentDetailsDto? paymentDetails = null;
 
                 if (existingPayment != null)
                 {
-                    status = existingPayment.Status switch
+                    derivedStatus = existingPayment.Status switch
                     {
                         "Completed" => "Regularizada",
                         "Pending"   => "Pendente",
@@ -242,23 +285,6 @@ public class PaymentController : ControllerBase
                         {
                             Entity    = existingPayment.Entity ?? "",
                             Reference = existingPayment.Reference ?? ""
-                        };
-                    }
-                }
-                else
-                {
-                    var pendingPayment = await _context.Payments
-                        .Where(p => p.MemberProfileId == member.MemberProfile.Id && p.Status == "Pending")
-                        .OrderByDescending(p => p.CreatedAt)
-                        .FirstOrDefaultAsync();
-
-                    if (pendingPayment != null)
-                    {
-                        status = "Pendente";
-                        paymentDetails = new PaymentDetailsDto
-                        {
-                            Entity    = pendingPayment.Entity ?? "",
-                            Reference = pendingPayment.Reference ?? ""
                         };
                     }
                 }
@@ -278,7 +304,7 @@ public class PaymentController : ControllerBase
 
                 var calc = await CalculateQuotaWithBreakdown(member);
 
-                result.Add(new AthletePaymentStatusDto
+                allResults.Add(new AthletePaymentStatusDto
                 {
                     UserId            = member.Id,
                     Name              = $"{member.FirstName} {member.LastName}",
@@ -286,13 +312,38 @@ public class PaymentController : ControllerBase
                     Sport             = currentSport,
                     PaymentPreference = paymentPreference,
                     CurrentPeriod     = periodMonth.HasValue ? $"{periodMonth.Value}/{periodYear}" : $"{periodYear}",
-                    Status            = status,
+                    Status            = derivedStatus,
                     Amount            = calc.Total,
                     PaymentDetails    = paymentDetails
                 });
             }
 
-            return Ok(result);
+            // Apply status filter AFTER computing all statuses (can't be done in SQL)
+            if (!string.IsNullOrEmpty(status) && status != "all")
+            {
+                allResults = allResults.Where(r => status.ToLower() switch {
+                    "paid"    => r.Status == "Regularizada",
+                    "pending" => r.Status == "Pendente",
+                    "unpaid"  => r.Status == "Unpaid",
+                    _         => true
+                }).ToList();
+            }
+
+            // Paginate the already-filtered result so TotalCount is correct
+            int filteredTotal = allResults.Count;
+            var pagedItems = allResults
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return Ok(new PaginatedResponse<AthletePaymentStatusDto>
+            {
+                Items      = pagedItems,
+                TotalCount = filteredTotal,
+                Page       = page,
+                PageSize   = pageSize,
+                TotalPages = (int)Math.Ceiling(filteredTotal / (double)pageSize)
+            });
         }
         catch (Exception ex)
         {
@@ -300,6 +351,7 @@ public class PaymentController : ControllerBase
             return StatusCode(500, new { message = "Erro ao obter estados de pagamento" });
         }
     }
+
 
     // POST: api/payment/reference
     [HttpPost("reference")]
@@ -641,6 +693,12 @@ public class PaymentController : ControllerBase
             .ToList() ?? new List<AthleteTeam>();
 
         bool anyQuotaIncluded = activeTeams.Any(at => at.Team!.Sport!.QuotaIncluded);
+        
+        // Detect if user is in Escalão 1
+        bool isEscalao1 = activeTeams.Any(at => {
+            var e = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+            return e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1");
+        });
 
         // Sort: most-expensive first (discount applied to cheaper ones)
         // Note: we order by the Normal fee to determine the primary sport
@@ -667,10 +725,11 @@ public class PaymentController : ControllerBase
                 discountsApplied.Add("second_sport");
 
             decimal netFee = sportFee;
-            string escalaoLabel = string.IsNullOrEmpty(at.Escalao) ? "" : $" — {at.Escalao}";
+            string escalaoLabel = string.IsNullOrEmpty(at.AthleteProfile?.Escalao) ? "" : $" — {at.AthleteProfile?.Escalao}";
 
             // If this sport has quota included, it covers the global member fee too
-            if (sport.QuotaIncluded && !globalFeeAdded && !isExemptFromGlobalFee)
+            // CRITICAL: Escalão 1 pays quota separately even if QuotaIncluded is true!
+            if (sport.QuotaIncluded && !globalFeeAdded && !isExemptFromGlobalFee && !isEscalao1)
             {
                 globalFeeAdded = true;
                 breakdown.Add(new BreakdownItem
@@ -680,11 +739,12 @@ public class PaymentController : ControllerBase
                     IsDiscount     = false,
                     QuotaIncluded  = true,
                     SportName      = sport.Name,
-                    Escalao        = at.Escalao
+                    Escalao        = at.AthleteProfile?.Escalao
                 });
             }
-            else if (!sport.QuotaIncluded)
+            else if (!sport.QuotaIncluded || isEscalao1)
             {
+                // For Escalao 1 or non-quota-included sports, we skip marking globalFeeAdded
                 if (netFee > 0)
                     breakdown.Add(new BreakdownItem
                     {
@@ -692,7 +752,7 @@ public class PaymentController : ControllerBase
                         Amount     = netFee,
                         IsDiscount = false,
                         SportName  = sport.Name,
-                        Escalao    = at.Escalao
+                        Escalao    = at.AthleteProfile?.Escalao
                     });
                 else
                     breakdown.Add(new BreakdownItem
@@ -701,12 +761,12 @@ public class PaymentController : ControllerBase
                         Amount     = 0,
                         IsDiscount = false,
                         SportName  = sport.Name,
-                        Escalao    = at.Escalao
+                        Escalao    = at.AthleteProfile?.Escalao
                     });
             }
             else
             {
-                // Additional sport where quota is included but we already added global fee
+                // Additional sport where quota is included but we already added global fee (or is 2nd sport)
                 if (netFee > 0)
                     breakdown.Add(new BreakdownItem
                     {
@@ -714,7 +774,7 @@ public class PaymentController : ControllerBase
                         Amount     = netFee,
                         IsDiscount = false,
                         SportName  = sport.Name,
-                        Escalao    = at.Escalao
+                        Escalao    = at.AthleteProfile?.Escalao
                     });
             }
 
@@ -757,11 +817,11 @@ public class PaymentController : ControllerBase
             {
                 AthleteTeamId = at.Id,
                 SportName     = at.Team!.Sport!.Name,
-                Escalao       = at.Escalao,
+                Escalao       = at.AthleteProfile?.Escalao,
                 Paid          = at.InscriptionPaid,
                 PaidDate      = at.InscriptionPaidDate,
                 FeeNormal     = at.Team.Sport.InscriptionFeeNormal,
-                FeeDiscount   = hasSiblingAthlete ? at.Team.Sport.InscriptionFeeDiscount : at.Team.Sport.InscriptionFeeNormal
+                FeeDiscount   = hasSiblingAthlete ? at.Team.Sport.FeeDiscount : at.Team.Sport.InscriptionFeeNormal
             })
             .ToList();
 
@@ -781,25 +841,31 @@ public class PaymentController : ControllerBase
         return result.Total;
     }
 
-    /// <summary>Returns the correct monthly fee for an AthleteTeam based on its Escalão and sibling status.</summary>
+    /// <summary>Returns the correct monthly fee for an AthleteTeam based on its Escalão and sibling/2nd-sport discount.</summary>
     private static decimal GetEscalaoFee(AthleteTeam at, bool applyDiscount)
     {
         var sport = at.Team?.Sport;
         if (sport == null) return 0;
 
-        if (!string.IsNullOrEmpty(at.Escalao))
-        {
-            var e = at.Escalao.ToLower();
-            if (e.Contains("1") || e.Contains("mini") || e.Contains("escalão 1") || e.Contains("escalao 1"))
-                return applyDiscount ? sport.FeeEscalao1Sibling : sport.FeeEscalao1Normal;
-            
-            if (e.Contains("2") || e.Contains("escalão 2") || e.Contains("escalao 2") || e.Contains("sénior") || e.Contains("senior"))
-                return applyDiscount ? sport.FeeEscalao2Sibling : sport.FeeEscalao2Normal;
-        }
+        // When discount applies, always use the single FeeDiscount price regardless of escalão
+        if (applyDiscount && sport.FeeDiscount > 0)
+            return sport.FeeDiscount;
 
-        // Fallback: use Escalão 2 fields
-        var fallbackFee = applyDiscount ? sport.FeeEscalao2Sibling : sport.FeeEscalao2Normal;
-        return fallbackFee > 0 ? fallbackFee : sport.MonthlyFee;
+        var escalao = at.AthleteProfile?.Escalao;
+
+        if (string.IsNullOrEmpty(escalao))
+            return sport.FeeNormalNormal;
+
+        var e = escalao.ToLower();
+
+        if (e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1"))
+            return sport.FeeEscalao1Normal;
+
+        if (e.Contains("2") || e.Contains("escalão 2") || e.Contains("escalao 2"))
+            return sport.FeeEscalao2Normal;
+
+        // Fallback: treat as Normal
+        return sport.FeeNormalNormal;
     }
 
     private static string? GetReciprocalRelationship(string? relationship)

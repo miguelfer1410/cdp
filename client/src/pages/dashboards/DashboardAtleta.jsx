@@ -4,8 +4,9 @@ import './DashboardAtleta.css';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
 import CalendarModal from '../../components/CalendarModal/CalendarModal';
-import FamilyAssociationModal from '../../components/FamilyAssociationModal/FamilyAssociationModal';
 import PaymentCard from '../../components/Payment/PaymentCard';
+import RequestsModal from '../../components/RequestsModal/RequestsModal';
+import DocumentsModal from '../../components/DocumentsModal/DocumentsModal';
 
 const DashboardAtleta = () => {
     const navigate = useNavigate();
@@ -16,7 +17,8 @@ const DashboardAtleta = () => {
     const [loadingTab, setLoadingTab] = useState(false);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+    const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
+    const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
     const [quotaBreakdown, setQuotaBreakdown] = useState([]);
@@ -100,8 +102,10 @@ const DashboardAtleta = () => {
                     const quotaResponse = await fetch(`http://localhost:5285/api/payment/quota?userId=${selectedUserId}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
+                    console.log(quotaResponse);
                     if (quotaResponse.ok) {
                         const quotaData = await quotaResponse.json();
+                        console.log(quotaData);
                         setQuotaAmount(quotaData.amount);
                         setPaymentStatus(quotaData.status);
                         setPaymentReference(quotaData.existingPayment || null);
@@ -399,7 +403,7 @@ const DashboardAtleta = () => {
                                     </button>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div className="personal-data-grid">
                                     <div style={{ padding: '15px', background: 'var(--bg-light)', borderRadius: '8px' }}>
                                         <p style={{ color: 'var(--text-light)', fontSize: '0.85rem', marginBottom: '5px' }}>Data de Nascimento</p>
                                         <p style={{ color: 'var(--text-color)', fontWeight: '600', fontSize: '1rem' }}>{formatDate(athleteData.birthDate)}</p>
@@ -517,11 +521,11 @@ const DashboardAtleta = () => {
                                     </a>
                                     <button
                                         className="action-btn"
-                                        onClick={() => setIsFamilyModalOpen(true)}
+                                        onClick={() => setIsRequestsModalOpen(true)}
                                         style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
                                     >
-                                        <i className="fas fa-user-friends"></i>
-                                        Associar Familiar
+                                        <i className="fas fa-clipboard-list"></i>
+                                        Requisições
                                     </button>
                                 </div>
                             </div>
@@ -529,11 +533,68 @@ const DashboardAtleta = () => {
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-folder"></i> Documentos</h2>
-                                    <a href="#" className="view-all-link">Ver Todos <i className="fas fa-arrow-right"></i></a>
+                                    <button
+                                        className="view-all-link"
+                                        onClick={() => setIsDocumentsModalOpen(true)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}
+                                    >
+                                        Ver Todos <i className="fas fa-arrow-right"></i>
+                                    </button>
                                 </div>
 
-                                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                    Não existem documentos.
+                                <div className="documents-list">
+                                    <div className="document-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid #eee' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <i className="fas fa-file-pdf" style={{ color: '#dc3545', fontSize: '1.2rem' }}></i>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontSize: '0.95rem' }}>Cartão de Sócio</h4>
+                                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#666' }}>PDF • 156 KB</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                const token = localStorage.getItem('token');
+                                                try {
+                                                    const response = await fetch(`http://localhost:5285/api/membershipcard/download?userId=${selectedUserId}`, {
+                                                        headers: { 'Authorization': `Bearer ${token}` }
+                                                    });
+                                                    if (response.ok) {
+                                                        const blob = await response.blob();
+                                                        const url = window.URL.createObjectURL(blob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = `Cartao_Socio_${selectedUserId}.pdf`;
+                                                        document.body.appendChild(a);
+                                                        a.click();
+                                                        a.remove();
+                                                    }
+                                                } catch (err) {
+                                                    console.error('Download failed', err);
+                                                }
+                                            }}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#003380' }}
+                                        >
+                                            <i className="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                    <div className="document-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <i className="fas fa-file-pdf" style={{ color: '#dc3545', fontSize: '1.2rem' }}></i>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontSize: '0.95rem' }}>Regulamento Interno</h4>
+                                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#666' }}>PDF • 304 KB</p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href="http://localhost:5285/docs/regulamento_cdpovoa.pdf"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: '#003380' }}
+                                        >
+                                            <i className="fas fa-download"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
 
@@ -669,9 +730,17 @@ const DashboardAtleta = () => {
                 teamId={primaryTeam?.id}
             />
 
-            <FamilyAssociationModal
-                isOpen={isFamilyModalOpen}
-                onClose={() => setIsFamilyModalOpen(false)}
+            <RequestsModal
+                isOpen={isRequestsModalOpen}
+                onClose={() => setIsRequestsModalOpen(false)}
+                userId={selectedUserId}
+                athleteProfileEscalao={athleteData?.athleteProfile?.escalao}
+            />
+
+            <DocumentsModal
+                isOpen={isDocumentsModalOpen}
+                onClose={() => setIsDocumentsModalOpen(false)}
+                userId={selectedUserId}
             />
         </div >
     );

@@ -1,0 +1,98 @@
+/* RequestsModal.css */
+
+.req-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+    backdrop-filter: blur(3px);
+}
+
+.req-modal {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 51, 128, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+.req-modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #eef0f6;
+    background: linear-gradient(135deg, #003380, #0055cc);
+    color: #fff;
+    position: relative;
+}
+
+.req-modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.req-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.req-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.req-tabs {
+    display: flex;
+    padding: 16px 24px 0;
+    gap: 20px;
+    border-bottom: 1px solid #eef0f6;
+}
+
+.req-tab {
+    padding: 12px 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #666;
+    background: none;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.req-tab.active {
+    color: #003380;
+}
+
+.req-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #003380;
+    border-radius: 3px 3px 0 0;
+}
+
+.req-modal-body {
+    padding: 24px;
+}

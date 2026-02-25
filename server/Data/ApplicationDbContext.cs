@@ -34,6 +34,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SystemSetting> SystemSettings { get; set; }
     public DbSet<FamilyAssociationRequest> FamilyAssociationRequests { get; set; }
     public DbSet<UserFamilyLink> UserFamilyLinks { get; set; }
+    public DbSet<EscalaoRequest> EscalaoRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -340,5 +341,13 @@ public class ApplicationDbContext : DbContext
                 AssignedAt = DateTime.UtcNow
             }
         );
+
+        modelBuilder.Entity<EscalaoRequest>(entity =>
+        {
+            entity.HasOne(e => e.AthleteProfile)
+                  .WithMany()
+                  .HasForeignKey(e => e.AthleteProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

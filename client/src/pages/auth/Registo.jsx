@@ -370,7 +370,7 @@ const Registo = () => {
                         required
                         disabled={loading}
                       />
-                      <span>Aceito a <a href="#" target="_blank">Política de Privacidade</a> *</span>
+                      <span>Aceito o <a href="http://localhost:5285/docs/regulamento_cdpovoa.pdf" target="_blank" rel="noopener noreferrer">Regulamento Geral sobre a Proteção de Dados</a> *</span>
                     </label>
 
                     <label className="checkbox-label">

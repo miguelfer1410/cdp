@@ -1,0 +1,193 @@
+/* FamilyAssociationCard.css */
+
+.fam-card {
+    background: transparent;
+}
+
+.fam-card-header {
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eef0f6;
+}
+
+.fam-card-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #003380;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fam-card-body {
+    padding: 0;
+}
+
+/* Form Styles */
+.fam-form-description {
+    font-size: 0.88rem;
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    background: #f0f4ff;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border-left: 3px solid #003380;
+}
+
+.fam-form-group {
+    margin-bottom: 16px;
+}
+
+.fam-form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.fam-form-group input,
+.fam-form-group textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #dde2ef;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
+    background: #fafbff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.fam-form-group input:focus,
+.fam-form-group textarea:focus {
+    border-color: #003380;
+    box-shadow: 0 0 0 3px rgba(0, 51, 128, 0.08);
+    outline: none;
+    background: #fff;
+}
+
+.fam-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.fam-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.86rem;
+    margin-bottom: 14px;
+}
+
+.fam-submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #003380, #0055cc);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.fam-submit-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.fam-submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Success */
+.fam-success {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.fam-success-icon {
+    font-size: 3rem;
+    color: #059669;
+    margin-bottom: 14px;
+}
+
+/* History */
+.fam-history {
+    margin-top: 24px;
+    border-top: 1px solid #eef0f6;
+    padding-top: 16px;
+}
+
+.fam-history h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 12px;
+}
+
+.fam-history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #f7f9ff;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #e8ecf8;
+}
+
+.fam-history-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.fam-history-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.fam-history-date {
+    font-size: 0.75rem;
+    color: #aaa;
+}
+
+.fam-status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fcd34d;
+}
+
+.status-seen {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #6ee7b7;
+}
+
+@media (max-width: 480px) {
+    .fam-form-row {
+        grid-template-columns: 1fr;
+    }
+}
