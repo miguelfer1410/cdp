@@ -29,6 +29,7 @@ public class TeamsController : ControllerBase
         {
             var teams = await _context.Teams
                 .Include(t => t.Sport)
+                .Include(t => t.Escalao)
                 .Where(t => t.IsActive)
                 .OrderBy(t => t.Sport.Name)
                 .ThenBy(t => t.Name)
@@ -38,7 +39,8 @@ public class TeamsController : ControllerBase
                     SportId = t.SportId,
                     SportName = t.Sport.Name,
                     Name = t.Name,
-                    Category = t.Category,
+                    Category = t.Escalao != null ? t.Escalao.Name : null,
+                    EscalaoId = t.EscalaoId,
                     Gender = t.Gender,
                     Season = t.Season,
                     IsActive = t.IsActive,
@@ -64,6 +66,7 @@ public class TeamsController : ControllerBase
         {
             var teams = await _context.Teams
                 .Include(t => t.Sport)
+                .Include(t => t.Escalao)
                 .OrderBy(t => t.Sport.Name)
                 .ThenBy(t => t.Name)
                 .Select(t => new TeamResponse
@@ -72,7 +75,8 @@ public class TeamsController : ControllerBase
                     SportId = t.SportId,
                     SportName = t.Sport.Name,
                     Name = t.Name,
-                    Category = t.Category,
+                    Category = t.Escalao != null ? t.Escalao.Name : null,
+                    EscalaoId = t.EscalaoId,
                     Gender = t.Gender,
                     Season = t.Season,
                     IsActive = t.IsActive,
@@ -97,6 +101,7 @@ public class TeamsController : ControllerBase
         {
             var team = await _context.Teams
                 .Include(t => t.Sport)
+                .Include(t => t.Escalao)
                 .Where(t => t.Id == id)
                 .Select(t => new TeamDetailResponse
                 {
@@ -104,7 +109,8 @@ public class TeamsController : ControllerBase
                     SportId = t.SportId,
                     SportName = t.Sport.Name,
                     Name = t.Name,
-                    Category = t.Category,
+                    Category = t.Escalao != null ? t.Escalao.Name : null,
+                    EscalaoId = t.EscalaoId,
                     Gender = t.Gender,
                     Season = t.Season,
                     IsActive = t.IsActive,
@@ -162,7 +168,7 @@ public class TeamsController : ControllerBase
             {
                 SportId = request.SportId,
                 Name = request.Name,
-                Category = request.Category,
+                EscalaoId = request.EscalaoId,
                 Gender = request.Gender,
                 Season = request.Season,
                 IsActive = request.IsActive
@@ -174,6 +180,7 @@ public class TeamsController : ControllerBase
             // Reload with Sport info
             var createdTeam = await _context.Teams
                 .Include(t => t.Sport)
+                .Include(t => t.Escalao)
                 .Where(t => t.Id == team.Id)
                 .Select(t => new TeamResponse
                 {
@@ -181,7 +188,8 @@ public class TeamsController : ControllerBase
                     SportId = t.SportId,
                     SportName = t.Sport.Name,
                     Name = t.Name,
-                    Category = t.Category,
+                    Category = t.Escalao != null ? t.Escalao.Name : null,
+                    EscalaoId = t.EscalaoId,
                     Gender = t.Gender,
                     Season = t.Season,
                     IsActive = t.IsActive,
@@ -220,7 +228,7 @@ public class TeamsController : ControllerBase
 
             team.SportId = request.SportId;
             team.Name = request.Name;
-            team.Category = request.Category;
+            team.EscalaoId = request.EscalaoId;
             team.Gender = request.Gender;
             team.Season = request.Season;
             team.IsActive = request.IsActive;
@@ -230,6 +238,7 @@ public class TeamsController : ControllerBase
             // Return updated team with Sport info
             var updatedTeam = await _context.Teams
                 .Include(t => t.Sport)
+                .Include(t => t.Escalao)
                 .Where(t => t.Id == id)
                 .Select(t => new TeamResponse
                 {
@@ -237,7 +246,8 @@ public class TeamsController : ControllerBase
                     SportId = t.SportId,
                     SportName = t.Sport.Name,
                     Name = t.Name,
-                    Category = t.Category,
+                    Category = t.Escalao != null ? t.Escalao.Name : null,
+                    EscalaoId = t.EscalaoId,
                     Gender = t.Gender,
                     Season = t.Season,
                     IsActive = t.IsActive,
@@ -397,7 +407,7 @@ public class TeamRequest
 {
     public int SportId { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string? Category { get; set; }
+    public int? EscalaoId { get; set; }
     public Gender Gender { get; set; } = Gender.Mixed;
     public string? Season { get; set; }
     public bool IsActive { get; set; } = true;
@@ -410,7 +420,8 @@ public class TeamResponse
     public int SportId { get; set; }
     public string SportName { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string? Category { get; set; }
+    public string? Category { get; set; } // Backward compatibility
+    public int? EscalaoId { get; set; }
     public Gender Gender { get; set; }
     public string? Season { get; set; }
     public bool IsActive { get; set; }

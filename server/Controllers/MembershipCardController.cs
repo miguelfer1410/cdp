@@ -2,11 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CdpApi.Data;
-using CdpApi.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using QuestPDF.Previewer;
+using QRCoder;
 
 namespace CdpApi.Controllers;
 
@@ -16,28 +15,23 @@ namespace CdpApi.Controllers;
 public class MembershipCardController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IWebHostEnvironment _env;
 
-    public MembershipCardController(ApplicationDbContext context)
+    public MembershipCardController(ApplicationDbContext context, IWebHostEnvironment env)
     {
         _context = context;
-        // QuestPDF License configuration (Community is free for small teams/open source)
+        _env = env;
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
     [HttpGet("download")]
     public async Task<IActionResult> DownloadCard([FromQuery] int? userId = null)
     {
-        // Get current user ID from JWT if not provided (or to validate permission)
         var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserIdStr)) return Unauthorized();
-        
+
         int authUserId = int.Parse(currentUserIdStr);
         int targetUserId = userId ?? authUserId;
-
-        // Security check: only allow downloading own card or linked family card
-        // (Simplification: if it's the same user, it's fine. For family, we'd check associations, 
-        // but for now let's assume the frontend passes the correct one and we validate auth)
-        // In a real scenario, we'd check if targetUserId is linked to authUserId.
 
         var user = await _context.Users
             .Include(u => u.MemberProfile)
@@ -45,66 +39,268 @@ public class MembershipCardController : ControllerBase
             .FirstOrDefaultAsync(u => u.Id == targetUserId);
 
         if (user == null) return NotFound("Utilizador não encontrado.");
-        if (user.MemberProfile == null) return BadRequest("Este utilizador não é um sócio ativo.");
+        if (user.MemberProfile == null) return BadRequest("Este utilizador não é sócio ativo.");
 
+        // ── Dados ─────────────────────────────────────────────────────
+        var fullName     = $"{user.FirstName} {user.LastName}".Trim();
+        var memberNum    = user.MemberProfile.MembershipNumber?.ToString().PadLeft(6, '0')
+                           ?? user.Id.ToString().PadLeft(6, '0');
+        var memberSince  = user.MemberProfile.MemberSince?.ToString("dd/MM/yyyy")
+                           ?? user.CreatedAt.ToString("dd/MM/yyyy");
+        var memberYear   = user.MemberProfile.MemberSince?.Year.ToString()
+                           ?? user.CreatedAt.Year.ToString();
+        var sport        = user.AthleteProfile?.Escalao;
+        bool isAtleta    = user.AthleteProfile != null;
+        var statusLabels = new[] { "Pendente", "Ativo", "Suspenso", "Cancelado" };
+        var statusLabel  = statusLabels[(int)user.MemberProfile.MembershipStatus];
+        bool isActive    = statusLabel == "Ativo";
+        var validity     = "31/12/2026";
+
+        // Logo
+        var logoPath = Path.Combine(_env.WebRootPath, "CDP_logo.png");
+        byte[]? logo = System.IO.File.Exists(logoPath)
+            ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
+
+        // QR Code
+        var qrUrl = $"http://localhost:3000/verify/{user.Id}";
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(qrUrl, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        byte[] qrCodeImage = qrCode.GetGraphic(20);
+
+        // ── Cores ─────────────────────────────────────────────────────
+        var navyDeep  = Color.FromHex("#0d1e45");
+        var navyCard  = Color.FromHex("#0f2d6b");
+        var navyBack  = Color.FromHex("#091a40");
+        var labelGrey = Color.FromHex("#94a3b8");
+        var bgPage    = Color.FromHex("#eef2ff");
+        var greenOk   = Color.FromHex("#059669");
+        var chipBlue  = Color.FromHex("#1a3f99");
+        var chipLine  = Color.FromHex("#2d5cb8");  // solid, sem alpha
+        var badgeBlue = Color.FromHex("#2554c7");
+        var logoBox   = Color.FromHex("#1b3d82");  // solid para caixa do logo
+        var pillBg    = Color.FromHex("#1e4db5");  // solid para pill tipo
+        var pillText  = Color.FromHex("#c8d8ff");  // solid para texto pill
+
+        // ── Documento ─────────────────────────────────────────────────
         var document = Document.Create(container =>
         {
             container.Page(page =>
             {
                 page.Size(PageSizes.A4);
-                page.Margin(2, Unit.Centimetre);
-                page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(12).FontFamily(Fonts.Verdana));
+                page.Margin(1.5f, Unit.Centimetre);
+                page.PageColor(bgPage);
+                page.DefaultTextStyle(t => t.FontFamily(Fonts.Calibri).FontSize(10)
+                    .FontColor(Colors.Grey.Darken4));
 
-                page.Header().Row(row =>
+                // ── CABEÇALHO ────────────────────────────────────────
+                page.Header().PaddingBottom(14).Row(hRow =>
                 {
-                    row.RelativeItem().Column(column =>
+                    hRow.RelativeItem().Column(col =>
                     {
-                        column.Item().Text("CLUBE DESPORTIVO").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
-                        column.Item().Text("Cartão de Sócio Digital").FontSize(14).Italic();
+                        col.Item().Text("Clube Desportivo da Póvoa")
+                            .FontSize(14).Bold().FontColor(navyDeep);
+                        col.Item().Text("Cartão de Sócio Digital — Documento Oficial")
+                            .FontSize(9).FontColor(labelGrey);
                     });
-
-                    // Logo placeholder (in a real app, you'd load the actual logo)
-                    row.ConstantItem(80).Height(80).Background(Colors.Grey.Lighten3).AlignCenter().AlignMiddle().Text("LOGO");
-                });
-
-                page.Content().PaddingVertical(1, Unit.Centimetre).Column(x =>
-                {
-                    x.Spacing(20);
-
-                    // Card Layout
-                    x.Item().Border(1).BorderColor(Colors.Grey.Medium).Padding(20).Row(row =>
-                    {
-                        row.RelativeItem().Column(col =>
+                    hRow.ConstantItem(55).Height(38).AlignRight().AlignMiddle()
+                        .Element(e =>
                         {
-                            col.Item().Text("NOME").FontSize(10).FontColor(Colors.Grey.Medium);
-                            col.Item().Text($"{user.FirstName} {user.LastName}").FontSize(16).SemiBold();
-                            
-                            col.Item().PaddingTop(15).Text("NÚMERO DE SÓCIO").FontSize(10).FontColor(Colors.Grey.Medium);
-                            col.Item().Text($"#{user.Id.ToString().PadLeft(4, '0')}").FontSize(14).SemiBold();
-                            
-                            col.Item().PaddingTop(15).Text("SÓCIO DESDE").FontSize(10).FontColor(Colors.Grey.Medium);
-                            col.Item().Text(user.MemberProfile.MemberSince?.ToString("dd/MM/yyyy") ?? user.CreatedAt.ToString("dd/MM/yyyy")).FontSize(12);
+                            if (logo != null) e.Image(logo).FitArea();
+                            else e.Background(Color.FromHex("#e2e8f0"));
+                        });
+                });
+
+                // ── CONTEÚDO ─────────────────────────────────────────
+                page.Content().Column(content =>
+                {
+                    content.Spacing(16);
+
+                    // ─── CARD FRENTE ──────────────────────────────────
+                    content.Item().MinHeight(220).Background(navyCard).Padding(28).Column(card =>
+                    {
+                        card.Spacing(10);
+
+                        // Linha 1: Logo | espaço | STATUS | TIPO
+                        card.Item().Row(r =>
+                        {
+                            // Logo (sem caixa com cor de fundo para evitar artefactos)
+                            r.ConstantItem(44).Height(30)
+                                .Background(logoBox)
+                                .Padding(4)
+                                .Element(e =>
+                                {
+                                    if (logo != null) e.Image(logo).FitArea();
+                                    else e.Text("CDP").FontSize(9).FontColor(Colors.White);
+                                });
+
+                            // Spacer
+                            r.ConstantItem(10);
+                            r.RelativeItem();
+
+                            // Status pill
+                            r.AutoItem().AlignMiddle()
+                                .Background(isActive ? greenOk : badgeBlue)
+                                .Padding(3).PaddingHorizontal(7)
+                                .Text($"  {statusLabel}  ")
+                                .FontSize(7).Bold().FontColor(Colors.White);
+
+                            r.ConstantItem(6);
+
+                            // Tipo
+                            r.AutoItem().AlignMiddle()
+                                .Background(pillBg)
+                                .Padding(3).PaddingHorizontal(7)
+                                .Text(isAtleta ? "  ATLETA  " : "  SOCIO  ")
+                                .FontSize(7).Bold()
+                                .FontColor(pillText);
                         });
 
-                        row.ConstantItem(120).AlignCenter().AlignMiddle().Column(col => {
-                             col.Item().Background(Colors.Grey.Lighten4).Padding(5).AlignCenter().Text("FOTO");
-                             col.Item().PaddingTop(10).AlignCenter().Text("ATIVO").FontColor(Colors.Green.Medium).SemiBold();
+                        // Número de sócio
+                        card.Item().PaddingTop(14).Text(text =>
+                        {
+                            text.Span("No.  ").FontSize(9).FontColor(Color.FromHex("#8baee8"));
+                            text.Span(memberNum).FontSize(22).Bold().FontColor(Colors.White);
+                        });
+
+                        // Campos
+                        card.Item().Row(r =>
+                        {
+                            r.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text("TITULAR").FontSize(6).FontColor(labelGrey);
+                                col.Item().Text(fullName).FontSize(9).Bold().FontColor(Colors.White);
+                            });
+
+                            if (sport != null)
+                            {
+                                r.ConstantItem(10);
+                                r.AutoItem().Column(col =>
+                                {
+                                    col.Item().Text("MODALIDADE").FontSize(6).FontColor(labelGrey);
+                                    col.Item().Text(sport).FontSize(9).Bold().FontColor(Colors.White);
+                                });
+                            }
+
+                            r.ConstantItem(10);
+                            r.ConstantItem(56).Column(col =>
+                            {
+                                col.Item().Text("VALIDO ATE").FontSize(6).FontColor(labelGrey);
+                                col.Item().Text(validity).FontSize(9).Bold().FontColor(Colors.White);
+                            });
+
+                            r.ConstantItem(10);
+                            r.ConstantItem(40).Column(col =>
+                            {
+                                col.Item().Text("DESDE").FontSize(6).FontColor(labelGrey);
+                                col.Item().Text(memberYear).FontSize(9).Bold().FontColor(Colors.White);
+                            });
                         });
                     });
 
-                    x.Item().Text("Este cartão é pessoal e intransmissível. Identifique-se sempre que solicitado pelos serviços do clube.").FontSize(10).Italic().FontColor(Colors.Grey.Medium);
+                    // ─── CARD VERSO ───────────────────────────────────
+                    content.Item().MinHeight(220).Background(navyBack).Column(back =>
+                    {
+                        // Banda magnética
+                        back.Item().Height(26).Background(Color.FromHex("#080808"));
+
+                        // Corpo
+                        back.Item().Padding(28).Column(body =>
+                        {
+                            body.Spacing(10);
+
+                            // Logo + nome do clube
+                            body.Item().Row(r =>
+                            {
+                                r.ConstantItem(28).Height(20)
+                                    .Background(logoBox)
+                                    .Padding(3)
+                                    .Element(e =>
+                                    {
+                                        if (logo != null) e.Image(logo).FitArea();
+                                        else e.Text("CDP").FontSize(7).FontColor(Colors.White);
+                                    });
+                                r.ConstantItem(8);
+                                r.RelativeItem().AlignMiddle()
+                                    .Text("CLUBE DESPORTIVO DA POVOA")
+                                    .FontSize(7).Bold().FontColor(Color.FromHex("#8baee8"));
+                            });
+
+                            // Campos em duas colunas e QR Code
+                            body.Item().Row(r =>
+                            {
+                                r.RelativeItem().Column(col =>
+                                {
+                                    BField(col, "No. DE SOCIO", $"#{memberNum}");
+                                    BField(col, "TITULAR", fullName);
+                                    if (sport != null) BField(col, "MODALIDADE", sport);
+                                });
+                                r.ConstantItem(16);
+                                r.RelativeItem().Column(col =>
+                                {
+                                    BField(col, "MEMBRO DESDE", memberSince);
+                                    BField(col, "VALIDADE", validity);
+                                    BField(col, "ESTADO", statusLabel,
+                                        isActive ? Color.FromHex("#6ee7b7") : Color.FromHex("#fcd34d"));
+                                });
+                                r.ConstantItem(16);
+                                r.ConstantItem(48).Height(48).Background(Colors.White).Padding(2).Element(e =>
+                                {
+                                    e.Image(qrCodeImage).FitArea();
+                                });
+                            });
+
+                            body.Item()
+                                .Text("Este cartao e pessoal e intransmissivel. Apresente-o sempre que solicitado.")
+                                .FontSize(6).Italic().FontColor(Color.FromHex("#4a6da0"));
+                        });
+                    });
+
+                    // ─── Nota de rodapé ───────────────────────────────
+                    content.Item().AlignCenter()
+                        .Text($"Gerado em {DateTime.Now:dd/MM/yyyy HH:mm} — Clube Desportivo da Povoa (c) {DateTime.Now.Year}")
+                        .FontSize(7).Italic().FontColor(labelGrey);
                 });
 
-                page.Footer().AlignCenter().Text(x =>
-                {
-                    x.Span("Página ");
-                    x.CurrentPageNumber();
-                });
+                // ── FOOTER ───────────────────────────────────────────
+                page.Footer()
+                    .BorderTop(1).BorderColor(Color.FromHex("#e2e8f0"))
+                    .PaddingTop(6)
+                    .Row(r =>
+                    {
+                        r.RelativeItem()
+                            .Text($"Gerado em {DateTime.Now:dd/MM/yyyy HH:mm}")
+                            .FontSize(8).FontColor(labelGrey);
+                        r.RelativeItem().AlignRight().Text(t =>
+                        {
+                            t.Span("Pagina ").FontSize(8).FontColor(labelGrey);
+                            t.CurrentPageNumber().FontSize(8).FontColor(labelGrey);
+                        });
+                    });
             });
         });
 
         var pdfData = document.GeneratePdf();
         return File(pdfData, "application/pdf", $"Cartao_Socio_{user.Id}.pdf");
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    private static void BField(ColumnDescriptor col, string label, string value, string? vc = null)
+    {
+        col.Item().PaddingBottom(7).Column(c =>
+        {
+            c.Item().Text(label).FontSize(5.5f).FontColor(Color.FromHex("#94a3b8"));
+            c.Item().Text(value).FontSize(9).Bold().FontColor(vc ?? Colors.White);
+        });
+    }
+
+    private static void IRow(ColumnDescriptor col, string label, string value)
+    {
+        col.Item().PaddingBottom(8).Column(c =>
+        {
+            c.Item().Text(label).FontSize(8).FontColor(Color.FromHex("#6b7280"));
+            c.Item().Text(value).FontSize(10).Bold().FontColor(Color.FromHex("#111827"));
+        });
     }
 }

@@ -138,6 +138,50 @@ public class PaymentController : ControllerBase
                 }
             }
 
+            // ── Calculate overdue months (Monthly only) ───────────────────────
+            var overdueMonths = new List<object>();
+            decimal overdueTotal = 0;
+
+            if (preference == "Monthly")
+            {
+                // Find when the member first registered
+                var memberSince = user.MemberProfile.MemberSince ?? user.CreatedAt;
+                var startYear   = memberSince.Year;
+                var startMonth  = memberSince.Month;
+
+                // Iterate from registration month up to (but not including) current month
+                var checkYear  = startYear;
+                var checkMonth = startMonth;
+
+                while (checkYear < currentYear || (checkYear == currentYear && checkMonth < currentMonth))
+                {
+                    // Was there a Completed payment for this period?
+                    bool paid = await _context.Payments.AnyAsync(p =>
+                        p.MemberProfileId == user.MemberProfile.Id &&
+                        p.Status          == "Completed" &&
+                        p.PeriodYear      == checkYear &&
+                        p.PeriodMonth     == checkMonth);
+
+                    if (!paid)
+                    {
+                        overdueMonths.Add(new
+                        {
+                            periodMonth = checkMonth,
+                            periodYear  = checkYear,
+                            amount      = result.Total
+                        });
+                        overdueTotal += result.Total;
+                    }
+
+                    // Advance to next month
+                    if (checkMonth == 12) { checkMonth = 1; checkYear++; }
+                    else checkMonth++;
+                }
+            }
+
+            // totalDue = overdue from past months + current month (if unpaid)
+            decimal totalDue = overdueTotal + (status == "Regularizada" ? 0 : result.Total);
+
             return Ok(new
             {
                 amount            = result.Total,
@@ -150,7 +194,10 @@ public class PaymentController : ControllerBase
                 paymentPreference = preference,
                 nextPeriodMonth   = nextPeriodMonth,
                 nextPeriodYear    = nextPeriodYear,
-                existingPayment   = paymentDetails
+                existingPayment   = paymentDetails,
+                overdueMonths     = overdueMonths,
+                overdueTotal      = overdueTotal,
+                totalDue          = totalDue
             });
         }
         catch (Exception ex)

@@ -91,7 +91,7 @@ public class ClubAnalyticsController : ControllerBase
 
         // User Breakdown
         var totalUsers = await _context.Users.CountAsync();
-        var membersNotAthletes = await _context.Users.CountAsync(u => u.MemberProfile != null && u.AthleteProfile == null);
+        var totalMembers = await _context.Users.CountAsync(u => u.MemberProfile != null);
         var registeredNotMembers = await _context.Users.CountAsync(u => u.MemberProfile == null);
 
         return Ok(new
@@ -103,7 +103,7 @@ public class ClubAnalyticsController : ControllerBase
                 totalSports,
                 totalCoaches,
                 totalUsers,
-                membersNotAthletes,
+                totalMembers,
                 registeredNotMembers
             },
             athletesPerSport,
@@ -111,6 +111,66 @@ public class ClubAnalyticsController : ControllerBase
             genderDistribution = genderDist,
             ageGroups = new { minors, adults },
             coachesPerSport
+        });
+    }
+
+    [HttpGet("financial")]
+    public async Task<IActionResult> GetFinancialAnalytics()
+    {
+        var allPayments = await _context.Payments.ToListAsync();
+
+        var totalRevenue = allPayments.Where(p => p.Status == "Completed").Sum(p => p.Amount);
+        var pendingRevenue = allPayments.Where(p => p.Status == "Pending").Sum(p => p.Amount);
+        var failedRevenue = allPayments.Where(p => p.Status == "Failed").Sum(p => p.Amount);
+        var totalTransactions = allPayments.Count;
+
+        var paymentsByStatus = allPayments
+            .GroupBy(p => p.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count(), TotalAmount = g.Sum(p => p.Amount) })
+            .ToList();
+
+        var revenueByMethod = allPayments
+            .Where(p => p.Status == "Completed")
+            .GroupBy(p => p.PaymentMethod)
+            .Select(g => new { Method = g.Key, TotalAmount = g.Sum(p => p.Amount), Count = g.Count() })
+            .ToList();
+
+        var revenueByMonth = allPayments
+            .Where(p => p.Status == "Completed")
+            .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
+            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+            .Select(g => new {
+                Month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                TotalAmount = g.Sum(p => p.Amount)
+            })
+            .ToList();
+
+        // Full per-month breakdown (all statuses)
+        var paymentStatsByMonth = allPayments
+            .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
+            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+            .Select(g => new {
+                Month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                TotalCount      = g.Count(),
+                CompletedAmount = g.Where(p => p.Status == "Completed").Sum(p => p.Amount),
+                PendingAmount   = g.Where(p => p.Status == "Pending").Sum(p => p.Amount),
+                FailedAmount    = g.Where(p => p.Status == "Failed").Sum(p => p.Amount),
+                CompletedCount  = g.Count(p => p.Status == "Completed"),
+                PendingCount    = g.Count(p => p.Status == "Pending"),
+                FailedCount     = g.Count(p => p.Status == "Failed"),
+            })
+            .ToList();
+
+        return Ok(new
+        {
+            totalRevenue,
+            pendingRevenue,
+            failedRevenue,
+            totalTransactions,
+            paymentsByStatus,
+            revenueByMethod,
+            revenueByMonth,
+            paymentStatsByMonth
         });
     }
 }

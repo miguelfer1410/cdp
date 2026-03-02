@@ -1,0 +1,209 @@
+.financial-analytics-container {
+    animation: fadeIn 0.5s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ── Overview stat cards ──────────────────────────────────────────────────── */
+.financial-card {
+    border-left: 4px solid var(--accent-color, #43e97b);
+}
+
+.analytics-stat-icon.revenue {
+    background: rgba(67, 233, 123, 0.15);
+    color: #43e97b;
+}
+
+.analytics-stat-icon.pending {
+    background: rgba(254, 180, 123, 0.15);
+    color: #feb47b;
+}
+
+.analytics-stat-icon.failed {
+    background: rgba(255, 126, 95, 0.15);
+    color: #ff7e5f;
+}
+
+.analytics-stat-icon.transactions {
+    background: rgba(37, 117, 252, 0.13);
+    color: #2575fc;
+}
+
+.pending-amount {
+    color: #feb47b !important;
+}
+
+.failed-amount {
+    color: #ff7e5f !important;
+}
+
+/* ── Chart title icons ────────────────────────────────────────────────────── */
+.chart-h-icon {
+    font-size: 0.85rem;
+    vertical-align: middle;
+    margin-right: 0.4rem;
+}
+
+.chart-h-icon.green {
+    color: #43e97b;
+}
+
+.chart-h-icon.blue {
+    color: #2575fc;
+}
+
+.chart-h-icon.orange {
+    color: #feb47b;
+}
+
+.chart-h-icon.purple {
+    color: #6a11cb;
+}
+
+/* ── Period filter bar ────────────────────────────────────────────────────── */
+.period-filter-bar {
+    background: var(--card-bg, #fff);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.period-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.period-filter-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.filter-icon {
+    color: #2575fc;
+    font-size: 0.8rem;
+}
+
+.period-select {
+    border: 1.5px solid rgba(0, 0, 0, 0.09);
+    background: var(--card-bg, #fff);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color, #1a202c);
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s;
+}
+
+.period-select:focus {
+    border-color: #2575fc;
+}
+
+.period-select:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Chart type toggle */
+.chart-type-toggle {
+    display: flex;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 0.3rem 0.65rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #718096;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn.active {
+    background: #fff;
+    color: #2575fc;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Period KPIs (inline mini stats) */
+.period-kpis {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.period-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.period-kpi-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: #a0aec0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.period-kpi-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-color, #1a202c);
+}
+
+.period-kpi-value.green {
+    color: #38a169;
+}
+
+.period-kpi-value.blue {
+    color: #2575fc;
+}
+
+/* ── No data ──────────────────────────────────────────────────────────────── */
+.no-data-msg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #a0aec0;
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .period-filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .period-kpis {
+        margin-left: 0;
+        gap: 0.75rem;
+    }
+}

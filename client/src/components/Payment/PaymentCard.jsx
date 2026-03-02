@@ -94,6 +94,8 @@ const BreakdownList = ({ breakdown }) => {
 const PaymentCard = ({
     paymentStatus,
     quotaAmount,
+    totalDue,
+    overdueMonths,
     paymentPreference,
     paymentReference,
     breakdown,
@@ -110,6 +112,7 @@ const PaymentCard = ({
     const [showHistory, setShowHistory] = useState(false);
 
     const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const MONTHS_PT_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
     // ── PAID state ────────────────────────────────────────────────────────────
     const renderPaid = () => (
@@ -155,21 +158,22 @@ const PaymentCard = ({
     );
 
     // ── UNPAID state ──────────────────────────────────────────────────────────
+    const effectiveAmount = (overdueMonths && overdueMonths.length > 0 && totalDue != null) ? totalDue : quotaAmount;
     const renderUnpaid = () => (
         <div className="payment-status-box payment-status-box--unpaid">
             <div className="payment-status-icon"><FaExclamationTriangle /></div>
             <div style={{ flex: 1 }}>
                 <h4>Quota por Pagar</h4>
                 <p>
-                    {paymentPreference === 'Annual' ? 'Quota Anual' : 'Quota Mensal'}:{' '}
+                    {paymentPreference === 'Annual' ? 'Quota Anual' : 'Quota Mensal'}{overdueMonths && overdueMonths.length > 0 ? ' + Meses em Atraso' : ''}:{' '}
                     <strong style={{ color: '#003380' }}>
-                        {quotaAmount !== null ? `${quotaAmount?.toFixed(2)} €` : '…'}
+                        {effectiveAmount !== null ? `${effectiveAmount?.toFixed(2)} €` : '…'}
                     </strong>
                 </p>
                 <button
                     className="payment-btn payment-btn--primary"
                     onClick={() => onGenerateReference()}
-                    disabled={generatingReference || quotaAmount === null}
+                    disabled={generatingReference || effectiveAmount === null}
                 >
                     {generatingReference ? <><FaSyncAlt className="icon-spin" /> A gerar…</> : <><FaBarcode /> Gerar Referência MB</>}
                 </button>
@@ -240,18 +244,17 @@ const PaymentCard = ({
                 {/* Discount badges */}
                 <DiscountBadge discounts={discountsApplied} />
 
-                {/* Inscription alert */}
-
                 {/* Main status */}
-                {paymentStatus === 'Regularizada' && renderPaid()}
+                {paymentStatus === 'Regularizada' && (!overdueMonths || overdueMonths.length === 0) && renderPaid()}
+                {paymentStatus === 'Regularizada' && overdueMonths && overdueMonths.length > 0 && renderUnpaid()}
                 {paymentStatus === 'Pendente' && renderPending()}
                 {paymentStatus !== 'Regularizada' && paymentStatus !== 'Pendente' && renderUnpaid()}
 
                 {/* Advance payment */}
                 {renderAdvance()}
 
-                {/* Breakdown toggle */}
-                {breakdown && breakdown.length > 0 && (
+                {/* Breakdown toggle — shown when there's a breakdown OR overdue months */}
+                {(breakdown && breakdown.length > 0) || (overdueMonths && overdueMonths.length > 0) ? (
                     <div className="payment-breakdown-toggle">
                         <button
                             className="breakdown-toggle-btn"
@@ -264,20 +267,54 @@ const PaymentCard = ({
 
                         {showBreakdown && (
                             <>
+                                {/* Regular breakdown items */}
                                 <BreakdownList breakdown={breakdown} />
+
+                                {/* Overdue months as extra line items */}
+                                {overdueMonths && overdueMonths.length > 0 && (
+                                    <div className="payment-breakdown payment-breakdown--overdue">
+                                        <div className="payment-breakdown-overdue-header">
+                                            Meses em atraso
+                                        </div>
+                                        {overdueMonths.map((m, i) => (
+                                            <div key={i} className="payment-breakdown-item payment-breakdown-item--overdue">
+                                                <span className="breakdown-label">
+                                                    <span className="breakdown-dot breakdown-dot--overdue" />
+                                                    {MONTHS_PT_FULL[m.periodMonth - 1]} {m.periodYear}
+                                                </span>
+                                                <span className="breakdown-amount" style={{ color: '#dc2626' }}>
+                                                    {m.amount.toFixed(2)} €
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <div className="payment-breakdown-total">
-                                    <span>Total mensal</span>
-                                    <strong>{quotaAmount?.toFixed(2)} €</strong>
+                                    <span>
+                                        {overdueMonths && overdueMonths.length > 0 ? 'Total a pagar' : 'Total mensal'}
+                                    </span>
+                                    <strong style={overdueMonths && overdueMonths.length > 0 ? { color: '#dc2626' } : {}}>
+                                        {(totalDue ?? quotaAmount)?.toFixed(2)} €
+                                    </strong>
                                 </div>
+                                {overdueMonths && overdueMonths.length > 0 && (
+                                    <div className="payment-breakdown-overdue-note">
+                                        Inclui {overdueMonths.length} {overdueMonths.length === 1 ? 'mês' : 'meses'} em atraso + mês atual
+                                    </div>
+                                )}
                                 <div className="payment-breakdown-legend">
                                     <span><span className="breakdown-dot breakdown-dot--included" /> Quota incluída na mensalidade</span>
                                     <span><span className="breakdown-dot breakdown-dot--discount" /> Desconto aplicado</span>
                                     <span><span className="breakdown-dot breakdown-dot--normal" /> Valor normal</span>
+                                    {overdueMonths && overdueMonths.length > 0 && (
+                                        <span><span className="breakdown-dot breakdown-dot--overdue" /> Em atraso</span>
+                                    )}
                                 </div>
                             </>
                         )}
                     </div>
-                )}
+                ) : null}
 
             </div>
         </div>

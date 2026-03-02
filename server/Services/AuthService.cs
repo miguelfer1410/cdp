@@ -257,7 +257,7 @@ public class AuthService : IAuthService
         // Create reset link
         // Use IConfiguration to get the base URL if possible or hardcode for now based on user context
         // Ideally this should be in appsettings
-        var clientUrl = "http://localhost:3000"; // Assuming default React port
+        var clientUrl = "http://localhost:3001"; // Assuming default React port
         var resetLink = $"{clientUrl}/reset-password?token={token}";
 
         // Send Email
@@ -310,7 +310,7 @@ public class AuthService : IAuthService
         return true;
     }
 
-    private string GenerateJwtToken(User user, List<string> roles = null)
+    private string GenerateJwtToken(User user, List<string>? roles = null)
     {
         var securityKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key not configured")));

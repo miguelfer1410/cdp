@@ -15,6 +15,7 @@ import PaymentManager from '../../components/Admin/PaymentManager';
 import FamilyAssociationsManager from '../../components/Admin/FamilyAssociationsManager';
 import EscalaoRequestsManager from '../../components/Admin/EscalaoRequestsManager';
 import ClubAnalytics from '../../components/Admin/ClubAnalytics';
+import EscalaoManager from '../../components/Admin/EscalaoManager';
 
 const NAV_ITEMS_CONFIG = {
     hero: { id: 'hero', label: 'Banner', icon: <FaImages /> },
@@ -27,10 +28,11 @@ const NAV_ITEMS_CONFIG = {
     fees: { id: 'fees', label: 'Config. Quotas', icon: <FaEuroSign /> },
     payments: { id: 'payments', label: 'Pagamentos', icon: <FaEuroSign /> },
     requests: { id: 'requests', label: 'Requisições', icon: <FaBell /> },
-    analytics: { id: 'analytics', label: 'Análise', icon: <FaChartLine /> }
+    analytics: { id: 'analytics', label: 'Análise', icon: <FaChartLine /> },
+    escalaos: { id: 'escalaos', label: 'Escalões', icon: <FaSort /> }
 };
 
-const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people'/*, 'calendar'*/, 'fees', 'payments', 'requests', 'analytics'];
+const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people'/*, 'calendar'*/, 'fees', 'payments', 'requests', 'analytics', 'escalaos'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
@@ -223,6 +225,7 @@ const DashboardAdmin = () => {
                 {activeTab === 'fees' && <FeeManager />}
                 {activeTab === 'payments' && <PaymentManager />}
                 {activeTab === 'analytics' && <ClubAnalytics />}
+                {activeTab === 'escalaos' && <EscalaoManager />}
                 {activeTab === 'requests' && (
                     <div className="requests-section">
                         <div className="admin-sub-tabs">

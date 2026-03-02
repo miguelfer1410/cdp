@@ -20,10 +20,22 @@ import DashboardAdmin from './pages/dashboards/DashboardAdmin';
 import DashboardAtleta from './pages/dashboards/DashboardAtleta';
 import DashboardTreinador from './pages/dashboards/DashboardTreinador';
 import AtivarConta from './pages/auth/AtivarConta';
+import VerificationPage from './pages/VerificationPage';
 
 function AppContent() {
   const location = useLocation();
-  const isAdminDashboard = location.pathname === '/dashboard-admin';
+
+  const noFooterRoutes = [
+    '/dashboard-',
+    '/login',
+    '/registo',
+    '/recuperar-password',
+    '/reset-password',
+    '/ativar-conta',
+    '/verify'
+  ];
+
+  const hideFooter = noFooterRoutes.some(route => location.pathname.startsWith(route));
 
   return (
     <div className="App">
@@ -46,9 +58,10 @@ function AppContent() {
           <Route path="/noticias/:slug" element={<NoticiaDetalhe />} />
           <Route path="/contactos" element={<Contactos />} />
           <Route path="/ativar-conta" element={<AtivarConta />} />
+          <Route path="/verify/:id" element={<VerificationPage />} />
         </Routes>
       </main>
-      {!isAdminDashboard && <Footer />}
+      {!hideFooter && <Footer />}
     </div>
   );
 }

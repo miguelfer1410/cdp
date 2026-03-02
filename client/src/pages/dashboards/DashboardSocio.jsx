@@ -22,12 +22,14 @@ import {
     FaTrophy,
     FaCalendarCheck,
     FaArrowRight,
-    FaUserFriends
+    FaUserFriends,
+    FaExclamationCircle
 } from 'react-icons/fa';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import BecomeMember from '../../components/BecomeMember/BecomeMember';
 import FamilyAssociationModal from '../../components/FamilyAssociationModal/FamilyAssociationModal';
 import DocumentsModal from '../../components/DocumentsModal/DocumentsModal';
+import MembershipCard from '../../components/MembershipCard/MembershipCard';
 import './DashboardSocio.css';
 
 const DashboardSocio = () => {
@@ -37,6 +39,8 @@ const DashboardSocio = () => {
     const [paymentData, setPaymentData] = useState(null);
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [memberQuota, setMemberQuota] = useState(null);
+    const [overdueMonths, setOverdueMonths] = useState([]);
+    const [totalDue, setTotalDue] = useState(null);
     const [error, setError] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
@@ -111,26 +115,36 @@ const DashboardSocio = () => {
                 console.log(userData);
 
                 if (userData.membershipStatus === 'Active') {
-                    // Fetch fees to determine correct quota (minor vs adult)
-                    const feesResponse = await fetch('http://localhost:5285/api/fees', {
+                    // Fetch quota (includes overdue detection)
+                    const quotaResponse = await fetch(`http://localhost:5285/api/payment/quota?userId=${currentUserId}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    if (feesResponse.ok) {
-                        const feesData = await feesResponse.json();
-                        // Calculate age
-                        let isMinor = false;
-                        if (data.birthDate) {
-                            const today = new Date();
-                            const birth = new Date(data.birthDate);
-                            let age = today.getFullYear() - birth.getFullYear();
-                            const m = today.getMonth() - birth.getMonth();
-                            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-                            isMinor = age < 18;
+                    if (quotaResponse.ok) {
+                        const quotaData = await quotaResponse.json();
+                        setMemberQuota(quotaData.amount);
+                        setOverdueMonths(quotaData.overdueMonths || []);
+                        setTotalDue(quotaData.totalDue ?? null);
+                    } else {
+                        // Fallback: fetch fees to determine correct quota (minor vs adult)
+                        const feesResponse = await fetch('http://localhost:5285/api/fees', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (feesResponse.ok) {
+                            const feesData = await feesResponse.json();
+                            let isMinor = false;
+                            if (data.birthDate) {
+                                const today = new Date();
+                                const birth = new Date(data.birthDate);
+                                let age = today.getFullYear() - birth.getFullYear();
+                                const m = today.getMonth() - birth.getMonth();
+                                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+                                isMinor = age < 18;
+                            }
+                            const quota = isMinor
+                                ? (feesData.minorMemberFee || feesData.memberFee || 0)
+                                : (feesData.memberFee || 0);
+                            setMemberQuota(quota);
                         }
-                        const quota = isMinor
-                            ? (feesData.minorMemberFee || feesData.memberFee || 0)
-                            : (feesData.memberFee || 0);
-                        setMemberQuota(quota);
                     }
 
                     // Fetch payment history
@@ -380,11 +394,11 @@ const DashboardSocio = () => {
                             <div className="profile-meta">
                                 <div className="profile-meta-item">
                                     <FaIdCard />
-                                    <span>Sócia #{memberData.memberNumber}</span>
+                                    <span>Sócio #{memberData.memberNumber}</span>
                                 </div>
                                 <div className="profile-meta-item">
                                     <FaCalendarAlt />
-                                    <span>Sócia desde {memberData.memberSince}</span>
+                                    <span>Sócio desde {memberData.memberSince}</span>
                                 </div>
                             </div>
                         </div>
@@ -419,34 +433,15 @@ const DashboardSocio = () => {
                         {/* Left Column */}
                         <div>
                             {/* Membership Card */}
-                            <div className="membership-card">
-                                <div className="membership-header">
-                                    <div className="membership-logo">
-                                        <img src="/CDP_logo.png" alt="CDP" />
-                                    </div>
-                                </div>
-                                <div className="membership-details">
-                                    <div className="membership-number">#{memberData.memberNumber}</div>
-                                    <div className="membership-info">
-                                        <div className="membership-info-item">
-                                            <h4>Nome</h4>
-                                            <p>{memberData.name}</p>
-                                        </div>
-                                        <div className="membership-info-item">
-                                            <h4>Validade</h4>
-                                            <p>{memberData.validity}</p>
-                                        </div>
-                                        <div className="membership-info-item">
-                                            <h4>Desde</h4>
-                                            <p>{memberData.registrationDate}</p>
-                                        </div>
-                                        <div className="membership-info-item">
-                                            <h4>Estado</h4>
-                                            <p>✓ {memberData.status}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <MembershipCard
+                                memberNumber={memberData.memberNumber}
+                                name={memberData.name}
+                                memberSince={memberData.memberSince}
+                                validity={memberData.validity}
+                                status={memberData.status}
+                                cardType="socio"
+                                userId={currentUserId}
+                            />
 
                             {/* Payment Status */}
                             <div className="dashboard-card">
@@ -468,6 +463,37 @@ const DashboardSocio = () => {
                                     </div>
                                 </div>
 
+                                {/* Overdue banner */}
+                                {overdueMonths && overdueMonths.length > 0 && (
+                                    <div style={{
+                                        margin: '12px 16px',
+                                        padding: '14px 16px',
+                                        background: '#fff5f5',
+                                        border: '1px solid #fca5a5',
+                                        borderRadius: '10px',
+                                        color: '#c0392b'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', marginBottom: '8px', fontSize: '0.95rem' }}>
+                                            <FaExclamationCircle /> Quotas em Atraso
+                                        </div>
+                                        <ul style={{ margin: 0, padding: '0 0 0 20px', fontSize: '0.875rem', lineHeight: '1.8' }}>
+                                            {overdueMonths.map((m, i) => {
+                                                const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                                                return (
+                                                    <li key={i} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '260px' }}>
+                                                        <span>{MONTHS[m.periodMonth - 1]} {m.periodYear}</span>
+                                                        <strong>{m.amount.toFixed(2)} €</strong>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                        <div style={{ marginTop: '10px', fontSize: '0.875rem', fontWeight: '700', borderTop: '1px solid #fca5a5', paddingTop: '8px' }}>
+                                            Total a pagar: <span>{(totalDue ?? overdueMonths.reduce((s, m2) => s + m2.amount, 0) + (memberQuota || 0)).toFixed(2)} €</span>
+                                            <span style={{ fontWeight: '400', fontSize: '0.8rem', color: '#888', marginLeft: '6px' }}>(meses em atraso + mês atual)</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {paymentHistory.length > 0 ? (
                                     paymentHistory.map((payment) => (
                                         <div key={payment.id} className="payment-item">
@@ -476,7 +502,10 @@ const DashboardSocio = () => {
                                                     {payment.status === 'Completed' ? <FaCheck /> : <FaClock />}
                                                 </div>
                                                 <div className="payment-info">
-                                                    <h4>Quota {payment.month}</h4>
+                                                    <h4>Quota {payment.periodMonth
+                                                        ? (() => { const M = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']; return `${M[payment.periodMonth - 1]} ${payment.periodYear}`; })()
+                                                        : (payment.month || '')}
+                                                    </h4>
                                                     <p>Pago em {formatDate(payment.paymentDate)}</p>
                                                 </div>
                                             </div>
@@ -488,10 +517,38 @@ const DashboardSocio = () => {
                                             </div>
                                         </div>
                                     ))
-                                ) : (
+                                ) : overdueMonths.length > 0 ? null : (
                                     <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
                                         <p>Nenhum pagamento registado ainda.</p>
                                     </div>
+                                )}
+
+                                {/* Overdue entries in history */}
+                                {overdueMonths && overdueMonths.length > 0 && (
+                                    <>
+                                        {overdueMonths.map((m, i) => {
+                                            const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                                            return (
+                                                <div key={`overdue-${i}`} className="payment-item" style={{ background: '#fff5f5', borderLeft: '3px solid #f87171' }}>
+                                                    <div className="payment-details">
+                                                        <div className="payment-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                                                            <FaExclamationCircle />
+                                                        </div>
+                                                        <div className="payment-info">
+                                                            <h4>Quota {MONTHS[m.periodMonth - 1]} {m.periodYear}</h4>
+                                                            <p style={{ color: '#dc2626', fontSize: '0.8rem' }}>Em atraso</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="payment-amount">
+                                                        <h4 style={{ color: '#c0392b' }}>€{m.amount.toFixed(2)}</h4>
+                                                        <span className="payment-status" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '12px', padding: '2px 10px', fontSize: '0.78rem', fontWeight: '600' }}>
+                                                            Em Atraso
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
                                 )}
                             </div>
 

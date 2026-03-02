@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import { FaUsers, FaShieldAlt, FaTrophy, FaUserTie } from 'react-icons/fa';
+import FinancialAnalytics from './FinancialAnalytics';
 import './ClubAnalytics.css';
 
 ChartJS.register(
@@ -25,6 +26,7 @@ ChartJS.register(
 );
 
 const ClubAnalytics = () => {
+    const [activeTab, setActiveTab] = useState('club');
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -176,9 +178,9 @@ const ClubAnalytics = () => {
     };
 
     const userTypologyChart = {
-        labels: ['Sócios (Não Atletas)', 'Registados (Não Sócios)'],
+        labels: ['Sócios', 'Registados (Não Sócios)'],
         datasets: [{
-            data: [data.overview.membersNotAthletes, data.overview.registeredNotMembers],
+            data: [data.overview.totalMembers, data.overview.registeredNotMembers],
             backgroundColor: ['#6a11cb', '#feb47b'],
             borderWidth: 0,
             hoverOffset: 15
@@ -231,103 +233,124 @@ const ClubAnalytics = () => {
         <div className="club-analytics-container">
             <header className="analytics-header">
                 <h2>Análise do Clube</h2>
-                <p>Estatísticas em tempo real sobre atletas, equipas e staff.</p>
+                <p>Estatísticas em tempo real sobre atletas, equipas, e finanças.</p>
+
+                <div className="analytics-tabs-container">
+                    <button
+                        className={`analytics-tab-btn ${activeTab === 'club' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('club')}
+                    >
+                        Gestão de Clube
+                    </button>
+                    <button
+                        className={`analytics-tab-btn ${activeTab === 'financial' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('financial')}
+                    >
+                        Gestão Financeira
+                    </button>
+                </div>
             </header>
 
-            <div className="analytics-overview-grid">
-                <div className="analytics-stat-card">
-                    <div className="analytics-stat-icon athletes"><FaUsers /></div>
-                    <div className="analytics-stat-info">
-                        <h3>Total Atletas</h3>
-                        <p className="analytics-stat-number">{data.overview.totalAthletes}</p>
-                    </div>
-                </div>
-                <div className="analytics-stat-card">
-                    <div className="analytics-stat-icon teams"><FaShieldAlt /></div>
-                    <div className="analytics-stat-info">
-                        <h3>Equipas Ativas</h3>
-                        <p className="analytics-stat-number">{data.overview.totalTeams}</p>
-                    </div>
-                </div>
-                <div className="analytics-stat-card">
-                    <div className="analytics-stat-icon sports"><FaTrophy /></div>
-                    <div className="analytics-stat-info">
-                        <h3>Modalidades</h3>
-                        <p className="analytics-stat-number">{data.overview.totalSports}</p>
-                    </div>
-                </div>
-                <div className="analytics-stat-card">
-                    <div className="analytics-stat-icon coaches"><FaUserTie /></div>
-                    <div className="analytics-stat-info">
-                        <h3>Treinadores</h3>
-                        <p className="analytics-stat-number">{data.overview.totalCoaches}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className="charts-grid">
-                <div className="chart-item">
-                    <h3>Atletas por Modalidade</h3>
-                    <div className="chart-wrapper">
-                        <Pie data={athletesPerSportCharts} options={chartOptions} />
-                    </div>
-                </div>
-                <div className="chart-item">
-                    <h3>Distribuição por Idade</h3>
-                    <div className="chart-wrapper">
-                        <Pie data={ageGroupChart} options={chartOptions} />
-                    </div>
-                </div>
-                <div className="chart-item">
-                    <h3>Divisões (Género)</h3>
-                    <div className="chart-wrapper">
-                        <Pie data={genderChart} options={chartOptions} />
-                    </div>
-                </div>
-                <div className="chart-item">
-                    <h3>Tipologia de Utilizadores</h3>
-                    <div className="chart-wrapper">
-                        <Pie data={userTypologyChart} options={chartOptions} />
-                    </div>
-                </div>
-                <div className="chart-item full-width">
-                    <h3>Treinadores por Modalidade</h3>
-                    <div className="chart-wrapper bar">
-                        <Bar data={coachesPerSportChart} options={barOptions} />
-                    </div>
-                </div>
-                <div className="chart-item full-width">
-                    <div className="chart-header-with-filters">
-                        <h3>Equipas por N.º de Atletas</h3>
-                        <div className="chart-filters">
-                            <select
-                                value={sportFilter}
-                                onChange={(e) => setSportFilter(e.target.value)}
-                                className="analytics-filter-select"
-                            >
-                                <option value="all">Todas as Modalidades</option>
-                                {uniqueSports.map(sport => (
-                                    <option key={sport} value={sport}>{sport}</option>
-                                ))}
-                            </select>
-                            <input
-                                type="text"
-                                placeholder="Pesquisar equipa..."
-                                value={teamSearch}
-                                onChange={(e) => setTeamSearch(e.target.value)}
-                                className="analytics-filter-input"
-                            />
+            {activeTab === 'club' ? (
+                <>
+                    <div className="analytics-overview-grid">
+                        <div className="analytics-stat-card">
+                            <div className="analytics-stat-icon athletes"><FaUsers /></div>
+                            <div className="analytics-stat-info">
+                                <h3>Total Atletas</h3>
+                                <p className="analytics-stat-number">{data.overview.totalAthletes}</p>
+                            </div>
+                        </div>
+                        <div className="analytics-stat-card">
+                            <div className="analytics-stat-icon teams"><FaShieldAlt /></div>
+                            <div className="analytics-stat-info">
+                                <h3>Equipas Ativas</h3>
+                                <p className="analytics-stat-number">{data.overview.totalTeams}</p>
+                            </div>
+                        </div>
+                        <div className="analytics-stat-card">
+                            <div className="analytics-stat-icon sports"><FaTrophy /></div>
+                            <div className="analytics-stat-info">
+                                <h3>Modalidades</h3>
+                                <p className="analytics-stat-number">{data.overview.totalSports}</p>
+                            </div>
+                        </div>
+                        <div className="analytics-stat-card">
+                            <div className="analytics-stat-icon coaches"><FaUserTie /></div>
+                            <div className="analytics-stat-info">
+                                <h3>Treinadores</h3>
+                                <p className="analytics-stat-number">{data.overview.totalCoaches}</p>
+                            </div>
                         </div>
                     </div>
-                    <div className="chart-wrapper bar teams-flexible-chart" style={{ height: teamChartHeight }}>
-                        {filteredTeams.length > 0 ? (
-                            <Bar data={teamsChartData} options={teamBarOptions} />
-                        ) : (
-                            <div className="no-data-msg">Nenhuma equipa encontrada com estes filtros.</div>
-                        )}
+
+                    <div className="charts-grid">
+                        <div className="chart-item">
+                            <h3>Atletas por Modalidade</h3>
+                            <div className="chart-wrapper">
+                                <Pie data={athletesPerSportCharts} options={chartOptions} />
+                            </div>
+                        </div>
+                        <div className="chart-item">
+                            <h3>Distribuição por Idade</h3>
+                            <div className="chart-wrapper">
+                                <Pie data={ageGroupChart} options={chartOptions} />
+                            </div>
+                        </div>
+                        <div className="chart-item">
+                            <h3>Divisões (Género)</h3>
+                            <div className="chart-wrapper">
+                                <Pie data={genderChart} options={chartOptions} />
+                            </div>
+                        </div>
+                        <div className="chart-item">
+                            <h3>Tipologia de Utilizadores</h3>
+                            <div className="chart-wrapper">
+                                <Pie data={userTypologyChart} options={chartOptions} />
+                            </div>
+                        </div>
+                        <div className="chart-item full-width">
+                            <h3>Treinadores por Modalidade</h3>
+                            <div className="chart-wrapper bar">
+                                <Bar data={coachesPerSportChart} options={barOptions} />
+                            </div>
+                        </div>
+                        <div className="chart-item full-width">
+                            <div className="chart-header-with-filters">
+                                <h3>Equipas por N.º de Atletas</h3>
+                                <div className="chart-filters">
+                                    <select
+                                        value={sportFilter}
+                                        onChange={(e) => setSportFilter(e.target.value)}
+                                        className="analytics-filter-select"
+                                    >
+                                        <option value="all">Todas as Modalidades</option>
+                                        {uniqueSports.map(sport => (
+                                            <option key={sport} value={sport}>{sport}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="text"
+                                        placeholder="Pesquisar equipa..."
+                                        value={teamSearch}
+                                        onChange={(e) => setTeamSearch(e.target.value)}
+                                        className="analytics-filter-input"
+                                    />
+                                </div>
+                            </div>
+                            <div className="chart-wrapper bar teams-flexible-chart" style={{ height: teamChartHeight }}>
+                                {filteredTeams.length > 0 ? (
+                                    <Bar data={teamsChartData} options={teamBarOptions} />
+                                ) : (
+                                    <div className="no-data-msg">Nenhuma equipa encontrada com estes filtros.</div>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </>
+            ) : (
+                <FinancialAnalytics />
+            )}
         </div>
     );
 };

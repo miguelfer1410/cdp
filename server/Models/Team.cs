@@ -14,8 +14,8 @@ public class Team
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty; // "Juniores A", "Seniores Femininos"
 
-    [MaxLength(50)]
-    public string? Category { get; set; } // "Sub-15", "Seniores"
+    public int? EscalaoId { get; set; } // Foreign key to Escalao
+    public Escalao? Escalao { get; set; }
 
     [Required]
     public Gender Gender { get; set; } = Gender.Mixed;

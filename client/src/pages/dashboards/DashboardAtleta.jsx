@@ -7,6 +7,7 @@ import CalendarModal from '../../components/CalendarModal/CalendarModal';
 import PaymentCard from '../../components/Payment/PaymentCard';
 import RequestsModal from '../../components/RequestsModal/RequestsModal';
 import DocumentsModal from '../../components/DocumentsModal/DocumentsModal';
+import MembershipCard from '../../components/MembershipCard/MembershipCard';
 
 const DashboardAtleta = () => {
     const navigate = useNavigate();
@@ -36,11 +37,12 @@ const DashboardAtleta = () => {
         return parseInt(localStorage.getItem('userId')) || null;
     });
 
-    // Payment State
     const [paymentReference, setPaymentReference] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState('unpaid');
     const [generatingReference, setGeneratingReference] = useState(false);
     const [quotaAmount, setQuotaAmount] = useState(null);
+    const [totalDue, setTotalDue] = useState(null);
+    const [overdueMonths, setOverdueMonths] = useState([]);
     const [paymentPreference, setPaymentPreference] = useState('Monthly');
     const [nextPeriod, setNextPeriod] = useState(null); // { month, year }
     const [paymentHistory, setPaymentHistory] = useState([]);
@@ -95,6 +97,7 @@ const DashboardAtleta = () => {
                 });
                 if (!userResponse.ok) throw new Error('Failed to fetch athlete data');
                 const userData = await userResponse.json();
+                console.log(userData);
                 setAthleteData(userData);
 
                 // 2. Fetch Quota for this user
@@ -114,6 +117,8 @@ const DashboardAtleta = () => {
                         setQuotaBreakdown(quotaData.breakdown || []);
                         setDiscountsApplied(quotaData.discountsApplied || []);
                         setInscriptionInfo(quotaData.inscriptionInfo || []);
+                        setOverdueMonths(quotaData.overdueMonths || []);
+                        setTotalDue(quotaData.totalDue ?? null);
                         if (quotaData.nextPeriodYear) {
                             setNextPeriod({ month: quotaData.nextPeriodMonth, year: quotaData.nextPeriodYear });
                         }
@@ -530,6 +535,24 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
+                            {/* Membership Card */}
+                            <MembershipCard
+                                memberNumber={athleteData.memberProfile?.membershipNumber || athleteData.id?.toString()}
+                                name={
+                                    athleteData.athleteProfile
+                                        ? `${athleteData.athleteProfile.firstName || ''} ${athleteData.athleteProfile.lastName || ''}`.trim() || athleteData.fullName
+                                        : athleteData.fullName
+                                }
+                                memberSince={athleteData.memberProfile?.memberSince ? new Date(athleteData.memberProfile.memberSince).getFullYear().toString() : '—'}
+                                validity="31/12/2026"
+                                status={athleteData.memberProfile?.membershipStatus !== undefined
+                                    ? ['Pending', 'Active', 'Suspended', 'Cancelled'][athleteData.memberProfile.membershipStatus] || 'Ativo'
+                                    : 'Ativo'}
+                                sport={athleteData.sport}
+                                cardType="atleta"
+                                userId={selectedUserId}
+                            />
+
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-folder"></i> Documentos</h2>
@@ -601,6 +624,8 @@ const DashboardAtleta = () => {
                             <PaymentCard
                                 paymentStatus={paymentStatus}
                                 quotaAmount={quotaAmount}
+                                totalDue={totalDue}
+                                overdueMonths={overdueMonths}
                                 paymentPreference={paymentPreference}
                                 paymentReference={paymentReference}
                                 breakdown={quotaBreakdown}
@@ -634,8 +659,14 @@ const DashboardAtleta = () => {
                                 </div>
 
                                 {(() => {
+                                    const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                                    const MONTHS_PT_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
                                     const yearPayments = paymentHistory.filter(p => p.periodYear === historyYear);
-                                    if (paymentHistory.length === 0) {
+                                    // Overdue entries for this year
+                                    const yearOverdue = (overdueMonths || []).filter(m => m.periodYear === historyYear);
+                                    const hasAnything = yearPayments.length > 0 || yearOverdue.length > 0;
+
+                                    if (paymentHistory.length === 0 && overdueMonths.length === 0) {
                                         return (
                                             <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
                                                 <i className="fas fa-receipt" style={{ fontSize: '2rem', marginBottom: '10px', display: 'block', opacity: 0.3 }}></i>
@@ -643,7 +674,7 @@ const DashboardAtleta = () => {
                                             </div>
                                         );
                                     }
-                                    if (yearPayments.length === 0) {
+                                    if (!hasAnything) {
                                         return (
                                             <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
                                                 Sem pagamentos registados para {historyYear}.
@@ -661,6 +692,29 @@ const DashboardAtleta = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
+                                                    {/* Overdue rows first */}
+                                                    {yearOverdue.map((m, idx) => (
+                                                        <tr key={`overdue-${m.periodMonth}-${m.periodYear}`}
+                                                            style={{ borderBottom: '1px solid #fff0f0', backgroundColor: '#fff5f5' }}
+                                                        >
+                                                            <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
+                                                                {MONTHS_PT_FULL[m.periodMonth - 1]} {m.periodYear}
+                                                            </td>
+                                                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#c0392b' }}>
+                                                                {m.amount?.toFixed(2)} €
+                                                            </td>
+                                                            <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                                                                <span style={{
+                                                                    background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5',
+                                                                    borderRadius: '20px', padding: '3px 10px', fontSize: '0.78rem',
+                                                                    fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap'
+                                                                }}>
+                                                                    <i className="fas fa-exclamation-circle"></i> Em Atraso
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    {/* Regular paid/pending payments */}
                                                     {yearPayments.map((payment, idx) => {
                                                         const isPaid = payment.status === 'Completed';
                                                         const isPending = payment.status === 'Pending';
@@ -676,7 +730,12 @@ const DashboardAtleta = () => {
                                                                 style={{ borderBottom: '1px solid #f0f4ff', backgroundColor: idx % 2 === 0 ? '#fff' : '#fafcff', transition: 'background 0.15s' }}
                                                             >
                                                                 <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
-                                                                    {payment.month}
+                                                                    {payment.month
+                                                                        ? payment.month
+                                                                        : payment.periodMonth
+                                                                            ? `${MONTHS_PT_FULL[payment.periodMonth - 1]} ${payment.periodYear}`
+                                                                            : `Anual ${payment.periodYear}`
+                                                                    }
                                                                 </td>
                                                                 <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#003380' }}>
                                                                     {payment.amount?.toFixed(2)} €

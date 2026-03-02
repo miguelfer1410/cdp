@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown, FaUserCheck, FaUserPlus } from 'react-icons/fa';
 import './TeamsManager.css';
 
 const TeamsManager = () => {
     const [teams, setTeams] = useState([]);
     const [sports, setSports] = useState([]);
+    const [escalaos, setEscalaos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -14,25 +15,32 @@ const TeamsManager = () => {
     const [addingAthletes, setAddingAthletes] = useState(false);
     const [availableAthletes, setAvailableAthletes] = useState([]);
     const [selectedAthletes, setSelectedAthletes] = useState([]);
-    const [searchFilters, setSearchFilters] = useState({
-        name: '',
-        nif: '',
-        email: ''
-    });
+    const [athletesLoading, setAthletesLoading] = useState(false);
+    const [athleteSearch, setAthleteSearch] = useState('');
     const [selectedSportFilter, setSelectedSportFilter] = useState('');
-    const [formData, setFormData] = useState({
+    const initialFormState = {
         sportId: '',
         name: '',
-        category: '',
-        gender: 3, // Mixed by default
-        season: '',
+        escalaoId: '',
+        gender: 2, // Mixed/Misto
+        season: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
         isActive: true
-    });
+    };
+    const [formData, setFormData] = useState(initialFormState);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+
+    const getEmailBase = (email) => {
+        if (!email) return '';
+        const [localPart, domain] = email.split('@');
+        if (!localPart || !domain) return email;
+        const [base] = localPart.split('+');
+        return `${base}@${domain}`;
+    };
 
     useEffect(() => {
         fetchTeams();
         fetchSports();
+        fetchEscalaos();
     }, []);
 
     const fetchTeams = async () => {
@@ -73,6 +81,21 @@ const TeamsManager = () => {
         }
     };
 
+    const fetchEscalaos = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5285/api/escalaos/all', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setEscalaos(data);
+            }
+        } catch (error) {
+            console.error('Error fetching escalaos:', error);
+        }
+    };
+
     const fetchTeamDetails = async (teamId) => {
         try {
             const token = localStorage.getItem('token');
@@ -94,6 +117,7 @@ const TeamsManager = () => {
     };
 
     const fetchAvailableAthletes = async () => {
+        setAthletesLoading(true);
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:5285/api/users?profileType=athlete&isActive=true&pageSize=1000', {
@@ -108,42 +132,40 @@ const TeamsManager = () => {
             }
         } catch (error) {
             console.error('Error fetching athletes:', error);
+        } finally {
+            setAthletesLoading(false);
         }
     };
 
-    // Generate team name automatically
-    const generateTeamName = (sportId, category, gender) => {
-        const sport = sports.find(s => s.id === parseInt(sportId));
-        if (!sport) return '';
+    const generateTeamName = (data) => {
+        const sport = sports.find(s => s.id === parseInt(data.sportId));
+        const escalao = escalaos.find(e => e.id === parseInt(data.escalaoId));
 
-        const parts = [sport.name];
+        if (!sport) return data.name;
 
-        if (category && category.trim()) {
-            parts.push(category.trim());
+        let name = sport.name;
+        if (escalao) {
+            name += ` ${escalao.name}`;
         }
 
-        const genderLabel = getGenderLabel(parseInt(gender));
-        if (genderLabel !== 'Misto') {
-            parts.push(genderLabel);
-        }
+        if (parseInt(data.gender) === 0) name += ' (masculino)';
+        if (parseInt(data.gender) === 1) name += ' (feminino)';
+        if (parseInt(data.gender) === 2) name += ' (mista)';
 
-        return parts.join(' ');
+        return name;
     };
 
-    // Update form data and regenerate name when relevant fields change
     const updateFormField = (field, value) => {
-        const newFormData = { ...formData, [field]: value };
+        setFormData(prev => {
+            const updated = { ...prev, [field]: value };
 
-        // Auto-generate name when sport, category, or gender changes
-        if (field === 'sportId' || field === 'category' || field === 'gender') {
-            newFormData.name = generateTeamName(
-                field === 'sportId' ? value : newFormData.sportId,
-                field === 'category' ? value : newFormData.category,
-                field === 'gender' ? value : newFormData.gender
-            );
-        }
+            // If sport or category changes, regenerate the suggested name
+            if (field === 'sportId' || field === 'escalaoId' || field === 'gender') {
+                updated.name = generateTeamName(updated);
+            }
 
-        setFormData(newFormData);
+            return updated;
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -154,7 +176,7 @@ const TeamsManager = () => {
         const dataToSend = {
             sportId: parseInt(formData.sportId),
             name: formData.name,
-            category: formData.category || null,
+            escalaoId: formData.escalaoId ? parseInt(formData.escalaoId) : null,
             gender: parseInt(formData.gender),
             season: formData.season || null,
             isActive: formData.isActive
@@ -255,7 +277,7 @@ const TeamsManager = () => {
         setFormData({
             sportId: team.sportId,
             name: team.name,
-            category: team.category || '',
+            escalaoId: team.escalaoId || '',
             gender: team.gender,
             season: team.season || '',
             isActive: team.isActive
@@ -264,15 +286,9 @@ const TeamsManager = () => {
     };
 
     const resetForm = () => {
-        setFormData({
-            sportId: '',
-            name: '',
-            category: '',
-            gender: 3,
-            season: '',
-            isActive: true
-        });
+        setFormData(initialFormState);
         setEditingTeam(null);
+        setShowModal(false);
     };
 
     const getGenderLabel = (gender) => {
@@ -293,24 +309,37 @@ const TeamsManager = () => {
         }
     };
 
-    // Filter athletes based on search criteria
-    const filteredAthletes = availableAthletes.filter(athlete => {
-        // Exclude athletes already in the team
-        const isInTeam = viewingTeam?.athletes?.some(a => a.userId === athlete.id);
-        if (isInTeam) return false;
+    // Filter athletes based on unified search
+    const filteredAthletes = useMemo(() => {
+        const term = athleteSearch.toLowerCase().trim();
+        return availableAthletes.filter(athlete => {
+            // Exclude athletes already in the team
+            const isInTeam = viewingTeam?.athletes?.some(a => a.userId === athlete.id);
+            if (isInTeam) return false;
 
-        // Apply search filters
-        const matchesName = !searchFilters.name ||
-            athlete.fullName.toLowerCase().includes(searchFilters.name.toLowerCase());
+            if (!term) return true;
+            return (
+                athlete.fullName.toLowerCase().includes(term) ||
+                (athlete.nif && athlete.nif.toLowerCase().includes(term)) ||
+                getEmailBase(athlete.email).toLowerCase().includes(term)
+            );
+        });
+    }, [availableAthletes, athleteSearch, viewingTeam]);
 
-        const matchesNIF = !searchFilters.nif ||
-            (athlete.nif && athlete.nif.toLowerCase().includes(searchFilters.nif.toLowerCase()));
-
-        const matchesEmail = !searchFilters.email ||
-            athlete.email.toLowerCase().includes(searchFilters.email.toLowerCase());
-
-        return matchesName && matchesNIF && matchesEmail;
-    });
+    // Athletes already in team (for info display)
+    const athletesAlreadyInTeam = useMemo(() => {
+        if (!athleteSearch.trim()) return [];
+        const term = athleteSearch.toLowerCase().trim();
+        return availableAthletes.filter(athlete => {
+            const isInTeam = viewingTeam?.athletes?.some(a => a.userId === athlete.id);
+            if (!isInTeam) return false;
+            return (
+                athlete.fullName.toLowerCase().includes(term) ||
+                (athlete.nif && athlete.nif.toLowerCase().includes(term)) ||
+                getEmailBase(athlete.email).toLowerCase().includes(term)
+            );
+        });
+    }, [availableAthletes, athleteSearch, viewingTeam]);
 
     const toggleAthleteSelection = (athleteProfileId) => {
         setSelectedAthletes(prev =>
@@ -319,6 +348,21 @@ const TeamsManager = () => {
                 : [...prev, athleteProfileId]
         );
     };
+
+    const handleSelectAllFiltered = () => {
+        const filteredIds = filteredAthletes.map(a => a.athleteProfileId);
+        setSelectedAthletes(prev => {
+            const newSelection = [...new Set([...prev, ...filteredIds])];
+            return newSelection;
+        });
+    };
+
+    const handleDeselectAllFiltered = () => {
+        const filteredIds = filteredAthletes.map(a => a.athleteProfileId);
+        setSelectedAthletes(prev => prev.filter(id => !filteredIds.includes(id)));
+    };
+
+    const areAllFilteredSelected = filteredAthletes.length > 0 && filteredAthletes.every(a => selectedAthletes.includes(a.athleteProfileId));
 
     const handleAddAthletes = async () => {
         if (selectedAthletes.length === 0) {
@@ -357,11 +401,7 @@ const TeamsManager = () => {
     };
 
     const clearSearchFilters = () => {
-        setSearchFilters({
-            name: '',
-            nif: '',
-            email: ''
-        });
+        setAthleteSearch('');
     };
 
     const handleSort = (key) => {
@@ -409,7 +449,7 @@ const TeamsManager = () => {
         return <FaSortDown className="sort-icon active" />;
     };
 
-    const hasActiveFilters = searchFilters.name || searchFilters.nif || searchFilters.email;
+    const hasActiveFilters = athleteSearch.trim() !== '';
 
     if (loading) {
         return (
@@ -424,25 +464,25 @@ const TeamsManager = () => {
 
     return (
         <div className="teams-manager">
-            <div className="manager-header">
+            <div className="teams-manager-header">
                 <div className="header-content">
                     <h1>Gestão de Equipas</h1>
                     <p className="header-subtitle">
                         {sortedTeams.length} {sortedTeams.length === 1 ? 'equipa' : 'equipas'} {selectedSportFilter ? 'encontrada' : 'registada'}{sortedTeams.length !== 1 ? 's' : ''}
                     </p>
                 </div>
-                <button className="btn-add" onClick={openAddModal}>
+                <button className="teams-btn-add" onClick={openAddModal}>
                     <FaPlus /> Nova Equipa
                 </button>
             </div>
 
             {/* Sport Filter */}
             {teams.length > 0 && (
-                <div className="filter-section">
-                    <div className="filter-group">
-                        <label className="filter-label">Filtrar por Modalidade:</label>
+                <div className="teams-filter-section">
+                    <div className="teams-filter-group">
+                        <label className="teams-filter-label">Filtrar por Modalidade:</label>
                         <select
-                            className="filter-select"
+                            className="teams-filter-select"
                             value={selectedSportFilter}
                             onChange={(e) => setSelectedSportFilter(e.target.value)}
                         >
@@ -455,7 +495,7 @@ const TeamsManager = () => {
                         </select>
                         {selectedSportFilter && (
                             <button
-                                className="clear-filter-btn"
+                                className="teams-clear-filter-btn"
                                 onClick={() => setSelectedSportFilter('')}
                                 title="Limpar filtro"
                             >
@@ -467,11 +507,11 @@ const TeamsManager = () => {
             )}
 
             {teams.length === 0 ? (
-                <div className="empty-state">
-                    <div className="empty-icon">🏆</div>
+                <div className="teams-empty-state">
+                    <div className="teams-empty-icon">🏆</div>
                     <h3>Nenhuma equipa registada</h3>
                     <p>Comece por criar a primeira equipa</p>
-                    <button className="btn-add" onClick={openAddModal}>
+                    <button className="teams-btn-add" onClick={openAddModal}>
                         <FaPlus /> Criar Primeira Equipa
                     </button>
                 </div>
@@ -554,10 +594,10 @@ const TeamsManager = () => {
                         </div>
 
                         <form onSubmit={handleSubmit} className="teams-modal-form">
-                            <div className="form-section">
-                                <label className="form-label">Modalidade *</label>
+                            <div className="teams-form-section">
+                                <label className="teams-form-label">Modalidade *</label>
                                 <select
-                                    className="form-select"
+                                    className="teams-form-select"
                                     value={formData.sportId}
                                     onChange={(e) => updateFormField('sportId', e.target.value)}
                                     required
@@ -571,22 +611,27 @@ const TeamsManager = () => {
                                 </select>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-section">
-                                    <label className="form-label">Escalão</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="Ex: Sub-12, Sénior"
-                                        value={formData.category}
-                                        onChange={(e) => updateFormField('category', e.target.value)}
-                                    />
+                            <div className="teams-form-row">
+                                <div className="teams-form-section">
+                                    <label className="teams-form-label">Escalão</label>
+                                    <select
+                                        className="teams-form-select"
+                                        value={formData.escalaoId}
+                                        onChange={(e) => updateFormField('escalaoId', e.target.value)}
+                                    >
+                                        <option value="">Sem escalão</option>
+                                        {escalaos.map(esc => (
+                                            <option key={esc.id} value={esc.id}>
+                                                {esc.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
-                                <div className="form-section">
-                                    <label className="form-label">Género</label>
+                                <div className="teams-form-section">
+                                    <label className="teams-form-label">Género</label>
                                     <select
-                                        className="form-select"
+                                        className="teams-form-select"
                                         value={formData.gender}
                                         onChange={(e) => updateFormField('gender', e.target.value)}
                                     >
@@ -597,11 +642,11 @@ const TeamsManager = () => {
                                 </div>
                             </div>
 
-                            <div className="form-section">
-                                <label className="form-label">Nome da Equipa *</label>
+                            <div className="teams-form-section">
+                                <label className="teams-form-label">Nome da Equipa *</label>
                                 <input
                                     type="text"
-                                    className="form-input"
+                                    className="teams-form-input"
                                     placeholder="Nome gerado automaticamente"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -723,7 +768,8 @@ const TeamsManager = () => {
                                                 onClick={() => {
                                                     setAddingAthletes(true);
                                                     fetchAvailableAthletes();
-                                                    clearSearchFilters();
+                                                    setAthleteSearch('');
+                                                    setSelectedAthletes([]);
                                                 }}
                                             >
                                                 <FaPlus /> Adicionar Atletas
@@ -733,174 +779,172 @@ const TeamsManager = () => {
 
                                     {addingAthletes ? (
                                         <div className="add-athlete-container">
-                                            <button className="modal-back-btn" onClick={() => {
-                                                setAddingAthletes(false);
-                                                clearSearchFilters();
-                                            }}>
-                                                ← Voltar à lista da equipa
-                                            </button>
-
-                                            {/* Advanced Search Section */}
-                                            <div className="advanced-search">
-                                                <div className="search-header">
-                                                    <h4>
-                                                        <FaSearch /> Pesquisar Atletas
-                                                    </h4>
-                                                    {hasActiveFilters && (
-                                                        <button
-                                                            className="clear-filters-btn"
-                                                            onClick={clearSearchFilters}
-                                                        >
-                                                            <FaTimes /> Limpar Filtros
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                <div className="search-grid">
-                                                    <div className="search-field">
-                                                        <label className="search-label">Nome</label>
-                                                        <div className="search-input-wrapper">
-                                                            <FaSearch className="search-input-icon" />
-                                                            <input
-                                                                type="text"
-                                                                className="search-input-field"
-                                                                placeholder="Procurar por nome..."
-                                                                value={searchFilters.name}
-                                                                onChange={(e) => setSearchFilters({
-                                                                    ...searchFilters,
-                                                                    name: e.target.value
-                                                                })}
-                                                            />
-                                                            {searchFilters.name && (
-                                                                <button
-                                                                    className="clear-input-btn"
-                                                                    onClick={() => setSearchFilters({
-                                                                        ...searchFilters,
-                                                                        name: ''
-                                                                    })}
-                                                                >
-                                                                    <FaTimes />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="search-field">
-                                                        <label className="search-label">NIF</label>
-                                                        <div className="search-input-wrapper">
-                                                            <FaSearch className="search-input-icon" />
-                                                            <input
-                                                                type="text"
-                                                                className="search-input-field"
-                                                                placeholder="Procurar por NIF..."
-                                                                value={searchFilters.nif}
-                                                                onChange={(e) => setSearchFilters({
-                                                                    ...searchFilters,
-                                                                    nif: e.target.value
-                                                                })}
-                                                            />
-                                                            {searchFilters.nif && (
-                                                                <button
-                                                                    className="clear-input-btn"
-                                                                    onClick={() => setSearchFilters({
-                                                                        ...searchFilters,
-                                                                        nif: ''
-                                                                    })}
-                                                                >
-                                                                    <FaTimes />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="search-field">
-                                                        <label className="search-label">Email</label>
-                                                        <div className="search-input-wrapper">
-                                                            <FaSearch className="search-input-icon" />
-                                                            <input
-                                                                type="text"
-                                                                className="search-input-field"
-                                                                placeholder="Procurar por email..."
-                                                                value={searchFilters.email}
-                                                                onChange={(e) => setSearchFilters({
-                                                                    ...searchFilters,
-                                                                    email: e.target.value
-                                                                })}
-                                                            />
-                                                            {searchFilters.email && (
-                                                                <button
-                                                                    className="clear-input-btn"
-                                                                    onClick={() => setSearchFilters({
-                                                                        ...searchFilters,
-                                                                        email: ''
-                                                                    })}
-                                                                >
-                                                                    <FaTimes />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="search-results-info">
-                                                    <span className="results-count">
-                                                        {filteredAthletes.length} {filteredAthletes.length === 1 ? 'atleta encontrado' : 'atletas encontrados'}
-                                                    </span>
-                                                </div>
+                                            <div className="add-athlete-header">
+                                                <button className="modal-back-btn" onClick={() => {
+                                                    setAddingAthletes(false);
+                                                    setAthleteSearch('');
+                                                    setSelectedAthletes([]);
+                                                }}>
+                                                    ← Voltar à lista da equipa
+                                                </button>
+                                                <span className="add-athlete-title">
+                                                    <FaUserPlus /> Adicionar Atletas à Equipa
+                                                </span>
                                             </div>
 
-                                            {/* Athletes List */}
-                                            <div className="athletes-list">
-                                                {filteredAthletes.map(athlete => (
-                                                    <div
-                                                        key={athlete.id}
-                                                        className="athlete-item"
-                                                        onClick={() => toggleAthleteSelection(athlete.athleteProfileId)}
-                                                    >
+                                            <div className="add-athlete-layout">
+                                                {/* Left: Search + Results */}
+                                                <div className="add-athlete-search-panel">
+                                                    {/* Unified Search Bar */}
+                                                    <div className="unified-search-bar">
+                                                        <FaSearch className="unified-search-icon" />
                                                         <input
-                                                            type="checkbox"
-                                                            className="athlete-checkbox"
-                                                            checked={selectedAthletes.includes(athlete.athleteProfileId)}
-                                                            onChange={() => { }}
+                                                            type="text"
+                                                            className="unified-search-input"
+                                                            placeholder="Pesquisar por nome, NIF ou email..."
+                                                            value={athleteSearch}
+                                                            onChange={(e) => setAthleteSearch(e.target.value)}
+                                                            autoFocus
                                                         />
-                                                        <div className="athlete-info">
-                                                            <div className="athlete-name">{athlete.fullName}</div>
-                                                            <div className="athlete-details">
-                                                                {athlete.email}
-                                                                {athlete.nif && ` • NIF: ${athlete.nif}`}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {filteredAthletes.length === 0 && (
-                                                    <div className="no-results">
-                                                        <div className="no-results-icon">🔍</div>
-                                                        <p>Nenhum atleta encontrado com os critérios de pesquisa.</p>
-                                                        {hasActiveFilters && (
-                                                            <button
-                                                                className="btn-add"
-                                                                onClick={clearSearchFilters}
-                                                                style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginTop: '0.5rem' }}
-                                                            >
-                                                                Limpar Filtros
+                                                        {athleteSearch && (
+                                                            <button className="unified-search-clear" onClick={() => setAthleteSearch('')}>
+                                                                <FaTimes />
                                                             </button>
                                                         )}
                                                     </div>
-                                                )}
-                                            </div>
 
-                                            {selectedAthletes.length > 0 && (
-                                                <div className="selected-count">
-                                                    <span>{selectedAthletes.length} {selectedAthletes.length === 1 ? 'atleta selecionado' : 'atletas selecionados'}</span>
-                                                    <button
-                                                        className="btn-submit"
-                                                        onClick={handleAddAthletes}
-                                                        disabled={submitting}
-                                                    >
-                                                        {submitting ? 'A guardar...' : 'Adicionar à Equipa'}
-                                                    </button>
+                                                    <div className="search-results-bar">
+                                                        <span className="results-count">
+                                                            {athletesLoading ? 'A carregar...' : `${filteredAthletes.length} ${filteredAthletes.length === 1 ? 'atleta disponível' : 'atletas disponíveis'}`}
+                                                        </span>
+                                                        {filteredAthletes.length > 0 && !athletesLoading && (
+                                                            <button
+                                                                className="btn-select-all"
+                                                                onClick={areAllFilteredSelected ? handleDeselectAllFiltered : handleSelectAllFiltered}
+                                                            >
+                                                                {areAllFilteredSelected ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Athletes List */}
+                                                    <div className="athletes-list">
+                                                        {athletesLoading ? (
+                                                            <div className="athletes-loading">
+                                                                <div className="spinner"></div>
+                                                                <p>A carregar atletas...</p>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                {filteredAthletes.map(athlete => {
+                                                                    const isSelected = selectedAthletes.includes(athlete.athleteProfileId);
+                                                                    const initials = athlete.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+                                                                    return (
+                                                                        <div
+                                                                            key={athlete.id}
+                                                                            className={`athlete-item${isSelected ? ' athlete-item--selected' : ''}`}
+                                                                            onClick={() => toggleAthleteSelection(athlete.athleteProfileId)}
+                                                                        >
+                                                                            <div className={`athlete-avatar-sm${isSelected ? ' athlete-avatar-sm--selected' : ''}`}>
+                                                                                {isSelected ? <FaUserCheck /> : initials}
+                                                                            </div>
+                                                                            <div className="athlete-info">
+                                                                                <div className="athlete-name">{athlete.fullName}</div>
+                                                                                <div className="athlete-details">
+                                                                                    {getEmailBase(athlete.email)}
+                                                                                    {athlete.nif && <span className="athlete-nif-tag">NIF: {athlete.nif}</span>}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className={`athlete-select-indicator${isSelected ? ' athlete-select-indicator--on' : ''}`}>
+                                                                                {isSelected ? <FaTimes /> : <FaPlus />}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+
+                                                                {/* Already in team section */}
+                                                                {athletesAlreadyInTeam.length > 0 && (
+                                                                    <div className="already-in-team-section">
+                                                                        <span className="already-in-team-label">
+                                                                            <FaUserCheck /> Já na equipa
+                                                                        </span>
+                                                                        {athletesAlreadyInTeam.map(athlete => (
+                                                                            <div key={athlete.id} className="athlete-item athlete-item--in-team">
+                                                                                <div className="athlete-avatar-sm athlete-avatar-sm--in-team">
+                                                                                    {athlete.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                                                                                </div>
+                                                                                <div className="athlete-info">
+                                                                                    <div className="athlete-name">{athlete.fullName}</div>
+                                                                                    <div className="athlete-details">
+                                                                                        {athlete.email}
+                                                                                        {athlete.nif && <span className="athlete-nif-tag">NIF: {athlete.nif}</span>}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <span className="in-team-badge">Na equipa</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
+                                                                {filteredAthletes.length === 0 && athletesAlreadyInTeam.length === 0 && (
+                                                                    <div className="no-results">
+                                                                        <div className="no-results-icon">🔍</div>
+                                                                        <p>Nenhum atleta encontrado.</p>
+                                                                        {hasActiveFilters && (
+                                                                            <button className="btn-add" onClick={clearSearchFilters}
+                                                                                style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginTop: '0.5rem' }}>
+                                                                                Limpar Pesquisa
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            )}
+
+                                                {/* Right: Selected Athletes Panel */}
+                                                <div className="add-athlete-selected-panel">
+                                                    <div className="selected-panel-header">
+                                                        <div className="selected-panel-title">
+                                                            <span>Selecionados</span>
+                                                            <span className="selected-panel-count">{selectedAthletes.length}</span>
+                                                        </div>
+                                                        {selectedAthletes.length > 0 && (
+                                                            <button
+                                                                className="btn-submit selected-panel-header-btn"
+                                                                onClick={handleAddAthletes}
+                                                                disabled={submitting}
+                                                            >
+                                                                {submitting ? '...' : <FaUserPlus />}
+                                                                <span>Adicionar</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="selected-panel-list">
+                                                        {selectedAthletes.length === 0 ? (
+                                                            <div className="selected-panel-empty">
+                                                                <FaUsers className="selected-panel-empty-icon" />
+                                                                <p>Clique nos atletas para os selecionar</p>
+                                                            </div>
+                                                        ) : (
+                                                            selectedAthletes.map(id => {
+                                                                const athlete = availableAthletes.find(a => a.athleteProfileId === id);
+                                                                if (!athlete) return null;
+                                                                return (
+                                                                    <div key={id} className="selected-panel-item">
+                                                                        <span className="selected-panel-name">{athlete.fullName}</span>
+                                                                        <button className="selected-panel-remove" onClick={(e) => { e.stopPropagation(); toggleAthleteSelection(id); }} title="Remover">
+                                                                            <FaTimes />
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </div>
+                                                    {/* Footer removed, button moved to header */}
+                                                </div>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="roster-grid">

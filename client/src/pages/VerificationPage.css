@@ -1,0 +1,137 @@
+.vp-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    padding: 20px;
+    background-color: #f3f4f6;
+    transition: background-color 0.3s ease;
+}
+
+.vp-container.vp-valid {
+    background-color: #ecfdf5;
+    /* emerald-50 */
+}
+
+.vp-container.vp-warning {
+    background-color: #fffbeb;
+    /* amber-50 */
+}
+
+.vp-container.vp-invalid,
+.vp-container.vp-error {
+    background-color: #fef2f2;
+    /* red-50 */
+}
+
+.vp-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px 30px;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.vp-status-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.vp-valid .vp-status-icon {
+    color: #10b981;
+}
+
+.vp-warning .vp-status-icon {
+    color: #f59e0b;
+}
+
+.vp-invalid .vp-status-icon,
+.vp-error .vp-icon {
+    color: #ef4444;
+}
+
+.vp-loading .vp-icon {
+    font-size: 60px;
+    color: #3b82f6;
+    margin-bottom: 20px;
+}
+
+.vp-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #111827;
+}
+
+.vp-message {
+    font-size: 18px;
+    color: #4b5563;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.vp-details {
+    text-align: left;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.vp-detail-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.vp-detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.vp-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.vp-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.vp-btn {
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    width: 100%;
+}
+
+.vp-btn:hover {
+    background-color: #0f172a;
+}
+
+.vp-btn:active {
+    transform: translateY(2px);
+}
+
+.vp-footer {
+    margin-top: 30px;
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+}

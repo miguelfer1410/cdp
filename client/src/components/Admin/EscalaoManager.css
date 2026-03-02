@@ -1,0 +1,325 @@
+/* ============================================================
+   EscalaoManager — styles
+   ============================================================ */
+
+.escalao-manager {
+    padding: 2rem;
+    max-width: 800px;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.escalao-manager .manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.escalao-manager .manager-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+}
+
+.escalao-manager .header-subtitle {
+    margin: 0.25rem 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* ── Search Bar ────────────────────────────────────────────── */
+.manager-controls {
+    margin-bottom: 1.25rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-bar {
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+    border-color: #003380;
+    box-shadow: 0 0 0 3px rgba(0, 51, 128, 0.1);
+}
+
+/* ── Add / Edit Input ────────────────────────────────────────── */
+.escalao-add-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    background: #f8f9fc;
+    border: 1.5px dashed #003380;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}
+
+.escalao-input {
+    flex: 1;
+    padding: 0.55rem 0.9rem;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #1a1a2e;
+    background: #fff;
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+.escalao-input:focus {
+    border-color: #003380;
+    box-shadow: 0 0 0 3px rgba(0, 51, 128, 0.1);
+}
+
+.escalao-input.inline {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.9rem;
+}
+
+/* ── Action Buttons (save / cancel inline) ───────────────────── */
+.escalao-manager .escalao-action-btn {
+    width: 44px !important;
+    height: 44px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.2s, transform 0.1s !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+}
+
+.escalao-manager .escalao-action-btn svg {
+    width: 1em !important;
+    height: 1em !important;
+    display: block !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+}
+
+.escalao-action-btn.save {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.escalao-action-btn.save:hover:not(:disabled) {
+    background: #a7f3d0;
+    transform: scale(1.05);
+}
+
+.escalao-action-btn.cancel {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.escalao-action-btn.cancel:hover {
+    background: #fecaca;
+    transform: scale(1.05);
+}
+
+.escalao-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Table ───────────────────────────────────────────────────── */
+.escalao-table-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+}
+
+.escalao-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.escalao-table thead tr {
+    background: linear-gradient(135deg, #003380, #0055cc);
+    color: #fff;
+}
+
+.escalao-table th {
+    padding: 0.9rem 1.2rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.escalao-table .th-actions {
+    width: 120px;
+    text-align: center;
+}
+
+.escalao-table tbody tr {
+    border-bottom: 1px solid #f1f3f6;
+    transition: background 0.15s;
+}
+
+.escalao-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.escalao-table tbody tr:hover {
+    background: #f8f9fc;
+}
+
+.escalao-table tbody tr.editing-row {
+    background: #eff6ff;
+}
+
+.escalao-table td {
+    padding: 0.85rem 1.2rem;
+    color: #374151;
+    vertical-align: middle;
+}
+
+.escalao-name {
+    font-weight: 500;
+    color: #1a1a2e;
+}
+
+/* ── Row action buttons (edit / delete) ──────────────────────── */
+.actions-cell {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.escalao-manager .action-btn {
+    width: 44px !important;
+    height: 44px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.2s, transform 0.1s !important;
+    padding: 0 !important;
+    font-size: 28px !important;
+}
+
+.escalao-manager .action-btn svg {
+    display: block !important;
+    width: 1em !important;
+    height: 1em !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    fill: currentColor !important;
+}
+
+.action-btn.edit {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.action-btn.edit:hover {
+    background: #bfdbfe;
+    transform: scale(1.05);
+}
+
+.action-btn.delete {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.action-btn.delete:hover {
+    background: #fecaca;
+    transform: scale(1.05);
+}
+
+/* ── Shared: btn-add ─────────────────────────────────────────── */
+.escalao-manager .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: linear-gradient(135deg, #003380, #0055cc);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.escalao-manager .btn-add:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.escalao-manager .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #666;
+}
+
+.escalao-manager .empty-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.escalao-manager .empty-state h3 {
+    font-size: 1.2rem;
+    margin: 0 0 0.5rem;
+    color: #374151;
+}
+
+/* ── Loading ─────────────────────────────────────────────────── */
+.escalao-manager .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4rem;
+    gap: 1rem;
+    color: #666;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .escalao-manager {
+        padding: 1rem;
+    }
+
+    .escalao-table th:not(:first-child):not(:last-child),
+    .escalao-table td:not(:first-child):not(:last-child) {
+        display: none;
+    }
+
+    .escalao-table td {
+        display: block;
+        padding: 0.5rem 1rem;
+    }
+
+    .escalao-table td::before {
+        content: attr(data-label) ': ';
+        font-weight: 600;
+        color: #374151;
+    }
+}

@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260302111255_AddMissingEscalaos")]
+    partial class AddMissingEscalaos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -970,14 +973,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 2, 11, 49, 40, 514, DateTimeKind.Utc).AddTicks(6630),
+                            CreatedAt = new DateTime(2026, 3, 2, 11, 12, 54, 910, DateTimeKind.Utc).AddTicks(5560),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 2, 11, 49, 40, 514, DateTimeKind.Utc).AddTicks(6634),
+                            CreatedAt = new DateTime(2026, 3, 2, 11, 12, 54, 910, DateTimeKind.Utc).AddTicks(5561),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1069,11 +1072,12 @@ namespace CdpApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<int?>("EscalaoId")
-                        .HasColumnType("int");
 
                     b.Property<int>("Gender")
                         .HasColumnType("int");
@@ -1094,8 +1098,6 @@ namespace CdpApi.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("EscalaoId");
 
                     b.HasIndex("SportId");
 
@@ -1239,12 +1241,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 2, 11, 49, 40, 719, DateTimeKind.Utc).AddTicks(627),
+                            CreatedAt = new DateTime(2026, 3, 2, 11, 12, 55, 33, DateTimeKind.Utc).AddTicks(5603),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$NGBRMJUSJ75AKwCOCm9R4e00juLqOwtJX2tziCScAQJTyXiolS5ai"
+                            PasswordHash = "$2a$11$MqjbWSOmpvRcuznwM6gPEus9bjNMHTrJWcOJxSVgxnzTuD8YXdEY2"
                         });
                 });
 
@@ -1311,7 +1313,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 2, 11, 49, 40, 719, DateTimeKind.Utc).AddTicks(1446),
+                            AssignedAt = new DateTime(2026, 3, 2, 11, 12, 55, 35, DateTimeKind.Utc).AddTicks(1944),
                             RoleId = 2,
                             UserId = 1
                         });
@@ -1505,17 +1507,11 @@ namespace CdpApi.Migrations
 
             modelBuilder.Entity("CdpApi.Models.Team", b =>
                 {
-                    b.HasOne("CdpApi.Models.Escalao", "Escalao")
-                        .WithMany()
-                        .HasForeignKey("EscalaoId");
-
                     b.HasOne("CdpApi.Models.Sport", "Sport")
                         .WithMany()
                         .HasForeignKey("SportId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Escalao");
 
                     b.Navigation("Sport");
                 });
