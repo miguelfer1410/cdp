@@ -54,6 +54,21 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         isActive: true
     });
 
+    // Derive the restricted sport from the team (when coach mode is active)
+    const restrictedTeam = restrictedTeamId ? teams.find(t => t.id === restrictedTeamId) : null;
+    const restrictedSportId = restrictedTeam?.sportId || null;
+
+    // Pre-fill sport and team as soon as teams are loaded (coach mode)
+    useEffect(() => {
+        if (restrictedTeamId && restrictedSportId) {
+            setFormData(prev => ({
+                ...prev,
+                teamId: restrictedTeamId,
+                sportId: restrictedSportId
+            }));
+        }
+    }, [restrictedSportId]);
+
     useEffect(() => {
         fetchEvents();
         fetchSports();
@@ -403,8 +418,8 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             eventType: 1,
             startDateTime: '',
             endDateTime: '',
-            teamId: null,
-            sportId: '',
+            teamId: restrictedTeamId || null,
+            sportId: restrictedSportId || '',
             location: '',
             description: '',
             opponentName: '',
@@ -503,17 +518,19 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             {/* Events Tab Content */}
             {activeTab === 'events' && (
                 <>
-                    {/* Filters */}
+                    {/* Filters — hide sport filter in restricted/coach mode */}
                     <div className="filter-section">
-                        <div className="filter-group">
-                            <label>Modalidade:</label>
-                            <select value={selectedSportFilter} onChange={(e) => setSelectedSportFilter(e.target.value)}>
-                                <option value="">Todas</option>
-                                {sports.map(sport => (
-                                    <option key={sport.id} value={sport.id}>{sport.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        {!restrictedTeamId && (
+                            <div className="filter-group">
+                                <label>Modalidade:</label>
+                                <select value={selectedSportFilter} onChange={(e) => setSelectedSportFilter(e.target.value)}>
+                                    <option value="">Todas</option>
+                                    {sports.map(sport => (
+                                        <option key={sport.id} value={sport.id}>{sport.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         <div className="filter-group">
                             <label>Equipa:</label>
@@ -651,56 +668,61 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
             {/* Event Modal */}
             {showEventModal && (
-                <div className="teams-modal-overlay" onMouseDown={handleOverlayClick}>
-                    <div className="teams-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="teams-modal-header">
-                            <h2>{editingEvent ? 'Editar Evento' : 'Novo Evento'}</h2>
-                            <button className="teams-modal-close" onClick={() => { setShowEventModal(false); resetForm(); }}>×</button>
+                <div className="cm-modal-overlay" onMouseDown={handleOverlayClick}>
+                    <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className={`cm-modal-header cm-modal-header--${formData.eventType === 1 ? 'game' : formData.eventType === 2 ? 'training' : 'other'}`}>
+                            <div className="cm-modal-header-text">
+                                <span className="cm-modal-badge">
+                                    {formData.eventType === 1 ? '⚽ Jogo' : formData.eventType === 2 ? '🏃 Treino' : '📌 Outro'}
+                                </span>
+                                <h2>{editingEvent ? 'Editar Evento' : 'Novo Evento'}</h2>
+                            </div>
+                            <button className="cm-modal-close" onClick={() => { setShowEventModal(false); resetForm(); }}>×</button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="teams-modal-form">
-                            <div className="form-section">
-                                <label>Título *</label>
+                        <form onSubmit={handleSubmit} className="cm-modal-form">
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Título *</label>
                                 <input
                                     type="text"
-                                    className="form-input"
+                                    className="cm-form-input"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    placeholder="Nome do evento"
                                     required
                                 />
                             </div>
 
-                            <div className="form-section">
-                                <label>Tipo de Evento *</label>
-                                <select
-                                    className="form-select"
-                                    value={formData.eventType}
-                                    onChange={(e) => setFormData({ ...formData, eventType: parseInt(e.target.value) })}
-                                    required
-                                >
-                                    <option value="1">Jogo</option>
-                                    <option value="2">Treino</option>
-                                    <option value="3">Outro</option>
-                                </select>
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Tipo de Evento *</label>
+                                <div className="cm-event-type-pills">
+                                    {[{ v: 1, label: '⚽ Jogo' }, { v: 2, label: '🏃 Treino' }, { v: 3, label: '📌 Outro' }].map(({ v, label }) => (
+                                        <button
+                                            key={v}
+                                            type="button"
+                                            className={`cm-type-pill cm-type-pill--${v === 1 ? 'game' : v === 2 ? 'training' : 'other'} ${formData.eventType === v ? 'active' : ''}`}
+                                            onClick={() => setFormData({ ...formData, eventType: v })}
+                                        >{label}</button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-section">
-                                    <label>Data/Hora Início *</label>
+                            <div className="cm-form-row">
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Início *</label>
                                     <input
                                         type="datetime-local"
-                                        className="form-input"
+                                        className="cm-form-input"
                                         value={formData.startDateTime}
                                         onChange={(e) => setFormData({ ...formData, startDateTime: e.target.value })}
                                         required
                                     />
                                 </div>
-
-                                <div className="form-section">
-                                    <label>Data/Hora Fim *</label>
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Fim *</label>
                                     <input
                                         type="datetime-local"
-                                        className="form-input"
+                                        className="cm-form-input"
                                         value={formData.endDateTime}
                                         onChange={(e) => setFormData({ ...formData, endDateTime: e.target.value })}
                                         required
@@ -708,35 +730,42 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 </div>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-section">
-                                    <label>Modalidade *</label>
-                                    <select
-                                        className="form-select"
-                                        value={formData.sportId}
-                                        onChange={(e) => setFormData({ ...formData, sportId: e.target.value })}
-                                        required
-                                    >
-                                        <option value="">Selecione</option>
-                                        {sports.map(sport => (
-                                            <option key={sport.id} value={sport.id}>{sport.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="form-section">
-                                    <label>Equipa</label>
+                            <div className="cm-form-row">
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Modalidade *</label>
                                     {restrictedTeamId ? (
                                         <input
                                             type="text"
-                                            className="form-input"
-                                            value={teams.find(t => t.id === restrictedTeamId)?.name || ''}
+                                            className="cm-form-input cm-form-input--disabled"
+                                            value={sports.find(s => s.id === restrictedSportId)?.name || restrictedTeam?.sportName || ''}
                                             disabled
-                                            style={{ backgroundColor: '#f3f4f6' }}
                                         />
                                     ) : (
                                         <select
-                                            className="form-select"
+                                            className="cm-form-input"
+                                            value={formData.sportId}
+                                            onChange={(e) => setFormData({ ...formData, sportId: e.target.value })}
+                                            required
+                                        >
+                                            <option value="">Selecione</option>
+                                            {sports.map(sport => (
+                                                <option key={sport.id} value={sport.id}>{sport.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Equipa</label>
+                                    {restrictedTeamId ? (
+                                        <input
+                                            type="text"
+                                            className="cm-form-input cm-form-input--disabled"
+                                            value={teams.find(t => t.id === restrictedTeamId)?.name || ''}
+                                            disabled
+                                        />
+                                    ) : (
+                                        <select
+                                            className="cm-form-input"
                                             value={formData.teamId || ''}
                                             onChange={(e) => setFormData({ ...formData, teamId: e.target.value ? parseInt(e.target.value) : null })}
                                         >
@@ -749,11 +778,11 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 </div>
                             </div>
 
-                            <div className="form-section">
-                                <label>Local</label>
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Local</label>
                                 <input
                                     type="text"
-                                    className="form-input"
+                                    className="cm-form-input"
                                     value={formData.location}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                     placeholder="Ex: Pavilhão Fernando Linhares"
@@ -761,36 +790,36 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                             </div>
 
                             {formData.eventType === 1 && (
-                                <>
-                                    <div className="form-section">
-                                        <label>Adversário</label>
+                                <div className="cm-form-row">
+                                    <div className="cm-form-field">
+                                        <label className="cm-form-label">Adversário</label>
                                         <input
                                             type="text"
-                                            className="form-input"
+                                            className="cm-form-input"
                                             value={formData.opponentName}
                                             onChange={(e) => setFormData({ ...formData, opponentName: e.target.value })}
                                             placeholder="Nome do adversário"
                                         />
                                     </div>
-
-                                    <div className="form-section">
-                                        <label className="toggle-switch">
+                                    <div className="cm-form-field cm-form-field--toggle">
+                                        <label className="cm-toggle-label">
                                             <input
                                                 type="checkbox"
+                                                className="cm-toggle-input"
                                                 checked={formData.isHomeGame}
                                                 onChange={(e) => setFormData({ ...formData, isHomeGame: e.target.checked })}
                                             />
-                                            <span className="toggle-slider"></span>
-                                            <span className="toggle-label">Jogo em Casa</span>
+                                            <span className="cm-toggle-track"><span className="cm-toggle-thumb" /></span>
+                                            <span className="cm-toggle-text">Jogo em Casa</span>
                                         </label>
                                     </div>
-                                </>
+                                </div>
                             )}
 
-                            <div className="form-section">
-                                <label>Descrição</label>
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Descrição</label>
                                 <textarea
-                                    className="form-input"
+                                    className="cm-form-input cm-form-textarea"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows="3"
@@ -798,16 +827,16 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 />
                             </div>
 
-                            <div className="modal-actions">
+                            <div className="cm-modal-actions">
                                 {editingEvent && (
-                                    <button type="button" className="btn-delete" onClick={handleDelete}>
+                                    <button type="button" className="cm-btn cm-btn--danger" onClick={handleDelete}>
                                         <FaTrash /> Eliminar
                                     </button>
                                 )}
-                                <button type="button" className="btn-cancel" onClick={() => { setShowEventModal(false); resetForm(); }}>
+                                <button type="button" className="cm-btn cm-btn--ghost" onClick={() => { setShowEventModal(false); resetForm(); }}>
                                     Cancelar
                                 </button>
-                                <button type="submit" className="teams-btn-submit">
+                                <button type="submit" className="cm-btn cm-btn--primary">
                                     {editingEvent ? 'Atualizar' : 'Criar'} Evento
                                 </button>
                             </div>
@@ -818,32 +847,34 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
             {/* Training Schedule Modal */}
             {showScheduleModal && (
-                <div className="teams-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowScheduleModal(false); resetScheduleForm(); } }}>
-                    <div className="teams-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="teams-modal-header">
-                            <h2>{editingSchedule ? 'Editar' : 'Novo Padrão de Treino'}</h2>
-                            <button className="teams-modal-close" onClick={() => { setShowScheduleModal(false); resetScheduleForm(); }}>×</button>
+                <div className="cm-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowScheduleModal(false); resetScheduleForm(); } }}>
+                    <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="cm-modal-header cm-modal-header--training">
+                            <div className="cm-modal-header-text">
+                                <span className="cm-modal-badge">🏃 Treinos</span>
+                                <h2>{editingSchedule ? 'Editar Padrão' : 'Novo Padrão de Treino'}</h2>
+                            </div>
+                            <button className="cm-modal-close" onClick={() => { setShowScheduleModal(false); resetScheduleForm(); }}>×</button>
                         </div>
 
-                        <form onSubmit={handleScheduleSubmit} className="teams-modal-form">
-                            <div className="form-section">
-                                <label>Equipa *</label>
+                        <form onSubmit={handleScheduleSubmit} className="cm-modal-form">
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Equipa *</label>
                                 {restrictedTeamId ? (
                                     <input
                                         type="text"
-                                        className="form-input"
+                                        className="cm-form-input cm-form-input--disabled"
                                         value={teams.find(t => t.id === restrictedTeamId)?.name || ''}
                                         disabled
-                                        style={{ backgroundColor: '#f3f4f6' }}
                                     />
                                 ) : (
                                     <select
-                                        className="form-select"
+                                        className="cm-form-input"
                                         value={scheduleFormData.teamId}
                                         onChange={(e) => setScheduleFormData({ ...scheduleFormData, teamId: e.target.value })}
                                         required
                                     >
-                                        <option value="">Selecione</option>
+                                        <option value="">Selecione a equipa</option>
                                         {teams.map(team => (
                                             <option key={team.id} value={team.id}>{team.sportName} - {team.name}</option>
                                         ))}
@@ -851,39 +882,44 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 )}
                             </div>
 
-                            <div className="form-section">
-                                <label>Dias da Semana *</label>
-                                <div className="days-of-week-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                                        <label key={day} className="day-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={scheduleFormData.daysOfWeek.includes(day)}
-                                                onChange={() => toggleDayOfWeek(day)}
-                                            />
-                                            <span>{day === 'Monday' ? 'Seg' : day === 'Tuesday' ? 'Ter' : day === 'Wednesday' ? 'Qua' : day === 'Thursday' ? 'Qui' : day === 'Friday' ? 'Sex' : day === 'Saturday' ? 'Sáb' : 'Dom'}</span>
-                                        </label>
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Dias da Semana *</label>
+                                <div className="cm-days-grid">
+                                    {[
+                                        { key: 'Monday', label: 'Seg' },
+                                        { key: 'Tuesday', label: 'Ter' },
+                                        { key: 'Wednesday', label: 'Qua' },
+                                        { key: 'Thursday', label: 'Qui' },
+                                        { key: 'Friday', label: 'Sex' },
+                                        { key: 'Saturday', label: 'Sáb' },
+                                        { key: 'Sunday', label: 'Dom' },
+                                    ].map(({ key, label }) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            className={`cm-day-pill ${scheduleFormData.daysOfWeek.includes(key) ? 'active' : ''}`}
+                                            onClick={() => toggleDayOfWeek(key)}
+                                        >{label}</button>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-section">
-                                    <label>Hora Início *</label>
+                            <div className="cm-form-row">
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Hora Início *</label>
                                     <input
                                         type="time"
-                                        className="form-input"
+                                        className="cm-form-input"
                                         value={scheduleFormData.startTime}
                                         onChange={(e) => setScheduleFormData({ ...scheduleFormData, startTime: e.target.value })}
                                         required
                                     />
                                 </div>
-
-                                <div className="form-section">
-                                    <label>Hora Fim *</label>
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Hora Fim *</label>
                                     <input
                                         type="time"
-                                        className="form-input"
+                                        className="cm-form-input"
                                         value={scheduleFormData.endTime}
                                         onChange={(e) => setScheduleFormData({ ...scheduleFormData, endTime: e.target.value })}
                                         required
@@ -891,34 +927,33 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 </div>
                             </div>
 
-                            <div className="form-section">
-                                <label>Local</label>
+                            <div className="cm-form-field">
+                                <label className="cm-form-label">Local</label>
                                 <input
                                     type="text"
-                                    className="form-input"
+                                    className="cm-form-input"
                                     value={scheduleFormData.location}
                                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, location: e.target.value })}
                                     placeholder="Ex: Pavilhão Fernando Linhares"
                                 />
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-section">
-                                    <label>Válido De *</label>
+                            <div className="cm-form-row">
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Válido De *</label>
                                     <input
                                         type="date"
-                                        className="form-input"
+                                        className="cm-form-input"
                                         value={scheduleFormData.validFrom}
                                         onChange={(e) => setScheduleFormData({ ...scheduleFormData, validFrom: e.target.value })}
                                         required
                                     />
                                 </div>
-
-                                <div className="form-section">
-                                    <label>Válido Até *</label>
+                                <div className="cm-form-field">
+                                    <label className="cm-form-label">Válido Até *</label>
                                     <input
                                         type="date"
-                                        className="form-input"
+                                        className="cm-form-input"
                                         value={scheduleFormData.validUntil}
                                         onChange={(e) => setScheduleFormData({ ...scheduleFormData, validUntil: e.target.value })}
                                         required
@@ -926,23 +961,24 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 </div>
                             </div>
 
-                            <div className="form-section">
-                                <label className="toggle-switch">
+                            <div className="cm-form-field cm-form-field--toggle">
+                                <label className="cm-toggle-label">
                                     <input
                                         type="checkbox"
+                                        className="cm-toggle-input"
                                         checked={scheduleFormData.isActive}
                                         onChange={(e) => setScheduleFormData({ ...scheduleFormData, isActive: e.target.checked })}
                                     />
-                                    <span className="toggle-slider"></span>
-                                    <span className="toggle-label">Padrão Ativo</span>
+                                    <span className="cm-toggle-track"><span className="cm-toggle-thumb" /></span>
+                                    <span className="cm-toggle-text">Padrão Ativo</span>
                                 </label>
                             </div>
 
-                            <div className="modal-actions">
-                                <button type="button" className="btn-cancel" onClick={() => { setShowScheduleModal(false); resetScheduleForm(); }}>
+                            <div className="cm-modal-actions">
+                                <button type="button" className="cm-btn cm-btn--ghost" onClick={() => { setShowScheduleModal(false); resetScheduleForm(); }}>
                                     Cancelar
                                 </button>
-                                <button type="submit" className="teams-btn-submit">
+                                <button type="submit" className="cm-btn cm-btn--primary">
                                     {editingSchedule ? 'Atualizar' : 'Criar'} Padrão
                                 </button>
                             </div>

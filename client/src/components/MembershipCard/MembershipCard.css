@@ -12,63 +12,44 @@
     user-select: none;
 }
 
-/* ── Scene: perspetiva para o flip 3D ── */
-.mc-scene {
+/* ── Cartão – face única ── */
+.mc-card {
     width: 100%;
     aspect-ratio: 1.586 / 1;
-    perspective: 1000px;
-    cursor: pointer;
-    position: relative;
-    transform-style: preserve-3d;
-}
-
-/* ── Faces: frente e verso ── */
-.mc-face {
-    position: absolute;
-    inset: 0;
     border-radius: 20px;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    transition: transform 0.72s cubic-bezier(0.4, 0.2, 0.2, 1);
-    clip-path: inset(0 round 20px);
-    /* substitui overflow:hidden que quebra backface-visibility */
-    box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.38),
-        0 6px 16px rgba(0, 0, 0, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    color: white;
-}
-
-/* Frente: visível por defeito */
-.mc-front {
     background: linear-gradient(135deg, #0d2b6e 0%, #1a3f99 35%, #0a1e52 70%, #0d1e45 100%);
-    transform: rotateY(0deg);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 20px 24px 18px;
-    gap: 0;
+    gap: 10px;
+    position: relative;
+    color: white;
+    clip-path: inset(0 round 20px);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.38),
+        0 6px 16px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-/* Verso: escondido (virado 180°) */
-.mc-back {
-    background: linear-gradient(145deg, #091a40 0%, #142f7a 50%, #0d2258 100%);
-    transform: rotateY(180deg);
+/* Corpo do cartão: info esquerda + QR direita */
+.mc-front-body {
+    flex: 1;
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    min-height: 0;
+}
+
+.mc-front-info {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0;
+    justify-content: space-between;
+    min-width: 0;
 }
 
-/* Estado virado – frente some, verso aparece */
-.mc-flipped .mc-front {
-    transform: rotateY(-180deg);
-}
 
-.mc-flipped .mc-back {
-    transform: rotateY(0deg);
-}
-
-/* ── Decorações de fundo (círculos) ── */
 .mc-deco-circle {
     position: absolute;
     border-radius: 50%;
@@ -386,18 +367,47 @@
     gap: 8px 16px;
 }
 
-/* QR Code no verso */
-.mc-qr-box {
-    width: 68px;
-    height: 68px;
+/* QR Code na frente – ocupa toda a altura disponível */
+.mc-qr-front {
+    width: 110px;
     background: #fff;
-    padding: 4px;
-    border-radius: 6px;
+    padding: 5px;
+    border-radius: 8px;
     flex-shrink: 0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
+    align-self: stretch;
+    height: 110px;
+}
+
+/* Info e QR Code Wrapper (verso simplificado) */
+.mc-back-qr-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.mc-back-qr-center>svg,
+.mc-back-qr-center>img {
+    width: 120px;
+    height: 120px;
+    background: #fff;
+    padding: 5px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.mc-back-qr-label {
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
 }
 
 .mc-back-field {
@@ -502,4 +512,79 @@
         font-size: 0.78rem;
         max-width: 120px;
     }
+}
+
+/* ══════════════════════════
+   MODO COMPACT (Dashboard)
+   ══════════════════════════ */
+.mc-wrapper--compact {
+    max-width: 360px;
+}
+
+.mc-wrapper--compact .mc-card {
+    padding: 12px 14px 10px;
+    gap: 6px;
+}
+
+.mc-wrapper--compact .mc-logo-img {
+    height: 22px;
+}
+
+.mc-wrapper--compact .mc-chip {
+    width: 30px;
+    height: 22px;
+}
+
+.mc-wrapper--compact .mc-qr-front {
+    width: 70px;
+    height: 70px;
+    padding: 3px;
+}
+
+.mc-wrapper--compact .mc-number-prefix {
+    font-size: 0.55rem;
+}
+
+.mc-wrapper--compact .mc-number-value {
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+}
+
+.mc-wrapper--compact .mc-type-pill {
+    font-size: 0.48rem;
+    padding: 2px 6px;
+    letter-spacing: 0.8px;
+}
+
+.mc-wrapper--compact .mc-badge {
+    font-size: 0.46rem;
+    padding: 2px 6px;
+}
+
+.mc-wrapper--compact .mc-badge-dot {
+    width: 5px;
+    height: 5px;
+}
+
+.mc-wrapper--compact .mc-field-label {
+    font-size: 0.44rem;
+    letter-spacing: 0.8px;
+}
+
+.mc-wrapper--compact .mc-field-value {
+    font-size: 0.67rem;
+    max-width: 100px;
+}
+
+.mc-wrapper--compact .mc-fields-row {
+    gap: 5px 10px;
+}
+
+.mc-wrapper--compact .mc-front-body {
+    gap: 8px;
+}
+
+.mc-wrapper--compact .mc-download-btn {
+    font-size: 0.72rem;
+    padding: 5px 12px;
 }

@@ -3,7 +3,7 @@ import QRCode from 'react-qr-code';
 import './MembershipCard.css';
 
 /**
- * MembershipCard – Cartão de sócio digital premium
+ * MembershipCard – Cartão de sócio digital premium (face única)
  *
  * Props:
  *   memberNumber  – string  – número de sócio
@@ -14,6 +14,7 @@ import './MembershipCard.css';
  *   sport         – string? – modalidade (só para atletas)
  *   cardType      – 'socio' | 'atleta'
  *   userId        – number  – para download do PDF
+ *   compact       – bool    – modo compacto para dashboard
  */
 const MembershipCard = ({
     memberNumber = '0000',
@@ -24,8 +25,8 @@ const MembershipCard = ({
     sport = null,
     cardType = 'socio',
     userId = null,
+    compact = false,
 }) => {
-    const [flipped, setFlipped] = useState(false);
     const [downloading, setDownloading] = useState(false);
 
     const isAtleta = cardType === 'atleta';
@@ -72,136 +73,86 @@ const MembershipCard = ({
     };
 
     return (
-        <div className="mc-wrapper">
-            <div
-                className={`mc-scene${flipped ? ' mc-flipped' : ''}`}
-                onClick={() => setFlipped(f => !f)}
-                title="Clique para virar o cartão"
-            >
-                {/* ══════ FRENTE ══════ */}
-                <div className="mc-face mc-front">
-                    {/* Decoração de fundo */}
-                    <div className="mc-deco-circle mc-deco-circle--1" />
-                    <div className="mc-deco-circle mc-deco-circle--2" />
-                    <div className="mc-holo-overlay" />
+        <div className={`mc-wrapper${compact ? ' mc-wrapper--compact' : ''}`}>
+            {/* ══════ CARTÃO (face única) ══════ */}
+            <div className="mc-card">
+                {/* Decoração de fundo */}
+                <div className="mc-deco-circle mc-deco-circle--1" />
+                <div className="mc-deco-circle mc-deco-circle--2" />
+                <div className="mc-holo-overlay" />
 
-                    {/* Linha 1 – Logo + tipo + estado */}
-                    <div className="mc-row mc-row--top">
-                        <div className="mc-logo-box">
-                            <img src="/CDP_logo.png" alt="CDP" className="mc-logo-img" />
-                        </div>
-                        <div className="mc-row-spacer" />
-                        <span className={`mc-badge ${statusClass}`}>
-                            <span className="mc-badge-dot" />
-                            {statusLabel}
-                        </span>
-                        <span className="mc-type-pill">
-                            {isAtleta ? <><i className="fas fa-running" /> ATLETA</> : <><i className="fas fa-id-card" /> SÓCIO</>}
-                        </span>
+                {/* Linha 1 – Logo + tipo + estado */}
+                <div className="mc-row mc-row--top">
+                    <div className="mc-logo-box">
+                        <img src="/CDP_logo.png" alt="CDP" className="mc-logo-img" />
                     </div>
+                    <div className="mc-row-spacer" />
+                    <span className={`mc-badge ${statusClass}`}>
+                        <span className="mc-badge-dot" />
+                        {statusLabel}
+                    </span>
+                    <span className="mc-type-pill">
+                        {isAtleta ? <><i className="fas fa-running" /> ATLETA</> : <><i className="fas fa-id-card" /> SÓCIO</>}
+                    </span>
+                </div>
 
-                    {/* Linha 2 – Chip */}
-                    <div className="mc-row">
-                        <div className="mc-chip">
-                            <div className="mc-chip-lines">
-                                <div className="mc-chip-line" />
-                                <div className="mc-chip-line" />
-                                <div className="mc-chip-line" />
+                {/* Corpo: info à esquerda + QR à direita */}
+                <div className="mc-front-body">
+                    <div className="mc-front-info">
+                        {/* Chip */}
+                        <div className="mc-row">
+                            <div className="mc-chip">
+                                <div className="mc-chip-lines">
+                                    <div className="mc-chip-line" />
+                                    <div className="mc-chip-line" />
+                                    <div className="mc-chip-line" />
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Linha 3 – Número */}
-                    <div className="mc-row">
+                        {/* Número */}
                         <div className="mc-number-block">
                             <span className="mc-number-prefix">Nº</span>
                             <span className="mc-number-value">{numDisplay}</span>
                         </div>
-                    </div>
 
-                    {/* Linha 4 – Campos */}
-                    <div className="mc-row mc-fields-row">
-                        <div className="mc-field">
-                            <span className="mc-field-label">TITULAR</span>
-                            <span className="mc-field-value">{name}</span>
-                        </div>
-                        {sport && (
+                        {/* Campos */}
+                        <div className="mc-fields-row">
                             <div className="mc-field">
-                                <span className="mc-field-label">MODALIDADE</span>
-                                <span className="mc-field-value">{sport}</span>
+                                <span className="mc-field-label">TITULAR</span>
+                                <span className="mc-field-value">{name}</span>
                             </div>
-                        )}
-                        <div className="mc-field">
-                            <span className="mc-field-label">VÁLIDO ATÉ</span>
-                            <span className="mc-field-value">{validity}</span>
-                        </div>
-                        <div className="mc-field">
-                            <span className="mc-field-label">DESDE</span>
-                            <span className="mc-field-value">{memberSince}</span>
+                            {sport && (
+                                <div className="mc-field">
+                                    <span className="mc-field-label">MODALIDADE</span>
+                                    <span className="mc-field-value">{sport}</span>
+                                </div>
+                            )}
+                            <div className="mc-field">
+                                <span className="mc-field-label">VÁLIDO ATÉ</span>
+                                <span className="mc-field-value">{validity}</span>
+                            </div>
+                            <div className="mc-field">
+                                <span className="mc-field-label">DESDE</span>
+                                <span className="mc-field-value">{memberSince}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* ══════ VERSO ══════ */}
-                <div className="mc-face mc-back">
-                    <div className="mc-deco-circle mc-deco-circle--1" />
-                    <div className="mc-deco-circle mc-deco-circle--2" />
-                    <div className="mc-holo-overlay" />
-
-                    {/* Banda magnética */}
-                    <div className="mc-stripe" />
-
-                    {/* Conteúdo do verso */}
-                    <div className="mc-back-body">
-                        {/* Logo + nome do clube */}
-                        <div className="mc-row">
-                            <div className="mc-logo-box mc-logo-box--sm">
-                                <img src="/CDP_logo.png" alt="CDP" className="mc-logo-img" />
-                            </div>
-                            <span className="mc-club-name">Clube Desportivo da Póvoa</span>
-                        </div>
-
-                        {/* Info e QR Code Wrapper */}
-                        <div className="mc-back-info-wrapper">
-                            {/* Grid de campos */}
-                            <div className="mc-back-grid">
-                                <div className="mc-back-field">
-                                    <span className="mc-field-label">Nº de Sócio</span>
-                                    <span className="mc-field-value">#{numDisplay}</span>
-                                </div>
-                                <div className="mc-back-field">
-                                    <span className="mc-field-label">Titular</span>
-                                    <span className="mc-field-value">{name}</span>
-                                </div>
-                                <div className="mc-back-field">
-                                    <span className="mc-field-label">Validade</span>
-                                    <span className="mc-field-value">{validity}</span>
-                                </div>
-                                {sport && (
-                                    <div className="mc-back-field">
-                                        <span className="mc-field-label">Modalidade</span>
-                                        <span className="mc-field-value">{sport}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* QR Code */}
-                            <div className="mc-qr-box">
-                                <QRCode
-                                    value={userId ? `http://localhost:3000/verify/${userId}` : numDisplay}
-                                    size={64}
-                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                    bgColor="#ffffff"
-                                    fgColor="#000000"
-                                />
-                            </div>
-                        </div>
-
+                    {/* QR Code a ocupar todo o espaço vertical */}
+                    <div className="mc-qr-front">
+                        <QRCode
+                            value={userId ? `http://localhost:3000/verify/${userId}` : numDisplay}
+                            size={120}
+                            style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                        />
                     </div>
                 </div>
             </div>
 
-            {/* Botões abaixo do cartão – sempre visíveis */}
+            {/* Botão abaixo do cartão */}
             <div className="mc-actions">
                 {userId && (
                     <button
@@ -215,10 +166,6 @@ const MembershipCard = ({
                     </button>
                 )}
             </div>
-
-            <p className="mc-flip-hint">
-                <i className="fas fa-sync-alt" /> Clique no cartão para ver o verso
-            </p>
         </div>
     );
 };

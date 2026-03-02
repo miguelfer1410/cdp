@@ -35,6 +35,26 @@
 .admin-nav {
     flex: 1;
     padding: 20px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Thin custom scrollbar for the nav */
+.admin-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 4px;
+}
+
+.admin-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.45);
 }
 
 .admin-nav-item {

@@ -551,6 +551,7 @@ const DashboardAtleta = () => {
                                 sport={athleteData.sport}
                                 cardType="atleta"
                                 userId={selectedUserId}
+                                compact={true}
                             />
 
                             <div className="dashboard-card">

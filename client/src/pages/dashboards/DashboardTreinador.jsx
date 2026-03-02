@@ -84,10 +84,12 @@ const DashboardTreinador = () => {
                     const teamData = await teamResponse.json();
                     setTeamData(teamData);
 
-                    const today = new Date().toISOString();
+                    // Use local start of today (no 'Z' suffix) to match stored unspecified datetimes
+                    const todayStart = new Date();
+                    const todayStartLocal = `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}T00:00:00`;
 
                     // Fetch Upcoming Events for the team
-                    const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${today}`, {
+                    const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${todayStartLocal}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -103,7 +105,7 @@ const DashboardTreinador = () => {
                     }
 
                     // Fetch Last Training Statistics
-                    const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${today}`, {
+                    const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${todayStartLocal}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 

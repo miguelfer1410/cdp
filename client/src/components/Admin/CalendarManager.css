@@ -387,3 +387,456 @@
     height: 18px;
     cursor: pointer;
 }
+
+/* ═══════════════════════════════════════════════════════
+   CALENDAR MANAGER MODALS  (cm- prefix — exclusive scope)
+════════════════════════════════════════════════════════ */
+
+/* Overlay — same as teams-modal-overlay */
+.cm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 10, 30, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 1rem;
+    animation: cmFadeIn 0.3s ease;
+}
+
+@keyframes cmFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal box — same as teams-modal */
+.cm-modal {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 51, 128, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    animation: cmModalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cmModalSlideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ── Header — dark blue gradient like teams-modal-header ── */
+.cm-modal-header {
+    background: linear-gradient(135deg, #001f4d 0%, #003380 100%);
+    padding: 1.75rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Coloured bottom stripe that changes per event type */
+.cm-modal-header--game {
+    background: linear-gradient(135deg, #3d0a0a 0%, #7b1c1c 50%, #003380 100%);
+}
+
+.cm-modal-header--training {
+    background: linear-gradient(135deg, #001f4d 0%, #003380 100%);
+}
+
+.cm-modal-header--other {
+    background: linear-gradient(135deg, #014d14 0%, #00509e 100%);
+}
+
+.cm-modal-header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.cm-modal-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.cm-modal-header h2 {
+    color: white;
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* Close button — same as teams-modal-close */
+.cm-modal-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.cm-modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+/* ── Form — same scroll behaviour as teams-modal-form ── */
+.cm-modal-form {
+    padding: 2rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.cm-modal-form::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cm-modal-form::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cm-modal-form::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+.cm-modal-form::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
+
+/* ── Field layout ── */
+.cm-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cm-form-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+/* Inputs & selects — same as teams-form-input / teams-form-select */
+.cm-form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+    background: #fcfcfc;
+    box-sizing: border-box;
+}
+
+.cm-form-input:focus {
+    outline: none;
+    border-color: #003380;
+    box-shadow: 0 0 0 3px rgba(0, 51, 128, 0.12), 0 2px 4px rgba(0, 0, 0, 0.05);
+    background: white;
+}
+
+.cm-form-input--disabled {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.cm-form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.cm-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* ── Event type pills ── */
+.cm-event-type-pills {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.cm-type-pill {
+    flex: 1;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fcfcfc;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #6b7280;
+    font-family: inherit;
+}
+
+.cm-type-pill--game.active {
+    border-color: #dc2626;
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.cm-type-pill--training.active {
+    border-color: #003380;
+    background: #eff6ff;
+    color: #003380;
+}
+
+.cm-type-pill--other.active {
+    border-color: #16a34a;
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.cm-type-pill:hover:not(.active) {
+    border-color: #003380;
+    background: #f8faff;
+}
+
+/* ── Days-of-week pills ── */
+.cm-days-grid {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.cm-day-pill {
+    padding: 0.45rem 0.9rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fcfcfc;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.cm-day-pill.active {
+    border-color: #003380;
+    background: #eff6ff;
+    color: #003380;
+}
+
+.cm-day-pill:hover:not(.active) {
+    border-color: #003380;
+    background: #f8faff;
+}
+
+/* ── Toggle switch — same style as teams-toggle-switch ── */
+.cm-form-field--toggle {
+    flex-direction: row;
+    align-items: center;
+    padding: 0.9rem 1rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    gap: 0;
+}
+
+.cm-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.cm-toggle-input {
+    display: none;
+}
+
+.cm-toggle-track {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    background: #ccc;
+    border-radius: 26px;
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
+
+.cm-toggle-input:checked+.cm-toggle-track {
+    background: #10b981;
+}
+
+.cm-toggle-thumb {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.3s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.cm-toggle-input:checked+.cm-toggle-track .cm-toggle-thumb {
+    transform: translateX(24px);
+}
+
+.cm-toggle-text {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+/* ── Actions bar — same as teams-modal-actions ── */
+.cm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+    flex-shrink: 0;
+}
+
+/* Cancel — same as teams-btn-cancel */
+.cm-btn--ghost {
+    padding: 0.75rem 1.5rem;
+    background: white;
+    color: #666;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.cm-btn--ghost:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+/* Submit — same as teams-btn-submit */
+.cm-btn--primary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #003380;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 51, 128, 0.2);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.cm-btn--primary:hover {
+    background: #00509e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 51, 128, 0.3);
+}
+
+/* Delete — danger variant, left-aligned */
+.cm-btn--danger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: auto;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.cm-btn--danger:hover {
+    background: #dc2626;
+    color: white;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .cm-modal-header {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .cm-modal-form {
+        padding: 1.5rem;
+        gap: 1rem;
+    }
+
+    .cm-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .cm-event-type-pills {
+        flex-wrap: wrap;
+    }
+
+    .cm-modal-actions {
+        flex-wrap: wrap;
+    }
+
+    .cm-btn--danger {
+        margin-right: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .cm-btn--ghost,
+    .cm-btn--primary {
+        flex: 1;
+        justify-content: center;
+    }
+}
