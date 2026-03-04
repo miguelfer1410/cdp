@@ -92,7 +92,7 @@ const MembershipCard = ({
                         {statusLabel}
                     </span>
                     <span className="mc-type-pill">
-                        {isAtleta ? <><i className="fas fa-running" /> ATLETA</> : <><i className="fas fa-id-card" /> SÓCIO</>}
+                        {isAtleta ? <><i className="fas fa-running" /> ATLETA</> : <><i className="fas fa-id-card" /> SOCIO</>}
                     </span>
                 </div>
 
@@ -129,7 +129,7 @@ const MembershipCard = ({
                                 </div>
                             )}
                             <div className="mc-field">
-                                <span className="mc-field-label">VÁLIDO ATÉ</span>
+                                <span className="mc-field-label">VALIDO ATE</span>
                                 <span className="mc-field-value">{validity}</span>
                             </div>
                             <div className="mc-field">
@@ -142,7 +142,7 @@ const MembershipCard = ({
                     {/* QR Code a ocupar todo o espaço vertical */}
                     <div className="mc-qr-front">
                         <QRCode
-                            value={userId ? `http://localhost:3000/verify/${userId}` : numDisplay}
+                            value={`${(statusLabel.toLowerCase() === 'ativo' || statusLabel.toLowerCase() === 'active') ? '✅' : '❌'} SÓCIO: ${statusLabel.toUpperCase()}\n👤 Nome: ${name}\n🆔 Nº Sócio: ${numDisplay}\n📅 Validade: ${validity}`}
                             size={120}
                             style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
                             bgColor="#ffffff"

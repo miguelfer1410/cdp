@@ -16,6 +16,7 @@ import FamilyAssociationsManager from '../../components/Admin/FamilyAssociations
 import EscalaoRequestsManager from '../../components/Admin/EscalaoRequestsManager';
 import ClubAnalytics from '../../components/Admin/ClubAnalytics';
 import EscalaoManager from '../../components/Admin/EscalaoManager';
+import PromotionManager from '../../components/Admin/PromotionManager';
 
 const NAV_ITEMS_CONFIG = {
     hero: { id: 'hero', label: 'Banner', icon: <FaImages /> },
@@ -49,6 +50,7 @@ const DashboardAdmin = () => {
     const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [requestSubTab, setRequestSubTab] = useState('family'); // 'family' or 'escalao'
+    const [escalaoSubTab, setEscalaoSubTab] = useState('config'); // 'config' or 'promotion'
 
     useEffect(() => {
         // Load nav order from localStorage
@@ -225,7 +227,27 @@ const DashboardAdmin = () => {
                 {activeTab === 'fees' && <FeeManager />}
                 {activeTab === 'payments' && <PaymentManager />}
                 {activeTab === 'analytics' && <ClubAnalytics />}
-                {activeTab === 'escalaos' && <EscalaoManager />}
+                {activeTab === 'escalaos' && (
+                    <div className="escalaos-section">
+                        <div className="admin-sub-tabs">
+                            <button
+                                className={`sub-tab-btn ${escalaoSubTab === 'config' ? 'active' : ''}`}
+                                onClick={() => setEscalaoSubTab('config')}
+                            >
+                                <FaSort /> Configuração
+                            </button>
+                            <button
+                                className={`sub-tab-btn ${escalaoSubTab === 'promotion' ? 'active' : ''}`}
+                                onClick={() => setEscalaoSubTab('promotion')}
+                            >
+                                <FaChartLine /> Subida de Escalão
+                            </button>
+                        </div>
+                        <div className="sub-tab-content">
+                            {escalaoSubTab === 'config' ? <EscalaoManager /> : <PromotionManager />}
+                        </div>
+                    </div>
+                )}
                 {activeTab === 'requests' && (
                     <div className="requests-section">
                         <div className="admin-sub-tabs">

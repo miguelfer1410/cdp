@@ -60,9 +60,10 @@ public class MembershipCardController : ControllerBase
             ? await System.IO.File.ReadAllBytesAsync(logoPath) : null;
 
         // QR Code (high density, black on white)
-        var qrUrl = $"http://localhost:3000/verify/{user.Id}";
+        string statusEmoji = statusLabel.Equals("Ativo", StringComparison.OrdinalIgnoreCase) ? "✅" : "❌";
+        var qrText = $"{statusEmoji} SÓCIO: {statusLabel.ToUpper()}\n👤 Nome: {fullName}\n🆔 Nº Sócio: {memberNum}\n📅 Validade: {validity}";
         using var qrGenerator = new QRCodeGenerator();
-        using var qrCodeData  = qrGenerator.CreateQrCode(qrUrl, QRCodeGenerator.ECCLevel.Q);
+        using var qrCodeData  = qrGenerator.CreateQrCode(qrText, QRCodeGenerator.ECCLevel.Q);
         using var qrCode      = new PngByteQRCode(qrCodeData);
         byte[] qrCodeImage    = qrCode.GetGraphic(20);
 
@@ -166,7 +167,7 @@ public class MembershipCardController : ControllerBase
                                     r.AutoItem().AlignMiddle()
                                         .Background(pillBg)
                                         .Padding(2).PaddingHorizontal(6)
-                                        .Text(isAtleta ? " ATLETA " : " SÓCIO ")
+                                        .Text(isAtleta ? " ATLETA " : " SOCIO ")
                                         .FontSize(6).Bold().FontColor(pillText);
                                 });
 
@@ -210,7 +211,7 @@ public class MembershipCardController : ControllerBase
                                             fields.ConstantItem(8);
                                             fields.ConstantItem(44).Column(c =>
                                             {
-                                                c.Item().Text("VÁLIDO ATÉ").FontSize(5).FontColor(labelColor);
+                                                c.Item().Text("VALIDO ATE").FontSize(5).FontColor(labelColor);
                                                 c.Item().Text(validity).FontSize(7.5f).Bold()
                                                     .FontColor(Colors.White);
                                             });

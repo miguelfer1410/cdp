@@ -581,7 +581,113 @@
     cursor: not-allowed;
 }
 
+/* ── Escalão Searchable Combobox ─────────────────────────────── */
+.escalao-combobox {
+    position: relative;
+    width: 100%;
+}
+
+.escalao-combobox-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.escalao-combobox-input-wrap .teams-form-input {
+    padding-right: 2.25rem;
+}
+
+.escalao-combobox-clear {
+    position: absolute;
+    right: 0.6rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+
+.escalao-combobox-clear:hover {
+    color: #ef4444;
+}
+
+.escalao-combobox-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1.5px solid #003380;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 51, 128, 0.14);
+    list-style: none;
+    margin: 0;
+    padding: 0.35rem 0;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 20000;
+    animation: comboboxFadeIn 0.15s ease;
+}
+
+@keyframes comboboxFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.escalao-combobox-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.escalao-combobox-list::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+.escalao-combobox-item {
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+    color: #1e293b;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.escalao-combobox-item:hover {
+    background: #f0f7ff;
+}
+
+.escalao-combobox-item.selected {
+    background: #003380;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.escalao-combobox-empty-opt {
+    color: #64748b;
+    font-style: italic;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 0.25rem;
+}
+
+.escalao-combobox-no-results {
+    padding: 0.65rem 1rem;
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
 /* Responsive */
+
 @media (max-width: 900px) {
     .teams-table thead {
         display: none;

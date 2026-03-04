@@ -1,6 +1,92 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown, FaUserCheck, FaUserPlus } from 'react-icons/fa';
 import './TeamsManager.css';
+
+/* ── Searchable Escalão Combobox ─────────────────────────────── */
+const EscalaoSearchSelect = ({ escalaos, value, onChange }) => {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const containerRef = useRef(null);
+
+    const selected = escalaos.find(e => String(e.id) === String(value));
+
+    // Keep the text input in sync when the modal opens/resets
+    useEffect(() => {
+        if (!open) {
+            setQuery(selected ? selected.name : '');
+        }
+    }, [value, open]);
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setOpen(false);
+                setQuery(selected ? selected.name : '');
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [selected]);
+
+    const filtered = query.trim()
+        ? escalaos.filter(e => e.name.toLowerCase().includes(query.toLowerCase()))
+        : escalaos;
+
+    const handleSelect = (esc) => {
+        onChange(esc ? String(esc.id) : '');
+        setQuery(esc ? esc.name : '');
+        setOpen(false);
+    };
+
+    return (
+        <div className="escalao-combobox" ref={containerRef}>
+            <div className="escalao-combobox-input-wrap">
+                <input
+                    type="text"
+                    className="teams-form-input"
+                    placeholder="Pesquisar escalão..."
+                    value={open ? query : (selected ? selected.name : '')}
+                    onFocus={() => { setOpen(true); setQuery(''); }}
+                    onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+                    autoComplete="off"
+                />
+                {(value) && (
+                    <button
+                        type="button"
+                        className="escalao-combobox-clear"
+                        onClick={() => handleSelect(null)}
+                        title="Limpar"
+                    >
+                        ×
+                    </button>
+                )}
+            </div>
+            {open && (
+                <ul className="escalao-combobox-list">
+                    <li
+                        className={`escalao-combobox-item escalao-combobox-empty-opt${!value ? ' selected' : ''}`}
+                        onMouseDown={() => handleSelect(null)}
+                    >
+                        Sem escalão
+                    </li>
+                    {filtered.length === 0 && (
+                        <li className="escalao-combobox-no-results">Sem resultados</li>
+                    )}
+                    {filtered.map(esc => (
+                        <li
+                            key={esc.id}
+                            className={`escalao-combobox-item${String(esc.id) === String(value) ? ' selected' : ''}`}
+                            onMouseDown={() => handleSelect(esc)}
+                        >
+                            {esc.name}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+};
 
 const TeamsManager = () => {
     const [teams, setTeams] = useState([]);
@@ -614,18 +700,11 @@ const TeamsManager = () => {
                             <div className="teams-form-row">
                                 <div className="teams-form-section">
                                     <label className="teams-form-label">Escalão</label>
-                                    <select
-                                        className="teams-form-select"
+                                    <EscalaoSearchSelect
+                                        escalaos={escalaos}
                                         value={formData.escalaoId}
-                                        onChange={(e) => updateFormField('escalaoId', e.target.value)}
-                                    >
-                                        <option value="">Sem escalão</option>
-                                        {escalaos.map(esc => (
-                                            <option key={esc.id} value={esc.id}>
-                                                {esc.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        onChange={(val) => updateFormField('escalaoId', val)}
+                                    />
                                 </div>
 
                                 <div className="teams-form-section">

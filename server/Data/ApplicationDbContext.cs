@@ -36,6 +36,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserFamilyLink> UserFamilyLinks { get; set; }
     public DbSet<EscalaoRequest> EscalaoRequests { get; set; }
     public DbSet<Escalao> Escalaos { get; set; }
+    public DbSet<EscalaoSport> EscalaoSports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -361,43 +362,60 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
-        // Seed: escalões comuns no futebol
+        // EscalaoSport configuration
+        modelBuilder.Entity<EscalaoSport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.EscalaoId, e.SportId }).IsUnique();
+
+            entity.HasOne(e => e.Escalao)
+                .WithMany(e => e.EscalaoSports)
+                .HasForeignKey(e => e.EscalaoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Sport)
+                .WithMany()
+                .HasForeignKey(e => e.SportId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Seed: escalões comuns no futebol e outras modalidades em Portugal
         modelBuilder.Entity<Escalao>().HasData(
-            new Escalao { Id = 1, Name = "Sub-7",  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 2, Name = "Sub-9",  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 3, Name = "Sub-11", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 4, Name = "Sub-13", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 5, Name = "Sub-15", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 6, Name = "Sub-17", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 7, Name = "Sub-19", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 8, Name = "Sénior", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 9, Name = "Bambis", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 10, Name = "Benjamins", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 11, Name = "Cadetes", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 12, Name = "Escolares", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 13, Name = "Infantis", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 14, Name = "Infantis A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 15, Name = "Infantis B", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 16, Name = "Iniciados", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 17, Name = "Iniciados A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 18, Name = "Juniores", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 19, Name = "Juniores A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 20, Name = "Juvenis", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 21, Name = "Mini 10", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 22, Name = "Mini 12", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 23, Name = "Mini 8", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 24, Name = "Minis A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 25, Name = "Petizes", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 26, Name = "Seniores A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 27, Name = "Seniores B", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 28, Name = "Sub 13", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 29, Name = "Sub 14 A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 30, Name = "Sub 14 B", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 31, Name = "Sub 16", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 32, Name = "Sub 16 A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 33, Name = "Sub 16 B", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 34, Name = "Sub 18 A", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Escalao { Id = 35, Name = "Traquinas", IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new Escalao { Id = 1,  Name = "Sub-7",     MinAge = 0,  MaxAge = 7,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 2,  Name = "Sub-9",     MinAge = 8,  MaxAge = 9,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 3,  Name = "Sub-11",    MinAge = 10, MaxAge = 11, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 4,  Name = "Sub-13",    MinAge = 12, MaxAge = 13, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 5,  Name = "Sub-15",    MinAge = 14, MaxAge = 15, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 6,  Name = "Sub-17",    MinAge = 16, MaxAge = 17, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 7,  Name = "Sub-19",    MinAge = 18, MaxAge = 19, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 8,  Name = "Sénior",    MinAge = 20, MaxAge = 99, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 9,  Name = "Bambis",    MinAge = 0,  MaxAge = 6,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 10, Name = "Benjamins", MinAge = 10, MaxAge = 11, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 11, Name = "Cadetes",   MinAge = 14, MaxAge = 15, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 12, Name = "Escolares", MinAge = 8,  MaxAge = 9,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 13, Name = "Infantis",  MinAge = 12, MaxAge = 13, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 14, Name = "Infantis A",MinAge = 13, MaxAge = 13, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 15, Name = "Infantis B",MinAge = 12, MaxAge = 12, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 16, Name = "Iniciados", MinAge = 14, MaxAge = 15, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 17, Name = "Iniciados A",MinAge = 15, MaxAge = 15, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 18, Name = "Juniores",  MinAge = 18, MaxAge = 19, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 19, Name = "Juniores A",MinAge = 19, MaxAge = 19, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 20, Name = "Juvenis",   MinAge = 16, MaxAge = 17, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 21, Name = "Mini 10",   MinAge = 9,  MaxAge = 10, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 22, Name = "Mini 12",   MinAge = 11, MaxAge = 12, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 23, Name = "Mini 8",    MinAge = 7,  MaxAge = 8,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 24, Name = "Minis A",   MinAge = 8,  MaxAge = 10, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 25, Name = "Petizes",   MinAge = 0,  MaxAge = 7,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 26, Name = "Seniores A",MinAge = 20, MaxAge = 99, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 27, Name = "Seniores B",MinAge = 18, MaxAge = 99, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 28, Name = "Sub 13",    MinAge = 12, MaxAge = 13, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 29, Name = "Sub 14 A",  MinAge = 14, MaxAge = 14, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 30, Name = "Sub 14 B",  MinAge = 13, MaxAge = 14, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 31, Name = "Sub 16",    MinAge = 15, MaxAge = 16, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 32, Name = "Sub 16 A",  MinAge = 16, MaxAge = 16, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 33, Name = "Sub 16 B",  MinAge = 15, MaxAge = 16, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 34, Name = "Sub 18 A",  MinAge = 17, MaxAge = 18, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
+            new Escalao { Id = 35, Name = "Traquinas", MinAge = 8,  MaxAge = 9,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
     }
 }

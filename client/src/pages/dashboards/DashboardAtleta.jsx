@@ -512,7 +512,7 @@ const DashboardAtleta = () => {
                                         <i className="fas fa-calendar-alt" ></i>
                                         Ver Calendário
                                     </a>
-                                    <button className="action-btn" onClick={() => setIsEditModalOpen(true)} style={{ width: '100%', textAlign: 'left' }}>
+                                    <button className="action-btn" onClick={() => setIsEditModalOpen(true)}>
                                         <i className="fas fa-user-edit"></i>
                                         Editar Perfil
                                     </button>
@@ -527,7 +527,6 @@ const DashboardAtleta = () => {
                                     <button
                                         className="action-btn"
                                         onClick={() => setIsRequestsModalOpen(true)}
-                                        style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
                                     >
                                         <i className="fas fa-clipboard-list"></i>
                                         Requisições

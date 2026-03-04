@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260304093902_UpdateEscalaoSeeding")]
+    partial class UpdateEscalaoSeeding
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1070,14 +1073,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 4, 10, 10, 11, 446, DateTimeKind.Utc).AddTicks(8197),
+                            CreatedAt = new DateTime(2026, 3, 4, 9, 39, 1, 546, DateTimeKind.Utc).AddTicks(2507),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 4, 10, 10, 11, 446, DateTimeKind.Utc).AddTicks(8199),
+                            CreatedAt = new DateTime(2026, 3, 4, 9, 39, 1, 546, DateTimeKind.Utc).AddTicks(2509),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1292,9 +1295,6 @@ namespace CdpApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("Gender")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -1342,13 +1342,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 4, 10, 10, 11, 580, DateTimeKind.Utc).AddTicks(1817),
+                            CreatedAt = new DateTime(2026, 3, 4, 9, 39, 1, 671, DateTimeKind.Utc).AddTicks(4562),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
-                            Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$t8EB7lWuZTDGMuDpoDVsg.OWnJVc0FXIW83Zsv9zohwGisfe4dwdC"
+                            PasswordHash = "$2a$11$pzBncG7s9Lc7/xz9jqjSc.tcb5BXvWwisXaZnsaFmGfBwgqhA5bDi"
                         });
                 });
 
@@ -1415,7 +1414,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 4, 10, 10, 11, 580, DateTimeKind.Utc).AddTicks(2271),
+                            AssignedAt = new DateTime(2026, 3, 4, 9, 39, 1, 671, DateTimeKind.Utc).AddTicks(5029),
                             RoleId = 2,
                             UserId = 1
                         });

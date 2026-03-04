@@ -26,6 +26,8 @@ public class User
     [MaxLength(20)]
     public string? Phone { get; set; }
 
+    public Gender Gender { get; set; } = Gender.Mixed;
+
     public DateTime? BirthDate { get; set; }
 
     [MaxLength(9)]

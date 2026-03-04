@@ -201,6 +201,7 @@ public class UsersController : ControllerBase
             Address = user.Address,
             PostalCode = user.PostalCode,
             City = user.City,
+            Gender = user.Gender,
             HasAthleteProfile = user.AthleteProfile != null,
             HasMemberProfile = user.MemberProfile != null && user.MemberProfile.MembershipStatus == MembershipStatus.Active,
             HasCoachProfile = user.CoachProfile != null,
@@ -281,6 +282,7 @@ public class UsersController : ControllerBase
             Address = request.Address,
             PostalCode = request.PostalCode,
             City = request.City,
+            Gender = request.Gender,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             // Use PasswordResetToken fields for activation
@@ -329,6 +331,7 @@ public class UsersController : ControllerBase
             Address = user.Address,
             PostalCode = user.PostalCode,
             City = user.City,
+            Gender = user.Gender,
             HasAthleteProfile = false,
             HasMemberProfile = false,
             HasCoachProfile = false,
@@ -409,6 +412,7 @@ public class UsersController : ControllerBase
         user.Address = request.Address;
         user.PostalCode = request.PostalCode;
         user.City = request.City;
+        user.Gender = request.Gender;
 
         await _context.SaveChangesAsync();
 
@@ -1367,6 +1371,7 @@ public class UserResponse
     public string? Address { get; set; }
     public string? PostalCode { get; set; }
     public string? City { get; set; }
+    public Gender Gender { get; set; }
     public bool HasAthleteProfile { get; set; }
     public bool HasMemberProfile { get; set; }
     public bool HasCoachProfile { get; set; }
@@ -1445,6 +1450,7 @@ public class UserCreateRequest
     public string? Address { get; set; }
     public string? PostalCode { get; set; }
     public string? City { get; set; }
+    public Gender Gender { get; set; }
 }
 
 public class UserUpdateRequest
@@ -1458,6 +1464,7 @@ public class UserUpdateRequest
     public string? Address { get; set; }
     public string? PostalCode { get; set; }
     public string? City { get; set; }
+    public Gender Gender { get; set; }
 }
 
 public class AthleteProfileRequest

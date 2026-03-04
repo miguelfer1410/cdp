@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260304091423_AddEscalaoAgeAndSports")]
+    partial class AddEscalaoAgeAndSports
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -248,8 +251,6 @@ namespace CdpApi.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 7,
-                            MinAge = 0,
                             Name = "Sub-7"
                         },
                         new
@@ -257,8 +258,6 @@ namespace CdpApi.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 9,
-                            MinAge = 8,
                             Name = "Sub-9"
                         },
                         new
@@ -266,8 +265,6 @@ namespace CdpApi.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 11,
-                            MinAge = 10,
                             Name = "Sub-11"
                         },
                         new
@@ -275,8 +272,6 @@ namespace CdpApi.Migrations
                             Id = 4,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 13,
-                            MinAge = 12,
                             Name = "Sub-13"
                         },
                         new
@@ -284,8 +279,6 @@ namespace CdpApi.Migrations
                             Id = 5,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 15,
-                            MinAge = 14,
                             Name = "Sub-15"
                         },
                         new
@@ -293,8 +286,6 @@ namespace CdpApi.Migrations
                             Id = 6,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 17,
-                            MinAge = 16,
                             Name = "Sub-17"
                         },
                         new
@@ -302,8 +293,6 @@ namespace CdpApi.Migrations
                             Id = 7,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 19,
-                            MinAge = 18,
                             Name = "Sub-19"
                         },
                         new
@@ -311,8 +300,6 @@ namespace CdpApi.Migrations
                             Id = 8,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 99,
-                            MinAge = 20,
                             Name = "Sénior"
                         },
                         new
@@ -320,8 +307,6 @@ namespace CdpApi.Migrations
                             Id = 9,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 6,
-                            MinAge = 0,
                             Name = "Bambis"
                         },
                         new
@@ -329,8 +314,6 @@ namespace CdpApi.Migrations
                             Id = 10,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 11,
-                            MinAge = 10,
                             Name = "Benjamins"
                         },
                         new
@@ -338,8 +321,6 @@ namespace CdpApi.Migrations
                             Id = 11,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 15,
-                            MinAge = 14,
                             Name = "Cadetes"
                         },
                         new
@@ -347,8 +328,6 @@ namespace CdpApi.Migrations
                             Id = 12,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 9,
-                            MinAge = 8,
                             Name = "Escolares"
                         },
                         new
@@ -356,8 +335,6 @@ namespace CdpApi.Migrations
                             Id = 13,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 13,
-                            MinAge = 12,
                             Name = "Infantis"
                         },
                         new
@@ -365,8 +342,6 @@ namespace CdpApi.Migrations
                             Id = 14,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 13,
-                            MinAge = 13,
                             Name = "Infantis A"
                         },
                         new
@@ -374,8 +349,6 @@ namespace CdpApi.Migrations
                             Id = 15,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 12,
-                            MinAge = 12,
                             Name = "Infantis B"
                         },
                         new
@@ -383,8 +356,6 @@ namespace CdpApi.Migrations
                             Id = 16,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 15,
-                            MinAge = 14,
                             Name = "Iniciados"
                         },
                         new
@@ -392,8 +363,6 @@ namespace CdpApi.Migrations
                             Id = 17,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 15,
-                            MinAge = 15,
                             Name = "Iniciados A"
                         },
                         new
@@ -401,8 +370,6 @@ namespace CdpApi.Migrations
                             Id = 18,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 19,
-                            MinAge = 18,
                             Name = "Juniores"
                         },
                         new
@@ -410,8 +377,6 @@ namespace CdpApi.Migrations
                             Id = 19,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 19,
-                            MinAge = 19,
                             Name = "Juniores A"
                         },
                         new
@@ -419,8 +384,6 @@ namespace CdpApi.Migrations
                             Id = 20,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 17,
-                            MinAge = 16,
                             Name = "Juvenis"
                         },
                         new
@@ -428,8 +391,6 @@ namespace CdpApi.Migrations
                             Id = 21,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 10,
-                            MinAge = 9,
                             Name = "Mini 10"
                         },
                         new
@@ -437,8 +398,6 @@ namespace CdpApi.Migrations
                             Id = 22,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 12,
-                            MinAge = 11,
                             Name = "Mini 12"
                         },
                         new
@@ -446,8 +405,6 @@ namespace CdpApi.Migrations
                             Id = 23,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 8,
-                            MinAge = 7,
                             Name = "Mini 8"
                         },
                         new
@@ -455,8 +412,6 @@ namespace CdpApi.Migrations
                             Id = 24,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 10,
-                            MinAge = 8,
                             Name = "Minis A"
                         },
                         new
@@ -464,8 +419,6 @@ namespace CdpApi.Migrations
                             Id = 25,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 7,
-                            MinAge = 0,
                             Name = "Petizes"
                         },
                         new
@@ -473,8 +426,6 @@ namespace CdpApi.Migrations
                             Id = 26,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 99,
-                            MinAge = 20,
                             Name = "Seniores A"
                         },
                         new
@@ -482,8 +433,6 @@ namespace CdpApi.Migrations
                             Id = 27,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 99,
-                            MinAge = 18,
                             Name = "Seniores B"
                         },
                         new
@@ -491,8 +440,6 @@ namespace CdpApi.Migrations
                             Id = 28,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 13,
-                            MinAge = 12,
                             Name = "Sub 13"
                         },
                         new
@@ -500,8 +447,6 @@ namespace CdpApi.Migrations
                             Id = 29,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 14,
-                            MinAge = 14,
                             Name = "Sub 14 A"
                         },
                         new
@@ -509,8 +454,6 @@ namespace CdpApi.Migrations
                             Id = 30,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 14,
-                            MinAge = 13,
                             Name = "Sub 14 B"
                         },
                         new
@@ -518,8 +461,6 @@ namespace CdpApi.Migrations
                             Id = 31,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 16,
-                            MinAge = 15,
                             Name = "Sub 16"
                         },
                         new
@@ -527,8 +468,6 @@ namespace CdpApi.Migrations
                             Id = 32,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 16,
-                            MinAge = 16,
                             Name = "Sub 16 A"
                         },
                         new
@@ -536,8 +475,6 @@ namespace CdpApi.Migrations
                             Id = 33,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 16,
-                            MinAge = 15,
                             Name = "Sub 16 B"
                         },
                         new
@@ -545,8 +482,6 @@ namespace CdpApi.Migrations
                             Id = 34,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 18,
-                            MinAge = 17,
                             Name = "Sub 18 A"
                         },
                         new
@@ -554,8 +489,6 @@ namespace CdpApi.Migrations
                             Id = 35,
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsActive = true,
-                            MaxAge = 9,
-                            MinAge = 8,
                             Name = "Traquinas"
                         });
                 });
@@ -615,10 +548,9 @@ namespace CdpApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SportId");
+                    b.HasIndex("EscalaoId");
 
-                    b.HasIndex("EscalaoId", "SportId")
-                        .IsUnique();
+                    b.HasIndex("SportId");
 
                     b.ToTable("EscalaoSports");
                 });
@@ -1070,14 +1002,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 4, 10, 10, 11, 446, DateTimeKind.Utc).AddTicks(8197),
+                            CreatedAt = new DateTime(2026, 3, 4, 9, 14, 22, 945, DateTimeKind.Utc).AddTicks(2096),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 4, 10, 10, 11, 446, DateTimeKind.Utc).AddTicks(8199),
+                            CreatedAt = new DateTime(2026, 3, 4, 9, 14, 22, 945, DateTimeKind.Utc).AddTicks(2097),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1292,9 +1224,6 @@ namespace CdpApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("Gender")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -1342,13 +1271,12 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 4, 10, 10, 11, 580, DateTimeKind.Utc).AddTicks(1817),
+                            CreatedAt = new DateTime(2026, 3, 4, 9, 14, 23, 246, DateTimeKind.Utc).AddTicks(3308),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
-                            Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$t8EB7lWuZTDGMuDpoDVsg.OWnJVc0FXIW83Zsv9zohwGisfe4dwdC"
+                            PasswordHash = "$2a$11$Ak49O0JcMV5K3A6qmVUg..6.6I4QiLSZi1iy.A9Rsw317bDmj9hK."
                         });
                 });
 
@@ -1415,7 +1343,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 4, 10, 10, 11, 580, DateTimeKind.Utc).AddTicks(2271),
+                            AssignedAt = new DateTime(2026, 3, 4, 9, 14, 23, 246, DateTimeKind.Utc).AddTicks(3832),
                             RoleId = 2,
                             UserId = 1
                         });
