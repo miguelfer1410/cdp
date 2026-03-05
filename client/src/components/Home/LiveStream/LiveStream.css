@@ -1,0 +1,165 @@
+/* ===== LiveStream Section ===== */
+.livestream {
+  background-color: var(--primary-color);
+  /* Mesmo azul do Hero */
+}
+
+.livestream-inner {
+  display: flex;
+  align-items: center;
+  gap: 60px;
+}
+
+/* ── Visual (esquerdo) ── */
+.livestream-visual {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yt-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.yt-circle:hover {
+  background: rgba(255, 0, 0, 0.2);
+}
+
+.yt-main-icon {
+  font-size: 5rem;
+  color: #ffffff;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+}
+
+/* Badge "Em Direto" */
+.yt-play-badge {
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ff0000;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px 5px 9px;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
+}
+
+.yt-play-icon {
+  font-size: 0.6rem;
+}
+
+/* ── Text (direito) ── */
+.livestream-text {
+  flex: 1;
+}
+
+.livestream-label {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  border-left: 3px solid rgba(255, 255, 255, 0.4);
+  padding-left: 10px;
+}
+
+.livestream-text h2 {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+  margin-bottom: 18px;
+}
+
+.highlight-yt {
+  color: #ffffff;
+}
+
+.livestream-text p {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin-bottom: 28px;
+  max-width: 520px;
+}
+
+.livestream-text p strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Button */
+.livestream-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff !important;
+  color: var(--primary-color) !important;
+  padding: 13px 26px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.livestream-btn:hover {
+  background: #f0f0f0 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  color: var(--primary-color) !important;
+}
+
+.btn-arrow {
+  font-size: 0.8rem;
+  transition: transform 0.25s ease;
+}
+
+.livestream-btn:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .livestream-inner {
+    flex-direction: column;
+    gap: 36px;
+    text-align: center;
+  }
+
+  .livestream-text h2 {
+    font-size: 1.6rem;
+  }
+
+  .livestream-label {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .livestream-text p {
+    max-width: 100%;
+  }
+
+  .livestream-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

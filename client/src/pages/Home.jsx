@@ -4,6 +4,7 @@ import About from '../components/Home/About/About';
 import Stats from '../components/Home/Stats/Stats';
 import Modalidades from '../components/Home/Modalidades/Modalidades';
 import News from '../components/Home/News/News';
+import LiveStream from '../components/Home/LiveStream/LiveStream';
 import Contact from '../components/Home/Contact/Contact';
 import Partners from '../components/Home/Partners/Partners';
 
@@ -15,6 +16,7 @@ const Home = () => {
       <Stats />
       <Modalidades />
       <News />
+      <LiveStream />
       <Contact />
       <Partners />
     </div>
