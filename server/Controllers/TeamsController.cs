@@ -264,6 +264,78 @@ public class TeamsController : ControllerBase
         }
     }
 
+    // POST: api/teams/{id}/advance - Admin only
+    [HttpPost("{id}/advance")]
+    [Authorize]
+    public async Task<ActionResult<TeamResponse>> AdvanceTeam(int id)
+    {
+        try
+        {
+            var team = await _context.Teams
+                .Include(t => t.Sport)
+                .Include(t => t.Escalao)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (team == null)
+            {
+                return NotFound(new { message = "Team not found" });
+            }
+
+            // Parse and increment season (Format: "2024/2025")
+            string newSeason = string.Empty;
+            if (!string.IsNullOrEmpty(team.Season) && team.Season.Contains('/'))
+            {
+                var parts = team.Season.Split('/');
+                if (parts.Length == 2 && int.TryParse(parts[0], out int year1) && int.TryParse(parts[1], out int year2))
+                {
+                    newSeason = $"{year1 + 1}/{year2 + 1}";
+                }
+            }
+            
+            if (string.IsNullOrEmpty(newSeason))
+            {
+                // Fallback to current/next year if parsing fails
+                int currentYear = DateTime.Now.Year;
+                newSeason = $"{currentYear}/{currentYear + 1}";
+            }
+
+            var nextTeam = new Team
+            {
+                SportId = team.SportId,
+                Name = team.Name,
+                EscalaoId = team.EscalaoId,
+                Gender = team.Gender,
+                Season = newSeason,
+                IsActive = true // New season team starts active
+            };
+
+            _context.Teams.Add(nextTeam);
+            await _context.SaveChangesAsync();
+
+            // Return the new team info
+            var response = new TeamResponse
+            {
+                Id = nextTeam.Id,
+                SportId = nextTeam.SportId,
+                SportName = team.Sport.Name,
+                Name = nextTeam.Name,
+                Category = team.Escalao?.Name,
+                EscalaoId = nextTeam.EscalaoId,
+                Gender = nextTeam.Gender,
+                Season = nextTeam.Season,
+                IsActive = nextTeam.IsActive,
+                CreatedAt = nextTeam.CreatedAt
+            };
+
+            return CreatedAtAction(nameof(GetTeam), new { id = nextTeam.Id }, response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error advancing team {TeamId}", id);
+            return StatusCode(500, new { message = "Error advancing team to next season" });
+        }
+    }
+
     // DELETE: api/teams/{id} - Admin only
     [HttpDelete("{id}")]
     [Authorize]

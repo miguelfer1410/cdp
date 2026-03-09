@@ -1,5 +1,7 @@
 .modalidades-page {
   min-height: 100vh;
+  padding-top: 60px;
+  /* height of the fixed quick-links bar */
 }
 
 .modalidades-hero {
@@ -40,8 +42,16 @@
 /* Quick Links Section */
 .quick-links-section {
   background: white;
-  padding: 50px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #e5e7eb;
+  position: fixed;
+  top: 80px;
+  /* below the sticky header */
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 99;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10);
 }
 
 .quick-links-section .container {
@@ -59,26 +69,36 @@
 }
 
 .quick-links-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  max-width: 1000px;
-  margin: 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  justify-content: center;
+  /* hide scrollbar but keep functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.quick-links-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .quick-link {
   background: linear-gradient(135deg, #003d82 0%, #00509e 100%);
   color: white;
   text-decoration: none;
-  padding: 18px 25px;
+  padding: 12px 22px;
   border-radius: 10px;
   text-align: center;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 61, 130, 0.15);
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .quick-link::before {
@@ -109,6 +129,7 @@
 .modalidades-list {
   padding: 80px 0;
   background: #f8f9fa;
+  scroll-margin-top: 150px;
 }
 
 .modalidades-list .container {
@@ -128,6 +149,7 @@
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  scroll-margin-top: 150px;
 }
 
 .modalidade-item.reverse {
@@ -458,22 +480,7 @@
   }
 
   .quick-links-section {
-    padding: 40px 0;
-  }
-
-  .quick-links-section h3 {
-    font-size: 1.5rem;
-    margin-bottom: 25px;
-  }
-
-  .quick-links-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .quick-link {
-    padding: 15px 20px;
-    font-size: 0.95rem;
+    padding: 10px 0;
   }
 }
 

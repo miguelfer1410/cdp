@@ -3,6 +3,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaUser, FaChevronDown, FaSignOutAlt, FaTachometerAlt, FaCog, FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
 import './Header.css';
 
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+};
+
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -13,13 +22,23 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  const clearSession = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userType');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('roles');
+    setIsLoggedIn(false);
+    setDropdownOpen(false);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const name = localStorage.getItem('userName');
     const type = localStorage.getItem('userType');
     const rolesStr = localStorage.getItem('roles');
 
-    if (token && name) {
+    if (token && name && !isTokenExpired(token)) {
       setIsLoggedIn(true);
       setUserName(name);
 
@@ -35,8 +54,21 @@ const Header = () => {
       } else {
         setUserType(type || 'User');
       }
+    } else if (token && isTokenExpired(token)) {
+      clearSession();
     }
   }, [location]);
+
+  // Periodically check token expiry while the page is open
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (token && isTokenExpired(token)) {
+        clearSession();
+      }
+    }, 60000); // check every 60 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Close mobile menu when location changes
   useEffect(() => {
@@ -119,6 +151,9 @@ const Header = () => {
             </Link>
             <Link to="/noticias" className={location.pathname === '/noticias' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Notícias
+            </Link>
+            <Link to="/bilheteria" className={location.pathname === '/bilheteria' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
+              Bilheteira
             </Link>
             <Link to="/contactos" className={location.pathname === '/contactos' ? 'active' : ''} onClick={() => setMobileMenuOpen(false)}>
               Contactos

@@ -236,6 +236,24 @@
     font-weight: 600;
 }
 
+.socio-number {
+    font-size: 0.85rem;
+    color: #4b5563;
+    /* Darker gray for better visibility */
+    font-weight: 500;
+    margin-left: 0.5rem;
+    background: #e5e7eb;
+    /* Slightly darker background */
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    /* Pill shape */
+    border: 1px solid #d1d5db;
+    /* Darker border */
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+}
+
 /* Table Responsive Cards */
 @media (max-width: 900px) {
     .users-table thead {

@@ -58,6 +58,19 @@ const FamilyAssociationsManager = () => {
         });
     };
 
+    const getDisplayEmail = (email) => {
+        if (!email) return 'N/A';
+        const atIndex = email.lastIndexOf('@');
+        if (atIndex === -1) return email;
+        const localPart = email.substring(0, atIndex);
+        const domain = email.substring(atIndex);
+        const plusIndex = localPart.indexOf('+');
+        if (plusIndex !== -1) {
+            return localPart.substring(0, plusIndex) + domain;
+        }
+        return email;
+    };
+
     return (
         <div className="fam-manager">
             <div className="fam-manager-header">
@@ -121,7 +134,7 @@ const FamilyAssociationsManager = () => {
                                     <td data-label="Solicitante">
                                         <div className="fam-requester-cell">
                                             <span className="fam-requester-name">{req.requesterName}</span>
-                                            <span className="fam-requester-email">{req.requesterEmail}</span>
+                                            <span className="fam-requester-email">{getDisplayEmail(req.requesterEmail)}</span>
                                         </div>
                                     </td>
                                     <td data-label="Nome do Familiar" className="fam-family-name">{req.familyMemberName}</td>

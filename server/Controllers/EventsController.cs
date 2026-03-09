@@ -79,6 +79,8 @@ public class EventsController : ControllerBase
             Description = e.Description,
             OpponentName = e.OpponentName,
             IsHomeGame = e.IsHomeGame,
+            TicketPriceSocio = e.TicketPriceSocio,
+            TicketPriceNonSocio = e.TicketPriceNonSocio,
             CreatedBy = e.CreatedBy,
             CreatedByName = $"{e.Creator.FirstName} {e.Creator.LastName}",
             CreatedAt = e.CreatedAt,
@@ -119,11 +121,54 @@ public class EventsController : ControllerBase
             Description = eventItem.Description,
             OpponentName = eventItem.OpponentName,
             IsHomeGame = eventItem.IsHomeGame,
+            TicketPriceSocio = eventItem.TicketPriceSocio,
+            TicketPriceNonSocio = eventItem.TicketPriceNonSocio,
             CreatedBy = eventItem.CreatedBy,
             CreatedByName = $"{eventItem.Creator.FirstName} {eventItem.Creator.LastName}",
             CreatedAt = eventItem.CreatedAt,
             UpdatedAt = eventItem.UpdatedAt
         };
+
+        return Ok(response);
+    }
+
+    // GET: api/events/public - List future game events for public viewing (Bilheteira)
+    [HttpGet("public")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<EventResponse>>> GetPublicEvents()
+    {
+        var now = DateTime.UtcNow;
+
+        var events = await _context.Events
+            .Include(e => e.Sport)
+            .Include(e => e.Team)
+            .Include(e => e.Creator)
+            .Where(e => e.EventType == EventType.Game && e.StartDateTime >= now)
+            .OrderBy(e => e.StartDateTime)
+            .ToListAsync();
+
+        var response = events.Select(e => new EventResponse
+        {
+            Id = e.Id,
+            Title = e.Title,
+            EventType = e.EventType,
+            StartDateTime = e.StartDateTime,
+            EndDateTime = e.EndDateTime,
+            TeamId = e.TeamId,
+            TeamName = e.Team?.Name,
+            SportId = e.SportId,
+            SportName = e.Sport.Name,
+            Location = e.Location,
+            Description = e.Description,
+            OpponentName = e.OpponentName,
+            IsHomeGame = e.IsHomeGame,
+            TicketPriceSocio = e.TicketPriceSocio,
+            TicketPriceNonSocio = e.TicketPriceNonSocio,
+            CreatedBy = e.CreatedBy,
+            CreatedByName = $"{e.Creator.FirstName} {e.Creator.LastName}",
+            CreatedAt = e.CreatedAt,
+            UpdatedAt = e.UpdatedAt
+        }).ToList();
 
         return Ok(response);
     }
@@ -152,6 +197,8 @@ public class EventsController : ControllerBase
             Description = request.Description,
             OpponentName = request.OpponentName,
             IsHomeGame = request.IsHomeGame,
+            TicketPriceSocio = request.TicketPriceSocio,
+            TicketPriceNonSocio = request.TicketPriceNonSocio,
             CreatedBy = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -174,6 +221,8 @@ public class EventsController : ControllerBase
             Description = newEvent.Description,
             OpponentName = newEvent.OpponentName,
             IsHomeGame = newEvent.IsHomeGame,
+            TicketPriceSocio = newEvent.TicketPriceSocio,
+            TicketPriceNonSocio = newEvent.TicketPriceNonSocio,
             CreatedBy = newEvent.CreatedBy,
             CreatedAt = newEvent.CreatedAt,
             UpdatedAt = newEvent.UpdatedAt
@@ -202,6 +251,8 @@ public class EventsController : ControllerBase
         eventItem.Description = request.Description;
         eventItem.OpponentName = request.OpponentName;
         eventItem.IsHomeGame = request.IsHomeGame;
+        eventItem.TicketPriceSocio = request.TicketPriceSocio;
+        eventItem.TicketPriceNonSocio = request.TicketPriceNonSocio;
         eventItem.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -244,6 +295,8 @@ public class EventResponse
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
     public bool? IsHomeGame { get; set; }
+    public decimal? TicketPriceSocio { get; set; }
+    public decimal? TicketPriceNonSocio { get; set; }
     public int CreatedBy { get; set; }
     public string CreatedByName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -263,6 +316,8 @@ public class EventCreateRequest
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
     public bool? IsHomeGame { get; set; }
+    public decimal? TicketPriceSocio { get; set; }
+    public decimal? TicketPriceNonSocio { get; set; }
 }
 
 public class EventUpdateRequest
@@ -277,4 +332,6 @@ public class EventUpdateRequest
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
     public bool? IsHomeGame { get; set; }
+    public decimal? TicketPriceSocio { get; set; }
+    public decimal? TicketPriceNonSocio { get; set; }
 }

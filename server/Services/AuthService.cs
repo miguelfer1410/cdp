@@ -99,6 +99,7 @@ public class AuthService : IAuthService
             var allLinked = await _context.Users
                 .Include(u => u.AthleteProfile)
                 .Include(u => u.CoachProfile)
+                .Include(u => u.MemberProfile)
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .Where(u => u.IsActive && u.Email.ToLower().StartsWith(localPart) && u.Email.ToLower().EndsWith(domain))
                 .ToListAsync();
@@ -110,15 +111,19 @@ public class AuthService : IAuthService
                     var localLower = emailLower.Substring(0, emailLower.LastIndexOf('@'));
                     return localLower == localPart || localLower.StartsWith(localPart + "+");
                 })
-                .Select(u => new LinkedUserInfo
-                {
-                    Id = u.Id,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    DashboardType = u.AthleteProfile != null ? "atleta"
-                        : u.CoachProfile != null ? "treinador"
-                        : u.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
-                        : "user"
+                .Select(u => {
+                    var isSocio = u.AthleteProfile != null || u.MemberProfile != null || u.UserRoles.Any(ur => ur.Role.Name == "Socio");
+                    return new LinkedUserInfo
+                    {
+                        Id = u.Id,
+                        FirstName = u.FirstName,
+                        LastName = u.LastName,
+                        DashboardType = u.AthleteProfile != null ? "atleta"
+                            : u.CoachProfile != null ? "treinador"
+                            : u.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
+                            : "user",
+                        IsSocio = isSocio
+                    };
                 })
                 .ToList();
         }
@@ -128,9 +133,11 @@ public class AuthService : IAuthService
             .Where(l => l.UserId == user.Id || l.LinkedUserId == user.Id)
             .Include(l => l.User).ThenInclude(u => u.AthleteProfile)
             .Include(l => l.User).ThenInclude(u => u.CoachProfile)
+            .Include(l => l.User).ThenInclude(u => u.MemberProfile)
             .Include(l => l.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
             .Include(l => l.LinkedUser).ThenInclude(u => u.AthleteProfile)
             .Include(l => l.LinkedUser).ThenInclude(u => u.CoachProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.MemberProfile)
             .Include(l => l.LinkedUser).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
             .ToListAsync();
 
@@ -152,6 +159,7 @@ public class AuthService : IAuthService
                     : other.CoachProfile != null ? "treinador"
                     : other.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
                     : "user",
+                IsSocio = other.AthleteProfile != null || other.MemberProfile != null || other.UserRoles.Any(ur => ur.Role.Name == "Socio"),
                 Relationship = link.Relationship
             });
         }

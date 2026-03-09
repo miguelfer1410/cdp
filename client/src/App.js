@@ -21,6 +21,7 @@ import DashboardAtleta from './pages/dashboards/DashboardAtleta';
 import DashboardTreinador from './pages/dashboards/DashboardTreinador';
 import AtivarConta from './pages/auth/AtivarConta';
 import VerificationPage from './pages/VerificationPage';
+import Bilheteria from './pages/Bilheteria';
 
 function AppContent() {
   const location = useLocation();
@@ -56,6 +57,7 @@ function AppContent() {
           <Route path="/modalidades" element={<Modalidades />} />
           <Route path="/noticias" element={<Noticias />} />
           <Route path="/noticias/:slug" element={<NoticiaDetalhe />} />
+          <Route path="/bilheteria" element={<Bilheteria />} />
           <Route path="/contactos" element={<Contactos />} />
           <Route path="/ativar-conta" element={<AtivarConta />} />
           <Route path="/verify/:id" element={<VerificationPage />} />

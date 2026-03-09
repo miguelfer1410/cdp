@@ -1,29 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-    Chart as ChartJS,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-} from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
+    PieChart, Pie, Cell,
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import { FaUsers, FaShieldAlt, FaTrophy, FaUserTie } from 'react-icons/fa';
 import FinancialAnalytics from './FinancialAnalytics';
 import './ClubAnalytics.css';
-
-ChartJS.register(
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title
-);
 
 const ClubAnalytics = () => {
     const [activeTab, setActiveTab] = useState('club');
@@ -146,84 +129,47 @@ const ClubAnalytics = () => {
         }
     };
 
-    // Chart Data Configurations
-    const athletesPerSportCharts = {
-        labels: data.athletesPerSport.map(s => s.sportName),
-        datasets: [{
-            data: data.athletesPerSport.map(s => s.count),
-            backgroundColor: COLORS,
-            borderWidth: 0,
-            hoverOffset: 20
-        }]
-    };
+    // Chart Data Configurations for Recharts
+    const athletesPerSportCharts = data.athletesPerSport.map(s => ({
+        name: s.sportName,
+        value: s.count
+    }));
 
-    const ageGroupChart = {
-        labels: ['Menores (<18)', 'Adultos (>=18)'],
-        datasets: [{
-            data: [data.ageGroups.minors, data.ageGroups.adults],
-            backgroundColor: ['#ff7e5f', '#1e3c72'],
-            borderWidth: 0,
-            hoverOffset: 15
-        }]
-    };
+    const ageGroupChart = [
+        { name: 'Menores (<18)', value: data.ageGroups.minors },
+        { name: 'Adultos (>=18)', value: data.ageGroups.adults }
+    ];
 
-    const genderChart = {
-        labels: data.genderDistribution.map(g => g.gender === 'Male' ? 'Masculino' : g.gender === 'Female' ? 'Feminino' : 'Misto'),
-        datasets: [{
-            data: data.genderDistribution.map(g => g.count),
-            backgroundColor: ['#1e3c72', '#ff7e5f', '#43e97b'],
-            borderWidth: 0,
-            hoverOffset: 15
-        }]
-    };
+    const genderChart = data.genderDistribution.map(g => ({
+        name: g.gender === 'Male' ? 'Masculino' : g.gender === 'Female' ? 'Feminino' : 'Misto',
+        value: g.count
+    }));
 
-    const userTypologyChart = {
-        labels: ['Sócios', 'Registados (Não Sócios)'],
-        datasets: [{
-            data: [data.overview.totalMembers, data.overview.registeredNotMembers],
-            backgroundColor: ['#6a11cb', '#feb47b'],
-            borderWidth: 0,
-            hoverOffset: 15
-        }]
-    };
+    const userTypologyChart = [
+        { name: 'Sócios', value: data.overview.totalMembers },
+        { name: 'Registados (Não Sócios)', value: data.overview.registeredNotMembers }
+    ];
 
-    const coachesPerSportChart = {
-        labels: data.coachesPerSport.map(s => s.sportName),
-        datasets: [{
-            label: 'Número de Treinadores',
-            data: data.coachesPerSport.map(s => s.count),
-            backgroundColor: 'rgba(30, 60, 114, 0.8)',
-            borderRadius: 8,
-            borderSkipped: false,
-            barThickness: 40
-        }]
-    };
+    const coachesPerSportChart = data.coachesPerSport.map(s => ({
+        name: s.sportName,
+        count: s.count
+    }));
 
-    const teamsChartData = {
-        labels: filteredTeams.map(t => t.teamName),
-        datasets: [{
-            label: 'Número de Atletas',
-            data: filteredTeams.map(t => t.count),
-            backgroundColor: 'rgba(37, 117, 252, 0.8)',
-            borderRadius: 8,
-            borderSkipped: false,
-            barThickness: 30
-        }]
-    };
+    const teamsChartData = filteredTeams.map(t => ({
+        name: t.teamName,
+        count: t.count
+    }));
 
-    const teamBarOptions = {
-        ...barOptions,
-        indexAxis: 'y', // Horizontal bars
-        scales: {
-            ...barOptions.scales,
-            y: {
-                ...barOptions.scales.y,
-                ticks: {
-                    ...barOptions.scales.y.ticks,
-                    autoSkip: false // Show all labels
-                }
-            }
+    // Custom Tooltip for Recharts PieCharts
+    const CustomPieTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div style={{ backgroundColor: '#fff', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}>
+                    <p style={{ margin: 0 }}>{`${payload[0].name} : ${payload[0].value}`}</p>
+                </div>
+            );
         }
+        return null;
     };
 
     // Dynamic height calculation for teams chart
@@ -254,28 +200,28 @@ const ClubAnalytics = () => {
             {activeTab === 'club' ? (
                 <>
                     <div className="analytics-overview-grid">
-                        <div className="analytics-stat-card">
+                        <div className="analytics-stat-card" style={{ animationDelay: '100ms' }}>
                             <div className="analytics-stat-icon athletes"><FaUsers /></div>
                             <div className="analytics-stat-info">
                                 <h3>Total Atletas</h3>
                                 <p className="analytics-stat-number">{data.overview.totalAthletes}</p>
                             </div>
                         </div>
-                        <div className="analytics-stat-card">
+                        <div className="analytics-stat-card" style={{ animationDelay: '200ms' }}>
                             <div className="analytics-stat-icon teams"><FaShieldAlt /></div>
                             <div className="analytics-stat-info">
                                 <h3>Equipas Ativas</h3>
                                 <p className="analytics-stat-number">{data.overview.totalTeams}</p>
                             </div>
                         </div>
-                        <div className="analytics-stat-card">
+                        <div className="analytics-stat-card" style={{ animationDelay: '300ms' }}>
                             <div className="analytics-stat-icon sports"><FaTrophy /></div>
                             <div className="analytics-stat-info">
                                 <h3>Modalidades</h3>
                                 <p className="analytics-stat-number">{data.overview.totalSports}</p>
                             </div>
                         </div>
-                        <div className="analytics-stat-card">
+                        <div className="analytics-stat-card" style={{ animationDelay: '400ms' }}>
                             <div className="analytics-stat-icon coaches"><FaUserTie /></div>
                             <div className="analytics-stat-info">
                                 <h3>Treinadores</h3>
@@ -285,37 +231,123 @@ const ClubAnalytics = () => {
                     </div>
 
                     <div className="charts-grid">
-                        <div className="chart-item">
+                        <div className="chart-item" style={{ animationDelay: '500ms' }}>
                             <h3>Atletas por Modalidade</h3>
                             <div className="chart-wrapper">
-                                <Pie data={athletesPerSportCharts} options={chartOptions} />
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={athletesPerSportCharts}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                            isAnimationActive={true}
+                                            animationBegin={500}
+                                            animationDuration={1500}
+                                        >
+                                            {athletesPerSportCharts.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip content={<CustomPieTooltip />} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="chart-item">
+                        <div className="chart-item" style={{ animationDelay: '600ms' }}>
                             <h3>Distribuição por Idade</h3>
                             <div className="chart-wrapper">
-                                <Pie data={ageGroupChart} options={chartOptions} />
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={ageGroupChart}
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={90}
+                                            dataKey="value"
+                                            isAnimationActive={true}
+                                            animationBegin={600}
+                                            animationDuration={1500}
+                                        >
+                                            <Cell fill="#ff7e5f" />
+                                            <Cell fill="#1e3c72" />
+                                        </Pie>
+                                        <Tooltip content={<CustomPieTooltip />} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="chart-item">
+                        <div className="chart-item" style={{ animationDelay: '700ms' }}>
                             <h3>Divisões (Género)</h3>
                             <div className="chart-wrapper">
-                                <Pie data={genderChart} options={chartOptions} />
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={genderChart}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={50}
+                                            outerRadius={90}
+                                            dataKey="value"
+                                            isAnimationActive={true}
+                                            animationBegin={700}
+                                            animationDuration={1500}
+                                        >
+                                            <Cell fill="#1e3c72" />
+                                            <Cell fill="#ff7e5f" />
+                                            <Cell fill="#43e97b" />
+                                        </Pie>
+                                        <Tooltip content={<CustomPieTooltip />} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="chart-item">
+                        <div className="chart-item" style={{ animationDelay: '800ms' }}>
                             <h3>Tipologia de Utilizadores</h3>
                             <div className="chart-wrapper">
-                                <Pie data={userTypologyChart} options={chartOptions} />
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie
+                                            data={userTypologyChart}
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={90}
+                                            dataKey="value"
+                                            isAnimationActive={true}
+                                            animationBegin={800}
+                                            animationDuration={1500}
+                                        >
+                                            <Cell fill="#6a11cb" />
+                                            <Cell fill="#feb47b" />
+                                        </Pie>
+                                        <Tooltip content={<CustomPieTooltip />} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="chart-item full-width">
+                        <div className="chart-item full-width" style={{ animationDelay: '900ms' }}>
                             <h3>Treinadores por Modalidade</h3>
                             <div className="chart-wrapper bar">
-                                <Bar data={coachesPerSportChart} options={barOptions} />
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <BarChart data={coachesPerSportChart} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                                        <Legend />
+                                        <Bar dataKey="count" name="Número de Treinadores" fill="rgba(30, 60, 114, 0.8)" radius={[8, 8, 0, 0]} barSize={40} isAnimationActive={true} animationBegin={900} animationDuration={1500} />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="chart-item full-width">
+                        <div className="chart-item full-width" style={{ animationDelay: '1000ms' }}>
                             <div className="chart-header-with-filters">
                                 <h3>Equipas por N.º de Atletas</h3>
                                 <div className="chart-filters">
@@ -338,9 +370,18 @@ const ClubAnalytics = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="chart-wrapper bar teams-flexible-chart" style={{ height: teamChartHeight }}>
+                            <div className="chart-wrapper bar teams-flexible-chart" style={{ height: teamChartHeight, minHeight: '400px' }}>
                                 {filteredTeams.length > 0 ? (
-                                    <Bar data={teamsChartData} options={teamBarOptions} />
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={teamsChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                            <XAxis type="number" />
+                                            <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 12 }} />
+                                            <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                                            <Legend />
+                                            <Bar dataKey="count" name="Número de Atletas" fill="rgba(37, 117, 252, 0.8)" radius={[0, 8, 8, 0]} barSize={30} isAnimationActive={true} animationBegin={1000} animationDuration={1500} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
                                 ) : (
                                     <div className="no-data-msg">Nenhuma equipa encontrada com estes filtros.</div>
                                 )}

@@ -31,6 +31,8 @@ import FamilyAssociationModal from '../../components/FamilyAssociationModal/Fami
 import DocumentsModal from '../../components/DocumentsModal/DocumentsModal';
 import MembershipCard from '../../components/MembershipCard/MembershipCard';
 import './DashboardSocio.css';
+import PaymentHistorySocio from '../../components/PaymentHistorySocio/PaymentHistorySocio';
+
 
 const DashboardSocio = () => {
     const navigate = useNavigate();
@@ -45,6 +47,8 @@ const DashboardSocio = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
 
     // Linked profiles (accounts sharing the same base email)
     const [linkedUsers] = useState(() => {
@@ -271,7 +275,7 @@ const DashboardSocio = () => {
 
     const memberData = {
         name: `${userData.firstName} ${userData.lastName}`,
-        memberNumber: userData.id.toString().padStart(4, '0'),
+        memberNumber: userData.memberProfile?.membershipNumber || userData.id.toString().padStart(4, '0'),
         memberSince: memberSinceYear.toString(),
         registrationDate: formattedDate,
         yearsAsMember: yearsAsMember,
@@ -447,9 +451,9 @@ const DashboardSocio = () => {
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><FaCreditCard /> Estado de Pagamento</h2>
-                                    <Link to="#" className="view-all-link">
+                                    <button className="view-all-link" onClick={() => setIsHistoryModalOpen(true)}>
                                         Ver Histórico <FaArrowRight />
-                                    </Link>
+                                    </button>
                                 </div>
 
                                 <div className="payment-summary">
@@ -775,6 +779,12 @@ const DashboardSocio = () => {
                 isOpen={isDocumentsModalOpen}
                 onClose={() => setIsDocumentsModalOpen(false)}
                 userId={currentUserId}
+            />
+            <PaymentHistorySocio
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                userId={currentUserId}
+                overdueMonths={overdueMonths}
             />
         </div>
     );

@@ -19,5 +19,6 @@ public class LinkedUserInfo
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string DashboardType { get; set; } = string.Empty; // "atleta", "treinador", "socio", "user"
+    public bool IsSocio { get; set; }
     public string? Relationship { get; set; }
 }

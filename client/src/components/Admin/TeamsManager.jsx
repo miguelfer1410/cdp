@@ -1,8 +1,59 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown, FaUserCheck, FaUserPlus } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaUsers, FaSearch, FaTimes, FaSort, FaSortUp, FaSortDown, FaUserCheck, FaUserPlus, FaForward, FaChevronDown, FaHistory } from 'react-icons/fa';
 import './TeamsManager.css';
 
-/* ── Searchable Escalão Combobox ─────────────────────────────── */
+/* ── Sport Emoji Helper ──────────────────────────────────── */
+const getSportEmoji = (sportName) => {
+    const name = (sportName || '').toLowerCase();
+    if (name.includes('atletism') || name.includes('atletica')) return '🏃';
+    if (name.includes('badminton')) return '🏸';
+    if (name.includes('basquet') || name.includes('basket')) return '🏀';
+    if (name.includes('futvolei') || name.includes('footvolley') || name.includes('futvolley')) return '🏖️';
+    if (name.includes('futsal')) return '⚽';
+    if (name.includes('hóquei') || name.includes('hockey') || name.includes('patins')) return '🛼';
+    if (name.includes('tenis') || name.includes('ténis') || name.includes('mesa')) return '🏓';
+    if (name.includes('volei') || name.includes('volley')) return '🏐';
+    return '🏆';
+};
+
+/* ── Team Card ───────────────────────────────────────────── */
+const TeamCard = ({ team, onView, onEdit, onDelete, onAdvance, getGenderBadgeClass, getGenderLabel }) => (
+    <div className="team-card">
+        <div className="team-card-body">
+            <h3 className="team-card-name">{team.name}</h3>
+            <div className="team-card-badges">
+                {team.category && (
+                    <span className="team-card-escalao-badge">{team.category}</span>
+                )}
+                <span className={`gender-badge ${getGenderBadgeClass(team.gender)}`}>
+                    {getGenderLabel(team.gender)}
+                </span>
+            </div>
+        </div>
+        <div className="team-card-footer">
+            <span className="team-card-athletes">
+                <FaUsers />
+                <span>{team.athleteCount ?? '—'} atletas</span>
+            </span>
+            <div className="team-card-actions">
+                <button className="teams-action-btn next-season" onClick={() => onAdvance(team)} title="Avançar Época">
+                    <FaForward />
+                </button>
+                <button className="teams-action-btn view" onClick={() => onView(team.id)} title="Ver equipa">
+                    <FaUsers />
+                </button>
+                <button className="teams-action-btn edit" onClick={() => onEdit(team)} title="Editar">
+                    <FaEdit />
+                </button>
+                <button className="teams-action-btn delete" onClick={() => onDelete(team.id)} title="Eliminar">
+                    <FaTrash />
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
+/* ── Searchable Escalão Combobox ─────────────────────────── */
 const EscalaoSearchSelect = ({ escalaos, value, onChange }) => {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
@@ -10,14 +61,10 @@ const EscalaoSearchSelect = ({ escalaos, value, onChange }) => {
 
     const selected = escalaos.find(e => String(e.id) === String(value));
 
-    // Keep the text input in sync when the modal opens/resets
     useEffect(() => {
-        if (!open) {
-            setQuery(selected ? selected.name : '');
-        }
+        if (!open) setQuery(selected ? selected.name : '');
     }, [value, open]);
 
-    // Close on outside click
     useEffect(() => {
         const handler = (e) => {
             if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -51,15 +98,8 @@ const EscalaoSearchSelect = ({ escalaos, value, onChange }) => {
                     onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
                     autoComplete="off"
                 />
-                {(value) && (
-                    <button
-                        type="button"
-                        className="escalao-combobox-clear"
-                        onClick={() => handleSelect(null)}
-                        title="Limpar"
-                    >
-                        ×
-                    </button>
+                {value && (
+                    <button type="button" className="escalao-combobox-clear" onClick={() => handleSelect(null)} title="Limpar">×</button>
                 )}
             </div>
             {open && (
@@ -88,6 +128,7 @@ const EscalaoSearchSelect = ({ escalaos, value, onChange }) => {
     );
 };
 
+/* ── Main Component ──────────────────────────────────────── */
 const TeamsManager = () => {
     const [teams, setTeams] = useState([]);
     const [sports, setSports] = useState([]);
@@ -104,16 +145,19 @@ const TeamsManager = () => {
     const [athletesLoading, setAthletesLoading] = useState(false);
     const [athleteSearch, setAthleteSearch] = useState('');
     const [selectedSportFilter, setSelectedSportFilter] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+    const [expandedSportHistory, setExpandedSportHistory] = useState({});
+    const [expandedHistorySeasons, setExpandedHistorySeasons] = useState({});
+
     const initialFormState = {
         sportId: '',
         name: '',
         escalaoId: '',
-        gender: 2, // Mixed/Misto
+        gender: 2,
         season: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
         isActive: true
     };
     const [formData, setFormData] = useState(initialFormState);
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
     const getEmailBase = (email) => {
         if (!email) return '';
@@ -133,11 +177,8 @@ const TeamsManager = () => {
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:5285/api/teams/all', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setTeams(data);
@@ -153,11 +194,8 @@ const TeamsManager = () => {
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:5285/api/sports/all', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setSports(data.filter(s => s.isActive));
@@ -186,11 +224,8 @@ const TeamsManager = () => {
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`http://localhost:5285/api/teams/${teamId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setViewingTeam(data);
@@ -207,11 +242,8 @@ const TeamsManager = () => {
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:5285/api/users?profileType=athlete&isActive=true&pageSize=1000', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setAvailableAthletes(Array.isArray(data) ? data : (data.items ?? []));
@@ -226,30 +258,22 @@ const TeamsManager = () => {
     const generateTeamName = (data) => {
         const sport = sports.find(s => s.id === parseInt(data.sportId));
         const escalao = escalaos.find(e => e.id === parseInt(data.escalaoId));
-
         if (!sport) return data.name;
-
         let name = sport.name;
-        if (escalao) {
-            name += ` ${escalao.name}`;
-        }
-
+        if (escalao) name += ` ${escalao.name}`;
         if (parseInt(data.gender) === 0) name += ' (masculino)';
-        if (parseInt(data.gender) === 1) name += ' (feminino)';
-        if (parseInt(data.gender) === 2) name += ' (mista)';
-
+        if (parseInt(data.gender) === 1) name += ' (masculino)';
+        if (parseInt(data.gender) === 2) name += ' (feminino)';
+        if (parseInt(data.gender) === 3) name += ' (mista)';
         return name;
     };
 
     const updateFormField = (field, value) => {
         setFormData(prev => {
             const updated = { ...prev, [field]: value };
-
-            // If sport or category changes, regenerate the suggested name
             if (field === 'sportId' || field === 'escalaoId' || field === 'gender') {
                 updated.name = generateTeamName(updated);
             }
-
             return updated;
         });
     };
@@ -257,7 +281,6 @@ const TeamsManager = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
-
         const token = localStorage.getItem('token');
         const dataToSend = {
             sportId: parseInt(formData.sportId),
@@ -267,21 +290,15 @@ const TeamsManager = () => {
             season: formData.season || null,
             isActive: formData.isActive
         };
-
         try {
             const url = editingTeam
                 ? `http://localhost:5285/api/teams/${editingTeam.id}`
                 : 'http://localhost:5285/api/teams';
-
             const response = await fetch(url, {
                 method: editingTeam ? 'PUT' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(dataToSend)
             });
-
             if (response.ok) {
                 await fetchTeams();
                 setShowModal(false);
@@ -300,22 +317,15 @@ const TeamsManager = () => {
     };
 
     const handleRemoveAthlete = async (athleteProfileId) => {
-        if (!window.confirm('Tem a certeza que deseja remover este atleta da equipa?')) {
-            return;
-        }
-
+        if (!window.confirm('Tem a certeza que deseja remover este atleta da equipa?')) return;
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`http://localhost:5285/api/teams/${viewingTeam.id}/athletes/${athleteProfileId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
                 alert('Atleta removido com sucesso!');
-                // Refresh team details
                 await fetchTeamDetails(viewingTeam.id);
             } else {
                 const error = await response.json();
@@ -327,20 +337,35 @@ const TeamsManager = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Tem a certeza que deseja eliminar esta equipa?')) {
-            return;
+    const handleAdvanceSeason = async (team) => {
+        if (!window.confirm(`Deseja avançar a equipa "${team.name}" para a época seguinte? Isso criará uma nova equipa salvando a anterior.`)) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5285/api/teams/${team.id}/advance`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                alert('Equipa avançada com sucesso para a próxima época!');
+                await fetchTeams();
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Erro ao avançar época');
+            }
+        } catch (error) {
+            console.error('Error advancing season:', error);
+            alert('Erro ao avançar época');
         }
+    };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm('Tem a certeza que deseja eliminar esta equipa?')) return;
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`http://localhost:5285/api/teams/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
                 await fetchTeams();
                 alert('Equipa eliminada com sucesso!');
@@ -353,8 +378,12 @@ const TeamsManager = () => {
         }
     };
 
-    const openAddModal = () => {
-        resetForm();
+    const openAddModal = (sportId = null) => {
+        setEditingTeam(null);
+        setFormData({
+            ...initialFormState,
+            sportId: sportId ? String(sportId) : ''
+        });
         setShowModal(true);
     };
 
@@ -395,14 +424,11 @@ const TeamsManager = () => {
         }
     };
 
-    // Filter athletes based on unified search
     const filteredAthletes = useMemo(() => {
         const term = athleteSearch.toLowerCase().trim();
         return availableAthletes.filter(athlete => {
-            // Exclude athletes already in the team
             const isInTeam = viewingTeam?.athletes?.some(a => a.userId === athlete.id);
             if (isInTeam) return false;
-
             if (!term) return true;
             return (
                 athlete.fullName.toLowerCase().includes(term) ||
@@ -412,7 +438,6 @@ const TeamsManager = () => {
         });
     }, [availableAthletes, athleteSearch, viewingTeam]);
 
-    // Athletes already in team (for info display)
     const athletesAlreadyInTeam = useMemo(() => {
         if (!athleteSearch.trim()) return [];
         const term = athleteSearch.toLowerCase().trim();
@@ -437,10 +462,7 @@ const TeamsManager = () => {
 
     const handleSelectAllFiltered = () => {
         const filteredIds = filteredAthletes.map(a => a.athleteProfileId);
-        setSelectedAthletes(prev => {
-            const newSelection = [...new Set([...prev, ...filteredIds])];
-            return newSelection;
-        });
+        setSelectedAthletes(prev => [...new Set([...prev, ...filteredIds])]);
     };
 
     const handleDeselectAllFiltered = () => {
@@ -455,24 +477,18 @@ const TeamsManager = () => {
             alert('Por favor, selecione pelo menos um atleta.');
             return;
         }
-
         setSubmitting(true);
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`http://localhost:5285/api/teams/${viewingTeam.id}/athletes`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ athleteProfileIds: selectedAthletes })
             });
-
             if (response.ok) {
                 alert('Atletas adicionados com sucesso!');
                 setSelectedAthletes([]);
                 setAddingAthletes(false);
-                // Reload team details
                 await fetchTeamDetails(viewingTeam.id);
             } else {
                 const error = await response.json();
@@ -486,48 +502,11 @@ const TeamsManager = () => {
         }
     };
 
-    const clearSearchFilters = () => {
-        setAthleteSearch('');
-    };
-
     const handleSort = (key) => {
         let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
         setSortConfig({ key, direction });
     };
-
-    const sortedTeams = useMemo(() => {
-        let sortableTeams = [...teams];
-
-        // Apply sport filter
-        if (selectedSportFilter) {
-            sortableTeams = sortableTeams.filter(team => team.sportId === parseInt(selectedSportFilter));
-        }
-
-        if (sortConfig.key !== null) {
-            sortableTeams.sort((a, b) => {
-                let aValue = a[sortConfig.key];
-                let bValue = b[sortConfig.key];
-
-                // Special handling for gender to sort by text label
-                if (sortConfig.key === 'gender') {
-                    aValue = getGenderLabel(a.gender);
-                    bValue = getGenderLabel(b.gender);
-                }
-
-                // Convert null/undefined to empty string for comparison
-                aValue = aValue ? aValue.toString().toLowerCase() : '';
-                bValue = bValue ? bValue.toString().toLowerCase() : '';
-
-                if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-                if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-                return 0;
-            });
-        }
-        return sortableTeams;
-    }, [teams, sortConfig, selectedSportFilter]);
 
     const getSortIcon = (name) => {
         if (sortConfig.key !== name) return <FaSort className="sort-icon" />;
@@ -535,7 +514,77 @@ const TeamsManager = () => {
         return <FaSortDown className="sort-icon active" />;
     };
 
+    const toggleSportHistory = (sportId) => {
+        setExpandedSportHistory(prev => ({ ...prev, [sportId]: !prev[sportId] }));
+    };
+
+    const toggleHistorySeason = (sportId, season) => {
+        const key = `${sportId}__${season}`;
+        setExpandedHistorySeasons(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    /* ── teamsBySport: main data structure ── */
+    const teamsBySport = useMemo(() => {
+        let filtered = [...teams];
+        if (selectedSportFilter) {
+            filtered = filtered.filter(t => t.sportId === parseInt(selectedSportFilter));
+        }
+
+        if (sortConfig.key) {
+            filtered.sort((a, b) => {
+                let aVal = sortConfig.key === 'gender' ? getGenderLabel(a.gender) : a[sortConfig.key];
+                let bVal = sortConfig.key === 'gender' ? getGenderLabel(b.gender) : b[sortConfig.key];
+                aVal = (aVal || '').toString().toLowerCase();
+                bVal = (bVal || '').toString().toLowerCase();
+                if (aVal < bVal) return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (aVal > bVal) return sortConfig.direction === 'ascending' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        const sportMap = {};
+        filtered.forEach(team => {
+            if (!sportMap[team.sportId]) {
+                sportMap[team.sportId] = {
+                    sport: { id: team.sportId, name: team.sportName },
+                    seasonMap: {}
+                };
+            }
+            const season = team.season || 'Sem Época';
+            if (!sportMap[team.sportId].seasonMap[season]) {
+                sportMap[team.sportId].seasonMap[season] = [];
+            }
+            sportMap[team.sportId].seasonMap[season].push(team);
+        });
+
+        return Object.values(sportMap).map(entry => {
+            const sortedSeasons = Object.keys(entry.seasonMap).sort((a, b) => b.localeCompare(a));
+            const currentSeasonKey = sortedSeasons[0] || null;
+            return {
+                sport: entry.sport,
+                currentSeasonKey,
+                currentTeams: currentSeasonKey ? entry.seasonMap[currentSeasonKey] : [],
+                historySeasons: sortedSeasons.slice(1).map(s => ({ season: s, teams: entry.seasonMap[s] })),
+                totalTeams: Object.values(entry.seasonMap).flat().length
+            };
+        }).sort((a, b) => a.sport.name.localeCompare(b.sport.name, 'pt'));
+    }, [teams, selectedSportFilter, sortConfig]);
+
+    const seasonOptions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let i = currentYear - 5; i <= currentYear + 10; i++) {
+            years.push(`${i}/${i + 1}`);
+        }
+        return years;
+    }, []);
+
     const hasActiveFilters = athleteSearch.trim() !== '';
+
+    const sportsWithTeams = useMemo(() =>
+        sports.filter(s => teams.some(t => t.sportId === s.id)),
+        [sports, teams]
+    );
 
     if (loading) {
         return (
@@ -550,154 +599,203 @@ const TeamsManager = () => {
 
     return (
         <div className="teams-manager">
+
+            {/* ── Header ── */}
             <div className="teams-manager-header">
                 <div className="header-content">
                     <h1>Gestão de Equipas</h1>
                     <p className="header-subtitle">
-                        {sortedTeams.length} {sortedTeams.length === 1 ? 'equipa' : 'equipas'} {selectedSportFilter ? 'encontrada' : 'registada'}{sortedTeams.length !== 1 ? 's' : ''}
+                        {teams.length} {teams.length === 1 ? 'equipa' : 'equipas'} em {sportsWithTeams.length} {sportsWithTeams.length === 1 ? 'modalidade' : 'modalidades'}
                     </p>
                 </div>
-                <button className="teams-btn-add" onClick={openAddModal}>
+                <button className="teams-btn-add" onClick={() => openAddModal()}>
                     <FaPlus /> Nova Equipa
                 </button>
             </div>
 
-            {/* Sport Filter */}
+            {/* ── Sport Pills Navigation ── */}
             {teams.length > 0 && (
-                <div className="teams-filter-section">
-                    <div className="teams-filter-group">
-                        <label className="teams-filter-label">Filtrar por Modalidade:</label>
-                        <select
-                            className="teams-filter-select"
-                            value={selectedSportFilter}
-                            onChange={(e) => setSelectedSportFilter(e.target.value)}
-                        >
-                            <option value="">Todas as Modalidades</option>
-                            {sports.map(sport => (
-                                <option key={sport.id} value={sport.id}>
-                                    {sport.name}
-                                </option>
-                            ))}
-                        </select>
-                        {selectedSportFilter && (
+                <div className="sport-pills-nav">
+                    <button
+                        className={`sport-pill ${!selectedSportFilter ? 'active' : ''}`}
+                        onClick={() => setSelectedSportFilter('')}
+                    >
+                        Todas
+                        <span className="sport-pill-count">{teams.length}</span>
+                    </button>
+                    {sportsWithTeams.map(sport => {
+                        const count = teams.filter(t => t.sportId === sport.id).length;
+                        return (
                             <button
-                                className="teams-clear-filter-btn"
-                                onClick={() => setSelectedSportFilter('')}
-                                title="Limpar filtro"
+                                key={sport.id}
+                                className={`sport-pill ${parseInt(selectedSportFilter) === sport.id ? 'active' : ''}`}
+                                onClick={() => setSelectedSportFilter(parseInt(selectedSportFilter) === sport.id ? '' : sport.id)}
                             >
-                                <FaTimes /> Limpar
+                                <span className="sport-pill-emoji">{getSportEmoji(sport.name)}</span>
+                                {sport.name}
+                                <span className="sport-pill-count">{count}</span>
                             </button>
-                        )}
-                    </div>
+                        );
+                    })}
                 </div>
             )}
 
+            {/* ── Empty State ── */}
             {teams.length === 0 ? (
                 <div className="teams-empty-state">
                     <div className="teams-empty-icon">🏆</div>
                     <h3>Nenhuma equipa registada</h3>
                     <p>Comece por criar a primeira equipa</p>
-                    <button className="teams-btn-add" onClick={openAddModal}>
+                    <button className="teams-btn-add" onClick={() => openAddModal()}>
                         <FaPlus /> Criar Primeira Equipa
                     </button>
                 </div>
+            ) : teamsBySport.length === 0 ? (
+                <div className="teams-empty-state">
+                    <div className="teams-empty-icon">🔍</div>
+                    <h3>Sem equipas para esta modalidade</h3>
+                    <p>Experimente selecionar outra modalidade</p>
+                </div>
             ) : (
-                <div className="teams-table-container">
-                    <table className="teams-table">
-                        <thead>
-                            <tr>
-                                <th onClick={() => handleSort('name')} className="sortable-header">
-                                    Nome {getSortIcon('name')}
-                                </th>
-                                <th onClick={() => handleSort('sportName')} className="sortable-header">
-                                    Modalidade {getSortIcon('sportName')}
-                                </th>
-                                <th onClick={() => handleSort('category')} className="sortable-header">
-                                    Escalão {getSortIcon('category')}
-                                </th>
-                                <th onClick={() => handleSort('gender')} className="sortable-header">
-                                    Género {getSortIcon('gender')}
-                                </th>
-                                <th onClick={() => handleSort('season')} className="sortable-header">
-                                    Época {getSortIcon('season')}
-                                </th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sortedTeams.map(team => (
-                                <tr key={team.id}>
-                                    <td className="team-name" data-label="Nome">{team.name}</td>
-                                    <td data-label="Modalidade">{team.sportName}</td>
-                                    <td data-label="Escalão">{team.category || '-'}</td>
-                                    <td data-label="Género">
-                                        <span className={`gender-badge ${getGenderBadgeClass(team.gender)}`}>
-                                            {getGenderLabel(team.gender)}
-                                        </span>
-                                    </td>
-                                    <td data-label="Época">{team.season || '-'}</td>
-                                    <td>
-                                        <div className="actions-cell">
-                                            <button
-                                                className="action-btn view"
-                                                onClick={() => fetchTeamDetails(team.id)}
-                                                title="Ver detalhes"
-                                            >
-                                                <FaUsers />
-                                            </button>
-                                            <button
-                                                className="action-btn edit"
-                                                onClick={() => openEditModal(team)}
-                                                title="Editar"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                className="action-btn delete"
-                                                onClick={() => handleDelete(team.id)}
-                                                title="Eliminar"
-                                            >
-                                                <FaTrash />
-                                            </button>
+                /* ── Sport Sections ── */
+                <div className="sports-sections-wrapper">
+                    {teamsBySport.map(({ sport, currentSeasonKey, currentTeams, historySeasons, totalTeams }) => (
+                        <div className="sport-section" key={sport.id}>
+
+                            {/* Sport Header */}
+                            <div className="sport-section-header">
+                                <div className="sport-section-title">
+                                    <span className="sport-section-emoji">{getSportEmoji(sport.name)}</span>
+                                    <h2>{sport.name}</h2>
+                                    <span className="sport-total-badge">
+                                        {totalTeams} {totalTeams === 1 ? 'equipa' : 'equipas'}
+                                    </span>
+                                </div>
+                                <button className="sport-add-btn" onClick={() => openAddModal(sport.id)}>
+                                    <FaPlus /> Nova Equipa
+                                </button>
+                            </div>
+
+                            <div className="sport-section-body">
+
+                                {/* Current Season */}
+                                {currentTeams.length > 0 && (
+                                    <div className="current-season-area">
+                                        <div className="season-bar current">
+                                            <span className="current-season-pill">Época Atual</span>
+                                            <span className="season-bar-name">{currentSeasonKey}</span>
+                                            <span className="season-bar-count">{currentTeams.length} {currentTeams.length === 1 ? 'equipa' : 'equipas'}</span>
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        <div className="teams-card-grid">
+                                            {currentTeams.map(team => (
+                                                <TeamCard
+                                                    key={team.id}
+                                                    team={team}
+                                                    onView={fetchTeamDetails}
+                                                    onEdit={openEditModal}
+                                                    onDelete={handleDelete}
+                                                    onAdvance={handleAdvanceSeason}
+                                                    getGenderBadgeClass={getGenderBadgeClass}
+                                                    getGenderLabel={getGenderLabel}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* No current season teams */}
+                                {currentTeams.length === 0 && historySeasons.length > 0 && (
+                                    <div className="no-current-season">
+                                        <span>Sem equipas na época atual</span>
+                                    </div>
+                                )}
+
+                                {/* History */}
+                                {historySeasons.length > 0 && (
+                                    <div className="sport-history-container">
+                                        <button
+                                            className={`sport-history-toggle ${expandedSportHistory[sport.id] ? 'open' : ''}`}
+                                            onClick={() => toggleSportHistory(sport.id)}
+                                        >
+                                            <FaHistory className="history-toggle-icon" />
+                                            <span>Histórico</span>
+                                            <span className="history-toggle-meta">
+                                                {historySeasons.reduce((sum, s) => sum + s.teams.length, 0)} {historySeasons.reduce((sum, s) => sum + s.teams.length, 0) === 1 ? 'equipa' : 'equipas'} · {historySeasons.length} {historySeasons.length === 1 ? 'época' : 'épocas'}
+                                            </span>
+                                            <FaChevronDown className={`history-toggle-chevron ${expandedSportHistory[sport.id] ? 'rotated' : ''}`} />
+                                        </button>
+
+                                        {expandedSportHistory[sport.id] && (
+                                            <div className="sport-history-content">
+                                                {historySeasons.map(({ season, teams: seasonTeams }) => {
+                                                    const key = `${sport.id}__${season}`;
+                                                    const isOpen = expandedHistorySeasons[key];
+                                                    return (
+                                                        <div key={season} className={`history-season-item ${isOpen ? 'open' : ''}`}>
+                                                            <div
+                                                                className="history-season-header"
+                                                                onClick={() => toggleHistorySeason(sport.id, season)}
+                                                            >
+                                                                <FaChevronDown className={`history-season-chevron ${isOpen ? 'rotated' : ''}`} />
+                                                                <span className="history-season-year">{season}</span>
+                                                                <span className="history-season-count">
+                                                                    {seasonTeams.length} {seasonTeams.length === 1 ? 'equipa' : 'equipas'}
+                                                                </span>
+                                                            </div>
+                                                            {isOpen && (
+                                                                <div className="history-season-table-wrapper">
+                                                                    <TeamsTable
+                                                                        teams={seasonTeams}
+                                                                        onAdvance={handleAdvanceSeason}
+                                                                        onView={fetchTeamDetails}
+                                                                        onEdit={openEditModal}
+                                                                        onDelete={handleDelete}
+                                                                        getSortIcon={getSortIcon}
+                                                                        handleSort={handleSort}
+                                                                        getGenderBadgeClass={getGenderBadgeClass}
+                                                                        getGenderLabel={getGenderLabel}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
-            {/* Create/Edit Team Modal */}
+            {/* ── Create/Edit Team Modal ── */}
             {showModal && (
                 <div className="teams-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
                     <div className="teams-modal" onClick={(e) => e.stopPropagation()}>
                         <div className="teams-modal-header">
                             <h2>{editingTeam ? 'Editar Equipa' : 'Nova Equipa'}</h2>
-                            <button className="teams-modal-close" onClick={() => { setShowModal(false); resetForm(); }}>
-                                ×
-                            </button>
+                            <button className="teams-modal-close" onClick={() => { setShowModal(false); resetForm(); }}>×</button>
                         </div>
 
                         <form onSubmit={handleSubmit} className="teams-modal-form">
-                            <div className="teams-form-section">
-                                <label className="teams-form-label">Modalidade *</label>
-                                <select
-                                    className="teams-form-select"
-                                    value={formData.sportId}
-                                    onChange={(e) => updateFormField('sportId', e.target.value)}
-                                    required
-                                >
-                                    <option value="">Selecione uma modalidade</option>
-                                    {sports.map(sport => (
-                                        <option key={sport.id} value={sport.id}>
-                                            {sport.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
                             <div className="teams-form-row">
+                                <div className="teams-form-section">
+                                    <label className="teams-form-label">Modalidade *</label>
+                                    <select
+                                        className="teams-form-select"
+                                        value={formData.sportId}
+                                        onChange={(e) => updateFormField('sportId', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Selecione a modalidade</option>
+                                        {sports.map(sport => (
+                                            <option key={sport.id} value={sport.id}>{sport.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div className="teams-form-section">
                                     <label className="teams-form-label">Escalão</label>
                                     <EscalaoSearchSelect
@@ -736,15 +834,18 @@ const TeamsManager = () => {
                                 </small>
                             </div>
 
-                            <div className="form-section">
-                                <label className="form-label">Época</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    placeholder="Ex: 2024/2025"
+                            <div className="teams-form-section">
+                                <label className="teams-form-label">Época</label>
+                                <select
+                                    className="teams-form-select scrollable-dropdown"
                                     value={formData.season}
                                     onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                                />
+                                >
+                                    <option value="">Selecione a época</option>
+                                    {seasonOptions.map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="form-section">
@@ -760,11 +861,7 @@ const TeamsManager = () => {
                             </div>
 
                             <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    className="btn-cancel"
-                                    onClick={() => { setShowModal(false); resetForm(); }}
-                                >
+                                <button type="button" className="btn-cancel" onClick={() => { setShowModal(false); resetForm(); }}>
                                     Cancelar
                                 </button>
                                 <button type="submit" className="teams-btn-submit" disabled={submitting}>
@@ -783,7 +880,7 @@ const TeamsManager = () => {
                 </div>
             )}
 
-            {/* Team Details Modal */}
+            {/* ── Team Details Modal ── */}
             {showDetailsModal && viewingTeam && (
                 <div className="teams-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowDetailsModal(false); setViewingTeam(null); setAddingAthletes(false); } }}>
                     <div className="teams-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px' }}>
@@ -836,192 +933,178 @@ const TeamsManager = () => {
                                 {/* Athletes Section */}
                                 <div className="roster-section">
                                     <h3>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <FaPlus style={{ color: '#003380' }} />
-                                            <span>Atletas ({viewingTeam.athletes ? viewingTeam.athletes.length : 0})</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between', width: '100%' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <FaUsers style={{ color: '#003380' }} />
+                                                <span>Atletas</span>
+                                                <span style={{
+                                                    background: '#e3f2fd',
+                                                    color: '#1976d2',
+                                                    borderRadius: '20px',
+                                                    padding: '2px 10px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {viewingTeam.athletes?.length || 0}
+                                                </span>
+                                            </div>
+                                            {!addingAthletes && (
+                                                <button
+                                                    className="btn-submit"
+                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                                                    onClick={() => { setAddingAthletes(true); fetchAvailableAthletes(); }}
+                                                >
+                                                    <FaUserPlus /> Adicionar Atletas
+                                                </button>
+                                            )}
+                                            {addingAthletes && (
+                                                <button
+                                                    className="btn-cancel"
+                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                                                    onClick={() => { setAddingAthletes(false); setSelectedAthletes([]); setAthleteSearch(''); }}
+                                                >
+                                                    <FaTimes /> Cancelar
+                                                </button>
+                                            )}
                                         </div>
-                                        {!addingAthletes && (
-                                            <button
-                                                className="btn-add"
-                                                style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}
-                                                onClick={() => {
-                                                    setAddingAthletes(true);
-                                                    fetchAvailableAthletes();
-                                                    setAthleteSearch('');
-                                                    setSelectedAthletes([]);
-                                                }}
-                                            >
-                                                <FaPlus /> Adicionar Atletas
-                                            </button>
-                                        )}
                                     </h3>
 
                                     {addingAthletes ? (
-                                        <div className="add-athlete-container">
-                                            <div className="add-athlete-header">
-                                                <button className="modal-back-btn" onClick={() => {
-                                                    setAddingAthletes(false);
-                                                    setAthleteSearch('');
-                                                    setSelectedAthletes([]);
-                                                }}>
-                                                    ← Voltar à lista da equipa
-                                                </button>
-                                                <span className="add-athlete-title">
-                                                    <FaUserPlus /> Adicionar Atletas à Equipa
-                                                </span>
-                                            </div>
-
-                                            <div className="add-athlete-layout">
-                                                {/* Left: Search + Results */}
-                                                <div className="add-athlete-search-panel">
-                                                    {/* Unified Search Bar */}
-                                                    <div className="unified-search-bar">
-                                                        <FaSearch className="unified-search-icon" />
-                                                        <input
-                                                            type="text"
-                                                            className="unified-search-input"
-                                                            placeholder="Pesquisar por nome, NIF ou email..."
-                                                            value={athleteSearch}
-                                                            onChange={(e) => setAthleteSearch(e.target.value)}
-                                                            autoFocus
-                                                        />
-                                                        {athleteSearch && (
-                                                            <button className="unified-search-clear" onClick={() => setAthleteSearch('')}>
-                                                                <FaTimes />
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="search-results-bar">
-                                                        <span className="results-count">
-                                                            {athletesLoading ? 'A carregar...' : `${filteredAthletes.length} ${filteredAthletes.length === 1 ? 'atleta disponível' : 'atletas disponíveis'}`}
-                                                        </span>
-                                                        {filteredAthletes.length > 0 && !athletesLoading && (
-                                                            <button
-                                                                className="btn-select-all"
-                                                                onClick={areAllFilteredSelected ? handleDeselectAllFiltered : handleSelectAllFiltered}
-                                                            >
-                                                                {areAllFilteredSelected ? 'Desmarcar Todos' : 'Selecionar Todos'}
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Athletes List */}
-                                                    <div className="athletes-list">
-                                                        {athletesLoading ? (
-                                                            <div className="athletes-loading">
-                                                                <div className="spinner"></div>
-                                                                <p>A carregar atletas...</p>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                {filteredAthletes.map(athlete => {
-                                                                    const isSelected = selectedAthletes.includes(athlete.athleteProfileId);
-                                                                    const initials = athlete.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-                                                                    return (
-                                                                        <div
-                                                                            key={athlete.id}
-                                                                            className={`athlete-item${isSelected ? ' athlete-item--selected' : ''}`}
-                                                                            onClick={() => toggleAthleteSelection(athlete.athleteProfileId)}
-                                                                        >
-                                                                            <div className={`athlete-avatar-sm${isSelected ? ' athlete-avatar-sm--selected' : ''}`}>
-                                                                                {isSelected ? <FaUserCheck /> : initials}
-                                                                            </div>
-                                                                            <div className="athlete-info">
-                                                                                <div className="athlete-name">{athlete.fullName}</div>
-                                                                                <div className="athlete-details">
-                                                                                    {getEmailBase(athlete.email)}
-                                                                                    {athlete.nif && <span className="athlete-nif-tag">NIF: {athlete.nif}</span>}
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className={`athlete-select-indicator${isSelected ? ' athlete-select-indicator--on' : ''}`}>
-                                                                                {isSelected ? <FaTimes /> : <FaPlus />}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-
-                                                                {/* Already in team section */}
-                                                                {athletesAlreadyInTeam.length > 0 && (
-                                                                    <div className="already-in-team-section">
-                                                                        <span className="already-in-team-label">
-                                                                            <FaUserCheck /> Já na equipa
-                                                                        </span>
-                                                                        {athletesAlreadyInTeam.map(athlete => (
-                                                                            <div key={athlete.id} className="athlete-item athlete-item--in-team">
-                                                                                <div className="athlete-avatar-sm athlete-avatar-sm--in-team">
-                                                                                    {athlete.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
-                                                                                </div>
-                                                                                <div className="athlete-info">
-                                                                                    <div className="athlete-name">{athlete.fullName}</div>
-                                                                                    <div className="athlete-details">
-                                                                                        {athlete.email}
-                                                                                        {athlete.nif && <span className="athlete-nif-tag">NIF: {athlete.nif}</span>}
-                                                                                    </div>
-                                                                                </div>
-                                                                                <span className="in-team-badge">Na equipa</span>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-
-                                                                {filteredAthletes.length === 0 && athletesAlreadyInTeam.length === 0 && (
-                                                                    <div className="no-results">
-                                                                        <div className="no-results-icon">🔍</div>
-                                                                        <p>Nenhum atleta encontrado.</p>
-                                                                        {hasActiveFilters && (
-                                                                            <button className="btn-add" onClick={clearSearchFilters}
-                                                                                style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginTop: '0.5rem' }}>
-                                                                                Limpar Pesquisa
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </div>
+                                        <div className="add-athlete-layout">
+                                            {/* Left: search + athlete list */}
+                                            <div className="add-athlete-search-panel">
+                                                <div className="athlete-search-bar-wrap">
+                                                    <FaSearch className="athlete-search-icon" />
+                                                    <input
+                                                        type="text"
+                                                        className="athlete-search-input"
+                                                        placeholder="Pesquisar por nome, NIF ou email..."
+                                                        value={athleteSearch}
+                                                        onChange={(e) => setAthleteSearch(e.target.value)}
+                                                        autoFocus
+                                                    />
+                                                    {athleteSearch && (
+                                                        <button className="athlete-search-clear" onClick={() => setAthleteSearch('')} title="Limpar">
+                                                            <FaTimes />
+                                                        </button>
+                                                    )}
                                                 </div>
 
-                                                {/* Right: Selected Athletes Panel */}
-                                                <div className="add-athlete-selected-panel">
-                                                    <div className="selected-panel-header">
-                                                        <div className="selected-panel-title">
-                                                            <span>Selecionados</span>
-                                                            <span className="selected-panel-count">{selectedAthletes.length}</span>
-                                                        </div>
-                                                        {selectedAthletes.length > 0 && (
-                                                            <button
-                                                                className="btn-submit selected-panel-header-btn"
-                                                                onClick={handleAddAthletes}
-                                                                disabled={submitting}
-                                                            >
-                                                                {submitting ? '...' : <FaUserPlus />}
-                                                                <span>Adicionar</span>
-                                                            </button>
-                                                        )}
+                                                {filteredAthletes.length > 0 && (
+                                                    <div className="athlete-list-controls">
+                                                        <button
+                                                            className="athlete-list-ctrl-btn"
+                                                            onClick={areAllFilteredSelected ? handleDeselectAllFiltered : handleSelectAllFiltered}
+                                                        >
+                                                            {areAllFilteredSelected ? <><FaUserCheck /> Desselecionar todos</> : <><FaUserPlus /> Selecionar todos</>}
+                                                        </button>
+                                                        <span className="athlete-list-count">{filteredAthletes.length} disponíveis</span>
                                                     </div>
-                                                    <div className="selected-panel-list">
-                                                        {selectedAthletes.length === 0 ? (
-                                                            <div className="selected-panel-empty">
-                                                                <FaUsers className="selected-panel-empty-icon" />
-                                                                <p>Clique nos atletas para os selecionar</p>
+                                                )}
+
+                                                {athletesLoading ? (
+                                                    <div className="athletes-loading">
+                                                        <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }}></div>
+                                                        <span>A carregar atletas...</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="athletes-list">
+                                                        {filteredAthletes.length === 0 && athletesAlreadyInTeam.length === 0 && (
+                                                            <div className="no-results">
+                                                                <span className="no-results-icon">🔍</span>
+                                                                <p>{athleteSearch ? 'Sem resultados para a pesquisa' : 'Sem atletas disponíveis'}</p>
                                                             </div>
-                                                        ) : (
-                                                            selectedAthletes.map(id => {
-                                                                const athlete = availableAthletes.find(a => a.athleteProfileId === id);
-                                                                if (!athlete) return null;
-                                                                return (
-                                                                    <div key={id} className="selected-panel-item">
-                                                                        <span className="selected-panel-name">{athlete.fullName}</span>
-                                                                        <button className="selected-panel-remove" onClick={(e) => { e.stopPropagation(); toggleAthleteSelection(id); }} title="Remover">
-                                                                            <FaTimes />
-                                                                        </button>
+                                                        )}
+
+                                                        {filteredAthletes.map(athlete => {
+                                                            const isSelected = selectedAthletes.includes(athlete.athleteProfileId);
+                                                            return (
+                                                                <div
+                                                                    key={athlete.id}
+                                                                    className={`athlete-item ${isSelected ? 'athlete-item--selected' : ''}`}
+                                                                    onClick={() => toggleAthleteSelection(athlete.athleteProfileId)}
+                                                                >
+                                                                    <div className={`athlete-avatar-sm ${isSelected ? 'athlete-avatar-sm--selected' : ''}`}>
+                                                                        {athlete.fullName?.charAt(0).toUpperCase()}
                                                                     </div>
-                                                                );
-                                                            })
+                                                                    <div className="athlete-info">
+                                                                        <div className="athlete-name">{athlete.fullName}</div>
+                                                                        <div className="athlete-details">
+                                                                            <span>{getEmailBase(athlete.email)}</span>
+                                                                            {athlete.nif && <span className="athlete-nif-tag">NIF: {athlete.nif}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className={`athlete-select-indicator ${isSelected ? 'athlete-select-indicator--on' : ''}`}>
+                                                                        {isSelected ? <FaTimes /> : <FaPlus />}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+
+                                                        {athletesAlreadyInTeam.length > 0 && (
+                                                            <div className="already-in-team-section">
+                                                                <div className="already-in-team-label">
+                                                                    <FaUserCheck /> Já na equipa
+                                                                </div>
+                                                                {athletesAlreadyInTeam.map(athlete => (
+                                                                    <div key={athlete.id} className="athlete-item athlete-item--in-team">
+                                                                        <div className="athlete-avatar-sm athlete-avatar-sm--in-team">
+                                                                            {athlete.fullName?.charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <div className="athlete-info">
+                                                                            <div className="athlete-name">{athlete.fullName}</div>
+                                                                            <div className="athlete-details">
+                                                                                <span>{getEmailBase(athlete.email)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="in-team-badge">Na equipa</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {/* Footer removed, button moved to header */}
+                                                )}
+                                            </div>
+
+                                            {/* Right: selected panel */}
+                                            <div className="add-athlete-selected-panel">
+                                                <div className="teams-selected-panel-header">
+                                                    <div className="selected-panel-title">
+                                                        <FaUsers />
+                                                        <span>Selecionados</span>
+                                                        <span className="selected-panel-count">{selectedAthletes.length}</span>
+                                                    </div>
+                                                    {selectedAthletes.length > 0 && (
+                                                        <button
+                                                            className="btn-submit selected-panel-header-btn"
+                                                            onClick={handleAddAthletes}
+                                                            disabled={submitting}
+                                                        >
+                                                            {submitting ? '...' : <FaUserPlus />}
+                                                            <span>Adicionar</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="selected-panel-list">
+                                                    {selectedAthletes.length === 0 ? (
+                                                        <div className="selected-panel-empty">
+                                                            <FaUsers className="selected-panel-empty-icon" />
+                                                            <p>Clique nos atletas para os selecionar</p>
+                                                        </div>
+                                                    ) : (
+                                                        selectedAthletes.map(id => {
+                                                            const athlete = availableAthletes.find(a => a.athleteProfileId === id);
+                                                            if (!athlete) return null;
+                                                            return (
+                                                                <div key={id} className="selected-panel-item">
+                                                                    <span className="selected-panel-name">{athlete.fullName}</span>
+                                                                    <button className="selected-panel-remove" onClick={(e) => { e.stopPropagation(); toggleAthleteSelection(id); }} title="Remover">
+                                                                        <FaTimes />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1067,5 +1150,52 @@ const TeamsManager = () => {
         </div>
     );
 };
+
+/* ── TeamsTable (for history) ────────────────────────────── */
+const TeamsTable = ({
+    teams,
+    onAdvance,
+    onView,
+    onEdit,
+    onDelete,
+    getSortIcon,
+    handleSort,
+    getGenderBadgeClass,
+    getGenderLabel
+}) => (
+    <div className="teams-table-container">
+        <table className="teams-table">
+            <thead>
+                <tr>
+                    <th onClick={() => handleSort('name')} className="sortable-header">Nome {getSortIcon('name')}</th>
+                    <th onClick={() => handleSort('category')} className="sortable-header">Escalão {getSortIcon('category')}</th>
+                    <th onClick={() => handleSort('gender')} className="sortable-header">Género {getSortIcon('gender')}</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {teams.map(team => (
+                    <tr key={team.id}>
+                        <td className="team-name" data-label="Nome">{team.name}</td>
+                        <td data-label="Escalão">{team.category || '—'}</td>
+                        <td data-label="Género">
+                            <span className={`gender-badge ${getGenderBadgeClass(team.gender)}`}>
+                                {getGenderLabel(team.gender)}
+                            </span>
+                        </td>
+                        <td>
+                            <div className="actions-cell">
+                                <button className="teams-action-btn next-season" onClick={() => onAdvance(team)} title="Avançar Época"><FaForward /></button>
+                                <button className="teams-action-btn view" onClick={() => onView(team.id)} title="Ver detalhes"><FaUsers /></button>
+                                <button className="teams-action-btn edit" onClick={() => onEdit(team)} title="Editar"><FaEdit /></button>
+                                <button className="teams-action-btn delete" onClick={() => onDelete(team.id)} title="Eliminar"><FaTrash /></button>
+                            </div>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+);
 
 export default TeamsManager;

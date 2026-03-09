@@ -102,10 +102,12 @@ public class UsersController : ControllerBase
                     u.FirstName.ToLower().Contains(token) ||
                     u.LastName.ToLower().Contains(token) ||
                     u.Email.ToLower().Contains(token) ||
+                    (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
                     (u.AthleteProfile != null && (
                         (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
                         (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
                     )));
+
             }
         }
 
@@ -147,6 +149,7 @@ public class UsersController : ControllerBase
             CreatedAt = u.CreatedAt,
             LastLogin = u.LastLogin,
             AthleteProfileId = u.AthleteProfile?.Id,
+            MembershipNumber = u.MemberProfile?.MembershipNumber,
             Sport = u.AthleteProfile != null
                 ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
                 : (u.CoachProfile != null ? u.CoachProfile.Sport?.Name : null)
@@ -339,6 +342,7 @@ public class UsersController : ControllerBase
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
             LastLogin = user.LastLogin,
+            MembershipNumber = null,
             Sport = user.AthleteProfile != null
                 ? user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
                 : (user.CoachProfile != null ? user.CoachProfile.Sport?.Name : null)
@@ -1381,6 +1385,7 @@ public class UserResponse
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLogin { get; set; }
     public int? AthleteProfileId { get; set; }
+    public string? MembershipNumber { get; set; }
     public string? Sport { get; set; }
 }
 

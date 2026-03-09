@@ -108,3 +108,248 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Modals expansion for add athlete panel */
+.team-modal-content {
+    transition: max-width 0.3s ease;
+}
+
+.team-modal-content.expanded {
+    max-width: 1100px !important;
+}
+
+.team-modal-body-container {
+    display: flex;
+    gap: 0;
+}
+
+.team-modal-body {
+    flex: 1;
+}
+
+.team-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f0f0f0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+}
+
+.team-section-header h3 {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.add-athlete-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.add-athlete-btn:hover {
+    background: #002255;
+}
+
+.remove-athlete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-athlete-btn:hover {
+    background: #ffebee;
+}
+
+.no-athletes-msg {
+    padding: 20px;
+    color: var(--text-light);
+    font-style: italic;
+    grid-column: 1 / -1;
+    text-align: center;
+}
+
+.add-athletes-panel {
+    width: 350px;
+    background: #f8f9fa;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
+}
+
+.add-athletes-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.add-athletes-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+.add-athletes-search {
+    padding: 15px 20px;
+    position: relative;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.add-athletes-search input {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.add-athletes-search .search-icon {
+    position: absolute;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.available-athletes-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.available-athlete-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: white;
+    border: 1px solid #eee;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.available-athlete-item:hover {
+    border-color: #bbdefb;
+}
+
+.available-athlete-item.selected {
+    border-color: var(--primary-color);
+    background: #f0f7ff;
+}
+
+.athlete-checkbox {
+    margin-right: 15px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.available-athlete-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.available-athlete-info strong {
+    display: block;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.available-athlete-info span {
+    display: block;
+    color: var(--text-light);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.add-athletes-actions {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.selected-count {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    text-align: center;
+}
+
+.confirm-add-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.confirm-add-btn:hover {
+    background: #002255;
+}
+
+.confirm-add-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.loading-athletes,
+.no-athletes-found {
+    padding: 30px;
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+@media (max-width: 900px) {
+    .team-modal-body-container {
+        flex-direction: column;
+    }
+
+    .add-athletes-panel {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #e0e0e0;
+        min-height: 400px;
+    }
+}

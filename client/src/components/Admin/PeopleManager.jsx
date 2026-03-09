@@ -1566,7 +1566,12 @@ const PeopleManager = () => {
                             <tbody>
                                 {sortedUsers.map((user) => (
                                     <tr key={user.id}>
-                                        <td className="user-name" data-label="Nome">{user.fullName}</td>
+                                        <td data-label="Nome">
+                                            <div className="user-name-container" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                                                <span className="user-name">{user.fullName}</span>
+                                                {user.membershipNumber && <span className="socio-number">{user.membershipNumber}</span>}
+                                            </div>
+                                        </td>
                                         <td data-label="Email">{(() => {
                                             const raw = user.email || '';
                                             const atIdx = raw.lastIndexOf('@');

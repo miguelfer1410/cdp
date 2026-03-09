@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaFutbol, FaSortNumericDown } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaEyeSlash, FaFutbol } from 'react-icons/fa';
 import './SportsManager.css';
 
 const SportsManager = () => {
@@ -165,60 +165,60 @@ const SportsManager = () => {
 
     if (loading) {
         return (
-            <div className="loading-container">
-                <div className="spinner"></div>
+            <div className="sports-manager-loading">
+                <div className="sports-spinner"></div>
                 <p>A carregar modalidades...</p>
             </div>
         );
     }
 
     return (
-        <div className="sports-manager">
-            <div className="manager-header">
-                <div className="header-content">
+        <div className="sports-manager-container">
+            <div className="sports-manager-header">
+                <div className="sports-header-content">
                     <h1>Modalidades Desportivas</h1>
-                    <p className="header-subtitle">Gerir informações das modalidades do clube</p>
+                    <p className="sports-header-subtitle">Gerir informações das modalidades do clube</p>
                 </div>
-                <button className="btn-add" onClick={() => setShowModal(true)}>
+                <button className="sports-btn-add" onClick={() => setShowModal(true)}>
                     <FaPlus /> Adicionar Modalidade
                 </button>
             </div>
 
             {sports.length === 0 ? (
-                <div className="empty-state">
-                    <FaFutbol className="empty-icon" />
+                <div className="sports-empty-state">
+                    <FaFutbol className="sports-empty-icon" />
                     <h3>Nenhuma modalidade adicionada</h3>
                     <p>Adicione a primeira modalidade desportiva do clube</p>
-                    <button className="btn-add" onClick={() => setShowModal(true)}>
+                    <button className="sports-btn-add" onClick={() => setShowModal(true)}>
                         <FaPlus /> Adicionar Modalidade
                     </button>
                 </div>
             ) : (
-                <div className="sports-grid">
+                <div className="sports-grid-layout">
                     {sports.map((sport) => (
-                        <div key={sport.id} className="sport-card">
-                            <div className="sport-image-wrapper">
+                        <div key={sport.id} className="sport-card-item">
+                            <div className="sport-card-image-wrapper">
                                 {sport.imageUrl ? (
                                     <img
                                         src={getImageUrl(sport.imageUrl)}
                                         alt={sport.name}
-                                        className="sport-image"
+                                        className="sport-card-image"
                                     />
                                 ) : (
-                                    <div className="sport-no-image">
+                                    <div className="sport-card-no-image">
                                         <FaFutbol />
                                     </div>
                                 )}
-                                <div className="sport-overlay">
+                                <div className="sport-card-overlay">
                                     <button
-                                        className="overlay-btn edit"
+                                        className="sport-card-overlay-btn edit"
                                         onClick={() => handleEdit(sport)}
                                         title="Editar"
                                     >
                                         <FaEdit />
                                     </button>
                                     <button
-                                        className="overlay-btn delete"
+                                        className="sport-card-overlay-btn delete"
                                         onClick={() => handleDelete(sport.id)}
                                         title="Eliminar"
                                     >
@@ -226,11 +226,11 @@ const SportsManager = () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="sport-info">
+                            <div className="sport-card-info">
                                 <h3>{sport.name}</h3>
-                                <p className="sport-description">{sport.description.substring(0, 100)}...</p>
-                                <div className="sport-badges">
-                                    <span className={`badge ${sport.isActive ? 'badge-active' : 'badge-inactive'}`}>
+                                <p className="sport-card-description">{sport.description.substring(0, 100)}...</p>
+                                <div className="sport-card-badges">
+                                    <span className={`sport-status-badge ${sport.isActive ? 'active' : 'inactive'}`}>
                                         {sport.isActive ? <><FaEye /> Ativo</> : <><FaEyeSlash /> Inativo</>}
                                     </span>
                                 </div>
@@ -241,24 +241,24 @@ const SportsManager = () => {
             )}
 
             {showModal && (
-                <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
-                    <div className="modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
+                <div className="sports-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) { setShowModal(false); resetForm(); } }}>
+                    <div className="sports-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="sports-modal-header">
                             <h2>{editingSport ? 'Editar Modalidade' : 'Nova Modalidade'}</h2>
                             <button
-                                className="modal-close"
+                                className="sports-modal-close"
                                 onClick={() => { setShowModal(false); resetForm(); }}
                             >
                                 ×
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="modal-form">
-                            <div className="form-section">
-                                <label className="form-label">Nome da Modalidade *</label>
+                        <form onSubmit={handleSubmit} className="sports-modal-form">
+                            <div className="sports-form-section">
+                                <label className="sports-form-label">Nome da Modalidade *</label>
                                 <input
                                     type="text"
-                                    className="form-input"
+                                    className="sports-form-input"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="Ex: Basquetebol"
@@ -266,10 +266,10 @@ const SportsManager = () => {
                                 />
                             </div>
 
-                            <div className="form-section">
-                                <label className="form-label">Descrição *</label>
+                            <div className="sports-form-section">
+                                <label className="sports-form-label">Descrição *</label>
                                 <textarea
-                                    className="form-textarea"
+                                    className="sports-form-textarea"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     placeholder="Descrição detalhada da modalidade..."
@@ -278,24 +278,24 @@ const SportsManager = () => {
                                 />
                             </div>
 
-                            <div className="form-section">
-                                <label className="form-label">Imagem da Modalidade</label>
+                            <div className="sports-form-section">
+                                <label className="sports-form-label">Imagem da Modalidade</label>
 
-                                <div className="image-upload-area">
+                                <div className="sports-image-upload-area">
                                     {previewUrl ? (
-                                        <div className="image-preview">
+                                        <div className="sports-image-preview">
                                             <img src={previewUrl} alt="Preview" />
                                             <button
                                                 type="button"
-                                                className="btn-change-image"
+                                                className="sports-btn-change-image"
                                                 onClick={() => document.getElementById('imageInput').click()}
                                             >
                                                 <FaFutbol /> Alterar Imagem
                                             </button>
                                         </div>
                                     ) : (
-                                        <label htmlFor="imageInput" className="upload-label">
-                                            <FaFutbol className="upload-icon" />
+                                        <label htmlFor="imageInput" className="sports-upload-label">
+                                            <FaFutbol className="sports-upload-icon" />
                                             <span>Clique para selecionar uma imagem</span>
                                             <small>Formatos: JPG, PNG, WebP</small>
                                         </label>
@@ -310,32 +310,32 @@ const SportsManager = () => {
                                 </div>
                             </div>
 
-                            <div className="form-section">
-                                <label className="toggle-switch">
+                            <div className="sports-form-section">
+                                <label className="sports-toggle-switch">
                                     <input
                                         type="checkbox"
                                         checked={formData.isActive}
                                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                                     />
-                                    <span className="toggle-slider"></span>
-                                    <span className="toggle-label">
+                                    <span className="sports-toggle-slider"></span>
+                                    <span className="sports-toggle-label">
                                         {formData.isActive ? 'Modalidade Ativa' : 'Modalidade Inativa'}
                                     </span>
                                 </label>
                             </div>
 
-                            <div className="modal-actions">
+                            <div className="sports-modal-actions">
                                 <button
                                     type="button"
-                                    className="btn-cancel"
+                                    className="sports-btn-cancel"
                                     onClick={() => { setShowModal(false); resetForm(); }}
                                 >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-submit" disabled={submitting}>
+                                <button type="submit" className="sports-btn-submit" disabled={submitting}>
                                     {submitting ? (
                                         <>
-                                            <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
+                                            <div className="sports-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
                                             A guardar...
                                         </>
                                     ) : (

@@ -41,8 +41,11 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         location: '',
         description: '',
         opponentName: '',
-        isHomeGame: true
+        isHomeGame: true,
+        ticketPriceSocio: '',
+        ticketPriceNonSocio: ''
     });
+
     const [scheduleFormData, setScheduleFormData] = useState({
         teamId: restrictedTeamId ? restrictedTeamId.toString() : '',
         daysOfWeek: [],
@@ -314,7 +317,9 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                 location: event.location,
                 description: event.description,
                 opponentName: event.opponentName,
-                isHomeGame: event.isHomeGame
+                isHomeGame: event.isHomeGame,
+                ticketPriceSocio: event.ticketPriceSocio,
+                ticketPriceNonSocio: event.ticketPriceNonSocio
             }
         }));
     };
@@ -343,7 +348,9 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                 location: event.location || '',
                 description: event.description || '',
                 opponentName: event.opponentName || '',
-                isHomeGame: event.isHomeGame ?? true
+                isHomeGame: event.isHomeGame ?? true,
+                ticketPriceSocio: event.ticketPriceSocio ?? '',
+                ticketPriceNonSocio: event.ticketPriceNonSocio ?? ''
             });
             setShowEventModal(true);
         }
@@ -357,7 +364,9 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             ...formData,
             teamId: formData.teamId || null,
             sportId: parseInt(formData.sportId),
-            eventType: parseInt(formData.eventType)
+            eventType: parseInt(formData.eventType),
+            ticketPriceSocio: formData.ticketPriceSocio === '' ? null : parseFloat(formData.ticketPriceSocio),
+            ticketPriceNonSocio: formData.ticketPriceNonSocio === '' ? null : parseFloat(formData.ticketPriceNonSocio)
         };
 
         try {
@@ -423,7 +432,9 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             location: '',
             description: '',
             opponentName: '',
-            isHomeGame: true
+            isHomeGame: true,
+            ticketPriceSocio: '',
+            ticketPriceNonSocio: ''
         });
         setEditingEvent(null);
     };
@@ -682,13 +693,13 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
                         <form onSubmit={handleSubmit} className="cm-modal-form">
                             <div className="cm-form-field">
-                                <label className="cm-form-label">Título *</label>
+                                <label className="cm-form-label">Competição *</label>
                                 <input
                                     type="text"
                                     className="cm-form-input"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="Nome do evento"
+                                    placeholder="Ex: Liga, Taça..."
                                     required
                                 />
                             </div>
@@ -790,30 +801,59 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                             </div>
 
                             {formData.eventType === 1 && (
-                                <div className="cm-form-row">
-                                    <div className="cm-form-field">
-                                        <label className="cm-form-label">Adversário</label>
-                                        <input
-                                            type="text"
-                                            className="cm-form-input"
-                                            value={formData.opponentName}
-                                            onChange={(e) => setFormData({ ...formData, opponentName: e.target.value })}
-                                            placeholder="Nome do adversário"
-                                        />
-                                    </div>
-                                    <div className="cm-form-field cm-form-field--toggle">
-                                        <label className="cm-toggle-label">
+                                <>
+                                    <div className="cm-form-row">
+                                        <div className="cm-form-field">
+                                            <label className="cm-form-label">Adversário</label>
                                             <input
-                                                type="checkbox"
-                                                className="cm-toggle-input"
-                                                checked={formData.isHomeGame}
-                                                onChange={(e) => setFormData({ ...formData, isHomeGame: e.target.checked })}
+                                                type="text"
+                                                className="cm-form-input"
+                                                value={formData.opponentName}
+                                                onChange={(e) => setFormData({ ...formData, opponentName: e.target.value })}
+                                                placeholder="Nome do adversário"
                                             />
-                                            <span className="cm-toggle-track"><span className="cm-toggle-thumb" /></span>
-                                            <span className="cm-toggle-text">Jogo em Casa</span>
-                                        </label>
+                                        </div>
+                                        <div className="cm-form-field cm-form-field--toggle">
+                                            <label className="cm-toggle-label">
+                                                <input
+                                                    type="checkbox"
+                                                    className="cm-toggle-input"
+                                                    checked={formData.isHomeGame}
+                                                    onChange={(e) => setFormData({ ...formData, isHomeGame: e.target.checked })}
+                                                />
+                                                <span className="cm-toggle-track"><span className="cm-toggle-thumb" /></span>
+                                                <span className="cm-toggle-text">Jogo em Casa</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
+
+                                    <div className="cm-form-row">
+                                        <div className="cm-form-field">
+                                            <label className="cm-form-label">Preço Bilhete (Sócio)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="cm-form-input"
+                                                value={formData.ticketPriceSocio}
+                                                onChange={(e) => setFormData({ ...formData, ticketPriceSocio: e.target.value })}
+                                                placeholder="€ 0.00"
+                                            />
+                                        </div>
+                                        <div className="cm-form-field">
+                                            <label className="cm-form-label">Preço Bilhete (Não Sócio)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="cm-form-input"
+                                                value={formData.ticketPriceNonSocio}
+                                                onChange={(e) => setFormData({ ...formData, ticketPriceNonSocio: e.target.value })}
+                                                placeholder="€ 0.00"
+                                            />
+                                        </div>
+                                    </div>
+                                </>
                             )}
 
                             <div className="cm-form-field">

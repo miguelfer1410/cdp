@@ -166,6 +166,19 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
         }
     };
 
+    const getDisplayEmail = (email) => {
+        if (!email) return 'N/A';
+        const atIndex = email.lastIndexOf('@');
+        if (atIndex === -1) return email;
+        const localPart = email.substring(0, atIndex);
+        const domain = email.substring(atIndex);
+        const plusIndex = localPart.indexOf('+');
+        if (plusIndex !== -1) {
+            return localPart.substring(0, plusIndex) + domain;
+        }
+        return email;
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -260,7 +273,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
                                             <div className="fam-link-avatar"><FaUser /></div>
                                             <div>
                                                 <div className="fam-link-name">{result.fullName}</div>
-                                                <div className="fam-link-email">{result.email}</div>
+                                                <div className="fam-link-email">{getDisplayEmail(result.email)}</div>
                                             </div>
                                         </div>
                                         <div className="fam-link-actions">

@@ -19,6 +19,8 @@ public class MemberProfile
 
     public DateTime? MemberSince { get; set; }
 
+    public int? CardNumber { get; set; }
+
     [MaxLength(20)]
     public string? PaymentPreference { get; set; } // "Monthly" or "Annual"
 

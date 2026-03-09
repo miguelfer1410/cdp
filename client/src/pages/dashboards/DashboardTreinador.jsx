@@ -494,6 +494,8 @@ const DashboardTreinador = () => {
                 isOpen={isTeamModalOpen}
                 onClose={() => setIsTeamModalOpen(false)}
                 teamData={teamData}
+                isEditable={true}
+                onTeamUpdate={fetchData}
             />
 
             <CalendarModal
