@@ -60,24 +60,24 @@ const Hero = () => {
   const isHeroSlide = currentIndex === 0;
 
   return (
-    <section className="hero">
+    <section className="home-hero">
       {/* Slide 0: Hero Original */}
       {isHeroSlide && (
-        <div className="hero-slide hero-default">
-          <div className="container hero-content">
-            <div className="hero-text">
+        <div className="home-hero-slide home-hero-default">
+          <div className="container home-hero-content">
+            <div className="home-hero-text">
               <h1>Clube Desportivo <br /> Da Póvoa</h1>
               <p className="subtitle">Tradição, Paixão e Excelência no Desporto</p>
               <p className="description">
                 Unidos pelo amor ao desporto e dedicados à formação de atletas e à construção de uma comunidade forte.
               </p>
-              <div className="hero-buttons">
+              <div className="home-hero-buttons">
                 <a href="/registo" className="btn btn-white">Tornar-se Sócio</a>
                 <a href="/clube" className="btn btn-outline">Conhecer o Clube</a>
               </div>
             </div>
-            <div className="hero-image">
-              <img src="/CDP_logo.png" alt="Emblema CDP" className="hero-emblem" />
+            <div className="home-hero-image">
+              <img src="/CDP_logo.png" alt="Emblema CDP" className="home-hero-emblem" />
             </div>
           </div>
         </div>
@@ -85,11 +85,11 @@ const Hero = () => {
 
       {/* Slides 1+: Imagens dos Banners */}
       {!isHeroSlide && banners[currentIndex - 1] && (
-        <div className="hero-slide hero-banner">
+        <div className="home-hero-slide home-hero-banner">
           <img
             src={`http://localhost:5285${banners[currentIndex - 1].imageUrl}`}
             alt={`Banner ${currentIndex}`}
-            className="hero-banner-image"
+            className="home-hero-banner-image"
           />
         </div>
       )}
@@ -97,19 +97,19 @@ const Hero = () => {
       {/* Setas - aparecem APENAS quando há banners */}
       {banners.length > 0 && (
         <>
-          <button className="hero-nav prev" onClick={prevSlide} aria-label="Anterior">
+          <button className="home-hero-nav prev" onClick={prevSlide} aria-label="Anterior">
             <FaChevronLeft />
           </button>
-          <button className="hero-nav next" onClick={nextSlide} aria-label="Próximo">
+          <button className="home-hero-nav next" onClick={nextSlide} aria-label="Próximo">
             <FaChevronRight />
           </button>
 
           {/* Dots */}
-          <div className="hero-dots">
+          <div className="home-hero-dots">
             {Array.from({ length: totalSlides }).map((_, index) => (
               <button
                 key={index}
-                className={`dot ${index === currentIndex ? 'active' : ''}`}
+                className={`home-hero-dot ${index === currentIndex ? 'active' : ''}`}
                 onClick={() => setCurrentIndex(index)}
                 aria-label={`Ir para slide ${index + 1}`}
               />
