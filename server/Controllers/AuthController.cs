@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using CdpApi.DTOs;
 using CdpApi.Services;
+using System.Security.Claims;
 
 namespace CdpApi.Controllers;
 
@@ -87,6 +89,32 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error in reset password");
             return StatusCode(500, new { message = "Ocorreu um erro ao alterar a password." });
+        }
+    }
+
+    /// <summary>
+    /// Returns the list of linked users for the currently authenticated user.
+    /// Called on dashboard mount so the frontend stays up-to-date without re-login.
+    /// </summary>
+    [HttpGet("linked-users")]
+    [Authorize]
+    public async Task<IActionResult> GetLinkedUsers()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            return Unauthorized(new { message = "Token inválido." });
+
+        try
+        {
+            var linkedUsers = await _authService.GetLinkedUsersAsync(userId);
+            return Ok(linkedUsers);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching linked users for userId {UserId}", userId);
+            return StatusCode(500, new { message = "Erro ao obter utilizadores associados." });
         }
     }
 }

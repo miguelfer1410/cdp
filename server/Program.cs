@@ -32,13 +32,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // TEMPORÁRIO: Permitir qualquer origem para debug
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-        
-        // NOTA: AllowAnyOrigin() não permite usar AllowCredentials()
-        // Depois de testar, voltar a usar WithOrigins específicos
+        policy.WithOrigins(
+            "http://localhost:3000",
+            "http://localhost:3001"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    
     });
 });
 

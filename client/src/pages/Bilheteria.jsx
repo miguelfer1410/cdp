@@ -34,25 +34,27 @@ const Bilheteria = () => {
                     const data = await response.json();
 
                     // Formatar dados para a interface
-                    const formattedEvents = data.map(e => {
-                        const dateObj = new Date(e.startDateTime);
+                    const formattedEvents = data
+                        .filter(e => e.eventType !== 1 || e.isHomeGame)
+                        .map(e => {
+                            const dateObj = new Date(e.startDateTime);
 
-                        const homeTeam = e.isHomeGame ? 'CD Póvoa' : (e.opponentName || 'Adversário');
-                        const awayTeam = e.isHomeGame ? (e.opponentName || 'Adversário') : 'CD Póvoa';
+                            const homeTeam = e.isHomeGame ? 'CD Póvoa' : (e.opponentName || 'Adversário');
+                            const awayTeam = e.isHomeGame ? (e.opponentName || 'Adversário') : 'CD Póvoa';
 
-                        return {
-                            ...e, // Keep original data for modal
-                            id: e.id,
-                            homeTeam,
-                            awayTeam,
-                            date: dateObj.toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' }),
-                            time: dateObj.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
-                            competition: e.title || `Jogo ${e.sportName}`,
-                            modalidade: e.sportName,
-                            location: e.location || 'Pavilhão Clube Desportivo da Póvoa',
-                            status: 'available'
-                        };
-                    });
+                            return {
+                                ...e, // Keep original data for modal
+                                id: e.id,
+                                homeTeam,
+                                awayTeam,
+                                date: dateObj.toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' }),
+                                time: dateObj.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+                                competition: e.title || `Jogo ${e.sportName}`,
+                                modalidade: e.sportName,
+                                location: e.location || 'Pavilhão Clube Desportivo da Póvoa',
+                                status: 'available'
+                            };
+                        });
 
                     setEvents(formattedEvents);
                 }
@@ -112,7 +114,7 @@ const Bilheteria = () => {
         setIsAnnualTicketPurchase(true);
         setSelectedEvent({
             id: 'annual-ticket',
-            homeTeam: 'Lugar Anual',
+            homeTeam: 'Bilhete Anual',
             awayTeam: '2025/2026',
             date: 'Época 2025/2026',
             time: 'Todos os jogos',
@@ -338,7 +340,7 @@ const Bilheteria = () => {
                         {purchaseStep === 'processing' && (
                             <div className="purchase-loading">
                                 <div className="spinner"></div>
-                                <h3>{isAnnualTicketPurchase ? 'A processar o teu Lugar Anual...' : 'A processar o teu bilhete...'}</h3>
+                                <h3>{isAnnualTicketPurchase ? 'A processar o teu Bilhete Anual...' : 'A processar o teu bilhete...'}</h3>
                                 <p>Por favor, não feches esta janela.</p>
                             </div>
                         )}
@@ -346,10 +348,10 @@ const Bilheteria = () => {
                         {purchaseStep === 'success' && (
                             <div className="purchase-success">
                                 <FaCheckCircle className="success-icon" />
-                                <h3>{isAnnualTicketPurchase ? 'Lugar Anual Adquirido!' : 'Compra Concluída!'}</h3>
+                                <h3>{isAnnualTicketPurchase ? 'Bilhete Anual Adquirido!' : 'Compra Concluída!'}</h3>
                                 <p>
                                     {isAnnualTicketPurchase
-                                        ? `O Lugar Anual para ${selectedProfiles.map(p => p.firstName).join(', ')} (época 2025/2026) foi processado com sucesso. Bem-vindo à família!`
+                                        ? `O Bilhete Anual para ${selectedProfiles.map(p => p.firstName).join(', ')} (época 2025/2026) foi processado com sucesso. Bem-vindo à família!`
                                         : `O bilhete para ${selectedProfiles.map(p => p.firstName).join(', ')} para o jogo ${selectedEvent.awayTeam === 'CD Póvoa' ? selectedEvent.homeTeam : selectedEvent.awayTeam} foi reservado com sucesso.`
                                     }
                                 </p>
@@ -371,7 +373,7 @@ const Bilheteria = () => {
 
                         <div className="purchase-header">
                             <FaTicketAlt className="main-icon" />
-                            <h2>Lugar Anual 2025/2026</h2>
+                            <h2>Bilhete Anual 2025/2026</h2>
                             <p>Tudo o que precisas de saber</p>
                         </div>
 
@@ -379,11 +381,8 @@ const Bilheteria = () => {
                             <div className="benefits-section">
                                 <h3>Vantagens Exclusivas</h3>
                                 <ul>
-                                    <li><FaCheckCircle className="check-icon" /> Acesso a todos os jogos em casa (Campeonato e Taça)</li>
+                                    <li><FaCheckCircle className="check-icon" /> Acesso a todos os jogos em casa </li>
                                     <li><FaCheckCircle className="check-icon" /> Lugar marcado personalizado no pavilhão</li>
-                                    <li><FaCheckCircle className="check-icon" /> 10% de desconto na loja oficial do clube</li>
-                                    <li><FaCheckCircle className="check-icon" /> Prioridade na compra de bilhetes para jogos fora</li>
-                                    <li><FaCheckCircle className="check-icon" /> Newsletter exclusiva do sócio detentor</li>
                                 </ul>
                             </div>
 
@@ -412,7 +411,7 @@ const Bilheteria = () => {
                 <section className="season-tickets-promo">
                     <div className="promo-card">
                         <div className="promo-icon"><FaTicketAlt /></div>
-                        <h2>Lugar Anual 2025/2026</h2>
+                        <h2>Bilhete Anual 2025/2026</h2>
                         <p>Junta-te à família CDP e garante o teu lugar para todos os jogos em casa com vantagens exclusivas.</p>
                         <div className="promo-actions">
                             <button className="bilhete-btn-primary" onClick={() => setShowAnnualInfoModal(true)}>Saber Mais</button>

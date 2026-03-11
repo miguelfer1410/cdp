@@ -175,6 +175,7 @@ public class TrainingSchedulesController : ControllerBase
     }
 
     // DELETE: api/trainingschedules/{id}
+    // DELETE: api/trainingschedules/{id}
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<IActionResult> DeleteSchedule(int id)
@@ -186,10 +187,56 @@ public class TrainingSchedulesController : ControllerBase
             return NotFound(new { message = "Padrão de treino não encontrado" });
         }
 
+        // Apagar todos os treinos futuros (a partir de hoje) gerados por este padrão
+        var today = DateTime.UtcNow.Date;
+        var futureTrainings = await _context.Events
+            .Where(e => e.TeamId == schedule.TeamId
+                && e.EventType == EventType.Training
+                && e.StartDateTime.Date >= today
+                && e.StartDateTime.Date <= schedule.ValidUntil.Date)
+            .ToListAsync();
+
+        _context.Events.RemoveRange(futureTrainings);
         _context.TrainingSchedules.Remove(schedule);
         await _context.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    // POST: api/trainingschedules/cleanup-orphaned
+    [HttpPost("cleanup-orphaned")]
+    [Authorize]
+    public async Task<IActionResult> CleanupOrphanedEvents()
+    {
+        var existingScheduleIds = await _context.TrainingSchedules.Select(ts => ts.Id).ToListAsync();
+        
+        // Find all training events
+        var trainingEvents = await _context.Events
+            .Where(e => e.EventType == EventType.Training && e.Description != null)
+            .ToListAsync();
+
+        var eventsToDelete = new List<Event>();
+
+        foreach (var ev in trainingEvents)
+        {
+            // Extract ID from description pattern "#ID"
+            var parts = ev.Description?.Split('#');
+            if (parts?.Length > 1 && int.TryParse(parts[1], out var scheduleId))
+            {
+                if (!existingScheduleIds.Contains(scheduleId))
+                {
+                    eventsToDelete.Add(ev);
+                }
+            }
+        }
+
+        if (eventsToDelete.Any())
+        {
+            _context.Events.RemoveRange(eventsToDelete);
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new { message = $"{eventsToDelete.Count} treinos órfãos foram removidos." });
     }
 
     // POST: api/trainingschedules/{id}/generate

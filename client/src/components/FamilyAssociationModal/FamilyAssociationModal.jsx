@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUserFriends, FaCheckCircle, FaClock, FaEye } from 'react-icons/fa';
+import { FaTimes, FaUserFriends, FaCheckCircle, FaClock, FaEye, FaTimesCircle } from 'react-icons/fa';
 import './FamilyAssociationModal.css';
 
 const API_BASE = 'http://localhost:5285';
@@ -94,8 +94,12 @@ const FamilyAssociationModal = ({ isOpen, onClose }) => {
     };
 
     const getStatusInfo = (status) => {
-        if (status === 'Seen') return { label: 'Visto', icon: <FaEye />, className: 'status-seen' };
-        return { label: 'Pendente', icon: <FaClock />, className: 'status-pending' };
+        switch (status) {
+            case 'Accepted':  return { label: 'Aceite',   icon: <FaCheckCircle />, className: 'status-accepted' };
+            case 'Rejected':  return { label: 'Recusado', icon: <FaTimesCircle />, className: 'status-rejected' };
+            case 'Seen':      return { label: 'Visto',    icon: <FaEye />,         className: 'status-seen' };
+            default:          return { label: 'Pendente', icon: <FaClock />,        className: 'status-pending' };
+        }
     };
 
     if (!isOpen) return null;

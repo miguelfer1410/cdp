@@ -31,10 +31,6 @@ const TeamCard = ({ team, onView, onEdit, onDelete, onAdvance, getGenderBadgeCla
             </div>
         </div>
         <div className="team-card-footer">
-            <span className="team-card-athletes">
-                <FaUsers />
-                <span>{team.athleteCount ?? '—'} atletas</span>
-            </span>
             <div className="team-card-actions">
                 <button className="teams-action-btn next-season" onClick={() => onAdvance(team)} title="Avançar Época">
                     <FaForward />
@@ -144,6 +140,14 @@ const TeamsManager = () => {
     const [selectedAthletes, setSelectedAthletes] = useState([]);
     const [athletesLoading, setAthletesLoading] = useState(false);
     const [athleteSearch, setAthleteSearch] = useState('');
+
+    // Coach related state
+    const [addingCoaches, setAddingCoaches] = useState(false);
+    const [availableCoaches, setAvailableCoaches] = useState([]);
+    const [selectedCoaches, setSelectedCoaches] = useState([]);
+    const [coachesLoading, setCoachesLoading] = useState(false);
+    const [coachSearch, setCoachSearch] = useState('');
+
     const [selectedSportFilter, setSelectedSportFilter] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
     const [expandedSportHistory, setExpandedSportHistory] = useState({});
@@ -255,6 +259,25 @@ const TeamsManager = () => {
         }
     };
 
+    const fetchAvailableCoaches = async () => {
+        setCoachesLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            // Check api. Ensure the profile type is 'coach'
+            const response = await fetch('http://localhost:5285/api/users?profileType=coach&isActive=true&pageSize=1000', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setAvailableCoaches(Array.isArray(data) ? data : (data.items ?? []));
+            }
+        } catch (error) {
+            console.error('Error fetching coaches:', error);
+        } finally {
+            setCoachesLoading(false);
+        }
+    };
+
     const generateTeamName = (data) => {
         const sport = sports.find(s => s.id === parseInt(data.sportId));
         const escalao = escalaos.find(e => e.id === parseInt(data.escalaoId));
@@ -334,6 +357,27 @@ const TeamsManager = () => {
         } catch (error) {
             console.error('Error removing athlete:', error);
             alert('Erro ao remover atleta');
+        }
+    };
+
+    const handleRemoveCoach = async (coachId) => {
+        if (!window.confirm('Tem a certeza que deseja remover este treinador da equipa?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5285/api/teams/${viewingTeam.id}/coaches/${coachId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                alert('Treinador removido com sucesso!');
+                await fetchTeamDetails(viewingTeam.id);
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Erro ao remover treinador');
+            }
+        } catch (error) {
+            console.error('Error removing coach:', error);
+            alert('Erro ao remover treinador');
         }
     };
 
@@ -452,11 +496,48 @@ const TeamsManager = () => {
         });
     }, [availableAthletes, athleteSearch, viewingTeam]);
 
+    const filteredCoaches = useMemo(() => {
+        const term = coachSearch.toLowerCase().trim();
+        return availableCoaches.filter(coach => {
+            // coaches use coach.userId or coach.id ? The api endpoint returns users with coachProfile
+            const isInTeam = viewingTeam?.coaches?.some(c => c.userId === coach.id);
+            if (isInTeam) return false;
+            if (!term) return true;
+            return (
+                coach.fullName.toLowerCase().includes(term) ||
+                (coach.nif && coach.nif.toLowerCase().includes(term)) ||
+                getEmailBase(coach.email).toLowerCase().includes(term)
+            );
+        });
+    }, [availableCoaches, coachSearch, viewingTeam]);
+
+    const coachesAlreadyInTeam = useMemo(() => {
+        if (!coachSearch.trim()) return [];
+        const term = coachSearch.toLowerCase().trim();
+        return availableCoaches.filter(coach => {
+            const isInTeam = viewingTeam?.coaches?.some(c => c.userId === coach.id);
+            if (!isInTeam) return false;
+            return (
+                coach.fullName.toLowerCase().includes(term) ||
+                (coach.nif && coach.nif.toLowerCase().includes(term)) ||
+                getEmailBase(coach.email).toLowerCase().includes(term)
+            );
+        });
+    }, [availableCoaches, coachSearch, viewingTeam]);
+
     const toggleAthleteSelection = (athleteProfileId) => {
         setSelectedAthletes(prev =>
             prev.includes(athleteProfileId)
                 ? prev.filter(id => id !== athleteProfileId)
                 : [...prev, athleteProfileId]
+        );
+    };
+
+    const toggleCoachSelection = (coachId) => {
+        setSelectedCoaches(prev =>
+            prev.includes(coachId)
+                ? prev.filter(id => id !== coachId)
+                : [...prev, coachId]
         );
     };
 
@@ -471,6 +552,18 @@ const TeamsManager = () => {
     };
 
     const areAllFilteredSelected = filteredAthletes.length > 0 && filteredAthletes.every(a => selectedAthletes.includes(a.athleteProfileId));
+
+    const handleSelectAllFilteredCoaches = () => {
+        const filteredIds = filteredCoaches.map(c => c.id);
+        setSelectedCoaches(prev => [...new Set([...prev, ...filteredIds])]);
+    };
+
+    const handleDeselectAllFilteredCoaches = () => {
+        const filteredIds = filteredCoaches.map(c => c.id);
+        setSelectedCoaches(prev => prev.filter(id => !filteredIds.includes(id)));
+    };
+
+    const areAllFilteredCoachesSelected = filteredCoaches.length > 0 && filteredCoaches.every(c => selectedCoaches.includes(c.id));
 
     const handleAddAthletes = async () => {
         if (selectedAthletes.length === 0) {
@@ -497,6 +590,36 @@ const TeamsManager = () => {
         } catch (error) {
             console.error('Error adding athletes:', error);
             alert('Erro ao adicionar atletas');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleAddCoaches = async () => {
+        if (selectedCoaches.length === 0) {
+            alert('Por favor, selecione pelo menos um treinador.');
+            return;
+        }
+        setSubmitting(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5285/api/teams/${viewingTeam.id}/coaches`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ coachProfileIds: selectedCoaches })
+            });
+            if (response.ok) {
+                alert('Treinadores adicionados com sucesso!');
+                setSelectedCoaches([]);
+                setAddingCoaches(false);
+                await fetchTeamDetails(viewingTeam.id);
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Erro ao adicionar treinadores');
+            }
+        } catch (error) {
+            console.error('Error adding coaches:', error);
+            alert('Erro ao adicionar treinadores');
         } finally {
             setSubmitting(false);
         }
@@ -631,7 +754,6 @@ const TeamsManager = () => {
                                 className={`sport-pill ${parseInt(selectedSportFilter) === sport.id ? 'active' : ''}`}
                                 onClick={() => setSelectedSportFilter(parseInt(selectedSportFilter) === sport.id ? '' : sport.id)}
                             >
-                                <span className="sport-pill-emoji">{getSportEmoji(sport.name)}</span>
                                 {sport.name}
                                 <span className="sport-pill-count">{count}</span>
                             </button>
@@ -665,7 +787,6 @@ const TeamsManager = () => {
                             {/* Sport Header */}
                             <div className="sport-section-header">
                                 <div className="sport-section-title">
-                                    <span className="sport-section-emoji">{getSportEmoji(sport.name)}</span>
                                     <h2>{sport.name}</h2>
                                     <span className="sport-total-badge">
                                         {totalTeams} {totalTeams === 1 ? 'equipa' : 'equipas'}
@@ -904,29 +1025,208 @@ const TeamsManager = () => {
                                 {/* Coaches Section */}
                                 <div className="roster-section">
                                     <h3>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <FaUsers style={{ color: '#003380' }} />
-                                            <span>Treinadores</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between', width: '100%' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <FaUsers style={{ color: '#003380' }} />
+                                                <span>Treinadores</span>
+                                                <span style={{
+                                                    background: '#e3f2fd',
+                                                    color: '#1976d2',
+                                                    borderRadius: '20px',
+                                                    padding: '2px 10px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {viewingTeam.coaches?.length || 0}
+                                                </span>
+                                            </div>
+                                            {!addingCoaches && (
+                                                <button
+                                                    className="teams-btn-submit"
+                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                                                    onClick={() => { setAddingCoaches(true); fetchAvailableCoaches(); }}
+                                                >
+                                                    <FaUserPlus /> Adicionar Treinadores
+                                                </button>
+                                            )}
+                                            {addingCoaches && (
+                                                <button
+                                                    className="btn-cancel"
+                                                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                                                    onClick={() => { setAddingCoaches(false); setSelectedCoaches([]); setCoachSearch(''); }}
+                                                >
+                                                    <FaTimes /> Cancelar
+                                                </button>
+                                            )}
                                         </div>
                                     </h3>
-                                    {viewingTeam.coaches && viewingTeam.coaches.length > 0 ? (
-                                        <div className="roster-grid">
-                                            {viewingTeam.coaches.map(coach => (
-                                                <div key={coach.id} className="roster-card">
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                                                        <div className="roster-card-avatar">
-                                                            {coach.name.charAt(0)}
-                                                        </div>
-                                                        <div className="roster-card-info">
-                                                            <span className="roster-card-name">{coach.name}</span>
-                                                            <span className="roster-card-role">{coach.role}</span>
-                                                        </div>
-                                                    </div>
+
+                                    {addingCoaches ? (
+                                        <div className="add-athlete-layout">
+                                            {/* Left: search + coach list */}
+                                            <div className="add-athlete-search-panel">
+                                                <div className="athlete-search-bar-wrap">
+                                                    <FaSearch className="athlete-search-icon" />
+                                                    <input
+                                                        type="text"
+                                                        className="athlete-search-input"
+                                                        placeholder="Pesquisar por nome, NIF ou email..."
+                                                        value={coachSearch}
+                                                        onChange={(e) => setCoachSearch(e.target.value)}
+                                                        autoFocus
+                                                    />
+                                                    {coachSearch && (
+                                                        <button className="athlete-search-clear" onClick={() => setCoachSearch('')} title="Limpar">
+                                                            <FaTimes />
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            ))}
+
+                                                {filteredCoaches.length > 0 && (
+                                                    <div className="athlete-list-controls">
+                                                        <button
+                                                            className="athlete-list-ctrl-btn"
+                                                            onClick={areAllFilteredCoachesSelected ? handleDeselectAllFilteredCoaches : handleSelectAllFilteredCoaches}
+                                                        >
+                                                            {areAllFilteredCoachesSelected ? <><FaUserCheck /> Desselecionar todos</> : <><FaUserPlus /> Selecionar todos</>}
+                                                        </button>
+                                                        <span className="athlete-list-count">{filteredCoaches.length} disponíveis</span>
+                                                    </div>
+                                                )}
+
+                                                {coachesLoading ? (
+                                                    <div className="athletes-loading">
+                                                        <div className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }}></div>
+                                                        <span>A carregar treinadores...</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="athletes-list">
+                                                        {filteredCoaches.length === 0 && coachesAlreadyInTeam.length === 0 && (
+                                                            <div className="no-results">
+                                                                <span className="no-results-icon">🔍</span>
+                                                                <p>{coachSearch ? 'Sem resultados para a pesquisa' : 'Sem treinadores disponíveis'}</p>
+                                                            </div>
+                                                        )}
+
+                                                        {filteredCoaches.map(coach => {
+                                                            const isSelected = selectedCoaches.includes(coach.id);
+                                                            return (
+                                                                <div
+                                                                    key={coach.id}
+                                                                    className={`athlete-item ${isSelected ? 'athlete-item--selected' : ''}`}
+                                                                    onClick={() => toggleCoachSelection(coach.id)}
+                                                                >
+                                                                    <div className={`athlete-avatar-sm ${isSelected ? 'athlete-avatar-sm--selected' : ''}`}>
+                                                                        {coach.fullName?.charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                    <div className="athlete-info">
+                                                                        <div className="athlete-name">{coach.fullName}</div>
+                                                                        <div className="athlete-details">
+                                                                            <span>{getEmailBase(coach.email)}</span>
+                                                                            {coach.nif && <span className="athlete-nif-tag">NIF: {coach.nif}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className={`athlete-select-indicator ${isSelected ? 'athlete-select-indicator--on' : ''}`}>
+                                                                        {isSelected ? <FaTimes /> : <FaPlus />}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+
+                                                        {coachesAlreadyInTeam.length > 0 && (
+                                                            <div className="already-in-team-section">
+                                                                <div className="already-in-team-label">
+                                                                    <FaUserCheck /> Já na equipa
+                                                                </div>
+                                                                {coachesAlreadyInTeam.map(coach => (
+                                                                    <div key={coach.id} className="athlete-item athlete-item--in-team">
+                                                                        <div className="athlete-avatar-sm athlete-avatar-sm--in-team">
+                                                                            {coach.fullName?.charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                        <div className="athlete-info">
+                                                                            <div className="athlete-name">{coach.fullName}</div>
+                                                                            <div className="athlete-details">
+                                                                                <span>{getEmailBase(coach.email)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="in-team-badge">Na equipa</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Right: selected panel */}
+                                            <div className="add-athlete-selected-panel">
+                                                <div className="teams-selected-panel-header">
+                                                    <div className="selected-panel-title">
+                                                        <FaUsers />
+                                                        <span>Selecionados</span>
+                                                        <span className="selected-panel-count">{selectedCoaches.length}</span>
+                                                    </div>
+                                                    {selectedCoaches.length > 0 && (
+                                                        <button
+                                                            className="teams-btn-submit selected-panel-header-btn"
+                                                            onClick={handleAddCoaches}
+                                                            disabled={submitting}
+                                                        >
+                                                            {submitting ? '...' : <FaUserPlus />}
+                                                            <span>Adicionar</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="selected-panel-list">
+                                                    {selectedCoaches.length === 0 ? (
+                                                        <div className="selected-panel-empty">
+                                                            <FaUsers className="selected-panel-empty-icon" />
+                                                            <p>Clique nos treinadores para os selecionar</p>
+                                                        </div>
+                                                    ) : (
+                                                        selectedCoaches.map(id => {
+                                                            const coach = availableCoaches.find(c => c.id === id);
+                                                            if (!coach) return null;
+                                                            return (
+                                                                <div key={id} className="selected-panel-item">
+                                                                    <span className="selected-panel-name">{coach.fullName}</span>
+                                                                    <button className="selected-panel-remove" onClick={(e) => { e.stopPropagation(); toggleCoachSelection(id); }} title="Remover">
+                                                                        <FaTimes />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     ) : (
-                                        <p style={{ color: '#999', fontStyle: 'italic', padding: '1rem' }}>Sem treinadores atribuídos.</p>
+                                        <div className="roster-grid">
+                                            {viewingTeam.coaches && viewingTeam.coaches.length > 0 ? (
+                                                viewingTeam.coaches.map(coach => (
+                                                    <div key={coach.id} className="roster-card">
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                                                            <div className="roster-card-avatar">
+                                                                {coach.name.charAt(0)}
+                                                            </div>
+                                                            <div className="roster-card-info">
+                                                                <span className="roster-card-name">{coach.name}</span>
+                                                                <span className="roster-card-role">{coach.role}</span>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            className="btn-remove-athlete"
+                                                            onClick={() => handleRemoveCoach(coach.id)}
+                                                            title="Remover da equipa"
+                                                        >
+                                                            <FaTrash />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p style={{ color: '#999', fontStyle: 'italic', padding: '1rem' }}>Sem treinadores atribuídos.</p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
@@ -950,7 +1250,7 @@ const TeamsManager = () => {
                                             </div>
                                             {!addingAthletes && (
                                                 <button
-                                                    className="btn-submit"
+                                                    className="teams-btn-submit"
                                                     style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
                                                     onClick={() => { setAddingAthletes(true); fetchAvailableAthletes(); }}
                                                 >
@@ -1076,7 +1376,7 @@ const TeamsManager = () => {
                                                     </div>
                                                     {selectedAthletes.length > 0 && (
                                                         <button
-                                                            className="btn-submit selected-panel-header-btn"
+                                                            className="teams-btn-submit selected-panel-header-btn"
                                                             onClick={handleAddAthletes}
                                                             disabled={submitting}
                                                         >

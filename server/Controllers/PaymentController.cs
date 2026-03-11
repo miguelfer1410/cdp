@@ -248,148 +248,115 @@ public class PaymentController : ControllerBase
 
         try
         {
-            var query = _context.Users
-                .Include(u => u.AthleteProfile)
-                    .ThenInclude(ap => ap.AthleteTeams)
-                        .ThenInclude(at => at.Team)
-                            .ThenInclude(t => t.Sport)
-                .Include(u => u.MemberProfile)
-                .Where(u => u.MemberProfile != null && u.IsActive);
+            // PHASE 1: Lightweight query - only IDs and basic info, no heavy includes
+            var lightQuery = _context.Users.Where(u => u.MemberProfile != null && u.IsActive);
 
-            // Filter by search
             if (!string.IsNullOrEmpty(search))
             {
                 var s = search.ToLower();
-                query = query.Where(u => u.FirstName.ToLower().Contains(s) || 
-                                           u.LastName.ToLower().Contains(s) || 
-                                           u.Email.ToLower().Contains(s));
+                lightQuery = lightQuery.Where(u => u.FirstName.ToLower().Contains(s) || u.LastName.ToLower().Contains(s) || u.Email.ToLower().Contains(s));
             }
 
-            // Filter by team
             if (teamId.HasValue)
-            {
-                query = query.Where(u => u.AthleteProfile != null && 
-                                           u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
-            }
+                lightQuery = lightQuery.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
 
-            // Filter by sport
             if (sportId.HasValue)
-            {
-                query = query.Where(u => u.AthleteProfile != null && 
-                                           u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null));
-            }
+                lightQuery = lightQuery.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null));
 
-            // Load all matching members — status is derived from Payments so we can't filter in SQL
-            var allMembers = await query
-                .OrderBy(u => u.FirstName)
-                .ThenBy(u => u.LastName)
+            var lightMembers = await lightQuery
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+                .Select(u => new
+                {
+                    u.Id,
+                    MemberProfileId   = u.MemberProfile!.Id,
+                    PaymentPreference = u.MemberProfile.PaymentPreference ?? "Monthly",
+                    Name              = u.FirstName + " " + u.LastName,
+                    Team              = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).FirstOrDefault() ?? "Sem Equipa" : "Sem Equipa",
+                    Sport             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).FirstOrDefault() ?? "N/A" : "N/A"
+                })
                 .ToListAsync();
 
-            var allResults = new List<AthletePaymentStatusDto>();
+            // BATCH: load all relevant payments in ONE query
+            var allProfileIds = lightMembers.Select(m => m.MemberProfileId).ToList();
+            var allPayments = await _context.Payments
+                .Where(p => allProfileIds.Contains(p.MemberProfileId) && p.PeriodYear == targetYear && (p.PeriodMonth == targetMonth || p.PeriodMonth == null))
+                .Select(p => new { p.MemberProfileId, p.Status, p.PeriodMonth, p.CreatedAt, p.Entity, p.Reference })
+                .ToListAsync();
 
-            foreach (var member in allMembers)
+            var paymentsByMember = allPayments
+                .GroupBy(p => p.MemberProfileId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.CreatedAt).ToList());
+
+            // Derive status in memory (no DB calls)
+            var statusMap = lightMembers.Select(m =>
             {
-                int? periodMonth = null;
-                int  periodYear  = targetYear;
-                string paymentPreference = member.MemberProfile!.PaymentPreference ?? "Monthly";
-                if (paymentPreference == "Monthly") periodMonth = targetMonth;
-
-                // Split query so EF Core generates correct IS NULL vs = @month
-                Payment? existingPayment;
-                if (paymentPreference == "Annual")
+                bool isAnnual = m.PaymentPreference == "Annual";
+                var payments  = paymentsByMember.TryGetValue(m.MemberProfileId, out var list) ? list : null;
+                var payment   = isAnnual
+                    ? payments?.FirstOrDefault(p => p.PeriodMonth == null)
+                    : payments?.FirstOrDefault(p => p.PeriodMonth == targetMonth);
+                string derivedStatus = payment?.Status switch { "Completed" => "Regularizada", "Pending" => "Pendente", _ => "Unpaid" } ?? "Unpaid";
+                return new
                 {
-                    existingPayment = await _context.Payments
-                        .Where(p => p.MemberProfileId == member.MemberProfile.Id &&
-                                    p.PeriodYear == periodYear &&
-                                    p.PeriodMonth == null)
-                        .OrderByDescending(p => p.CreatedAt)
-                        .FirstOrDefaultAsync();
+                    m.Id, m.MemberProfileId, m.PaymentPreference, m.Name, m.Team, m.Sport,
+                    Status = derivedStatus,
+                    PendingEntity    = payment?.Status == "Pending" ? payment.Entity    : null,
+                    PendingReference = payment?.Status == "Pending" ? payment.Reference : null,
+                    Period = isAnnual ? $"{targetYear}" : $"{targetMonth}/{targetYear}"
+                };
+            }).ToList();
+
+            // Apply status filter in memory
+            var filtered = statusMap.AsEnumerable();
+            if (!string.IsNullOrEmpty(status) && status != "all")
+            {
+                filtered = status.ToLower() switch
+                {
+                    "paid"    => filtered.Where(r => r.Status == "Regularizada"),
+                    "pending" => filtered.Where(r => r.Status == "Pendente"),
+                    "unpaid"  => filtered.Where(r => r.Status == "Unpaid"),
+                    _         => filtered
+                };
+            }
+
+            var filteredList  = filtered.ToList();
+            int filteredTotal = filteredList.Count;
+            var pageSlice     = filteredList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            // PHASE 2: Load full data and calculate quotas ONLY for paged records (10/25/50)
+            var pageUserIds = pageSlice.Select(r => r.Id).ToList();
+            var fullUsers = await _context.Users
+                .Include(u => u.AthleteProfile).ThenInclude(ap => ap.AthleteTeams).ThenInclude(at => at.Team).ThenInclude(t => t.Sport)
+                .Include(u => u.MemberProfile)
+                .Where(u => pageUserIds.Contains(u.Id))
+                .ToListAsync();
+            var fullUserMap = fullUsers.ToDictionary(u => u.Id);
+
+            var pagedItems = new List<AthletePaymentStatusDto>();
+            foreach (var row in pageSlice)
+            {
+                decimal amount = 0;
+                if (fullUserMap.TryGetValue(row.Id, out var fullUser))
+                {
+                    var calc = await CalculateQuotaWithBreakdown(fullUser);
+                    amount = calc.Total;
                 }
-                else
+                PaymentDetailsDto? paymentDetails = !string.IsNullOrEmpty(row.PendingReference)
+                    ? new PaymentDetailsDto { Entity = row.PendingEntity ?? "", Reference = row.PendingReference ?? "" }
+                    : null;
+
+                pagedItems.Add(new AthletePaymentStatusDto
                 {
-                    existingPayment = await _context.Payments
-                        .Where(p => p.MemberProfileId == member.MemberProfile.Id &&
-                                    p.PeriodYear == periodYear &&
-                                    p.PeriodMonth == periodMonth)
-                        .OrderByDescending(p => p.CreatedAt)
-                        .FirstOrDefaultAsync();
-                }
-
-                string derivedStatus = "Unpaid";
-                PaymentDetailsDto? paymentDetails = null;
-
-                if (existingPayment != null)
-                {
-                    derivedStatus = existingPayment.Status switch
-                    {
-                        "Completed" => "Regularizada",
-                        "Pending"   => "Pendente",
-                        _           => "Unpaid"
-                    };
-                    if (existingPayment.Status == "Pending")
-                    {
-                        paymentDetails = new PaymentDetailsDto
-                        {
-                            Entity    = existingPayment.Entity ?? "",
-                            Reference = existingPayment.Reference ?? ""
-                        };
-                    }
-                }
-
-                // Team / sport label
-                string currentTeam  = "Sem Equipa";
-                string currentSport = "N/A";
-                if (member.AthleteProfile?.AthleteTeams != null)
-                {
-                    var active = member.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null);
-                    if (active != null)
-                    {
-                        currentTeam  = active.Team?.Name ?? "-";
-                        currentSport = active.Team?.Sport?.Name ?? "-";
-                    }
-                }
-
-                var calc = await CalculateQuotaWithBreakdown(member);
-
-                allResults.Add(new AthletePaymentStatusDto
-                {
-                    UserId            = member.Id,
-                    Name              = $"{member.FirstName} {member.LastName}",
-                    Team              = currentTeam,
-                    Sport             = currentSport,
-                    PaymentPreference = paymentPreference,
-                    CurrentPeriod     = periodMonth.HasValue ? $"{periodMonth.Value}/{periodYear}" : $"{periodYear}",
-                    Status            = derivedStatus,
-                    Amount            = calc.Total,
-                    PaymentDetails    = paymentDetails
+                    UserId = row.Id, Name = row.Name, Team = row.Team, Sport = row.Sport,
+                    PaymentPreference = row.PaymentPreference, CurrentPeriod = row.Period,
+                    Status = row.Status, Amount = amount, PaymentDetails = paymentDetails
                 });
             }
 
-            // Apply status filter AFTER computing all statuses (can't be done in SQL)
-            if (!string.IsNullOrEmpty(status) && status != "all")
-            {
-                allResults = allResults.Where(r => status.ToLower() switch {
-                    "paid"    => r.Status == "Regularizada",
-                    "pending" => r.Status == "Pendente",
-                    "unpaid"  => r.Status == "Unpaid",
-                    _         => true
-                }).ToList();
-            }
-
-            // Paginate the already-filtered result so TotalCount is correct
-            int filteredTotal = allResults.Count;
-            var pagedItems = allResults
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
             return Ok(new PaginatedResponse<AthletePaymentStatusDto>
             {
-                Items      = pagedItems,
-                TotalCount = filteredTotal,
-                Page       = page,
-                PageSize   = pageSize,
-                TotalPages = (int)Math.Ceiling(filteredTotal / (double)pageSize)
+                Items = pagedItems, TotalCount = filteredTotal, Page = page,
+                PageSize = pageSize, TotalPages = (int)Math.Ceiling(filteredTotal / (double)pageSize)
             });
         }
         catch (Exception ex)

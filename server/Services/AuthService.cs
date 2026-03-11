@@ -16,6 +16,7 @@ public interface IAuthService
     Task<RegisterResponse?> RegisterAsync(RegisterRequest request);
     Task ForgotPasswordAsync(string email);
     Task<bool> ResetPasswordAsync(string token, string newPassword);
+    Task<List<LinkedUserInfo>> GetLinkedUsersAsync(int userId);
 }
 
 public class AuthService : IAuthService
@@ -362,6 +363,102 @@ public class AuthService : IAuthService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    // ─── GetLinkedUsersAsync ───────────────────────────────────────────────────
+    // Re-runs the same linked-user resolution used at login time so the
+    // frontend can refresh the list without requiring a re-login.
+    public async Task<List<LinkedUserInfo>> GetLinkedUsersAsync(int userId)
+    {
+        var user = await _context.Users
+            .Include(u => u.AthleteProfile)
+            .Include(u => u.CoachProfile)
+            .Include(u => u.MemberProfile)
+            .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null) return new List<LinkedUserInfo>();
+
+        var linkedUsers = new List<LinkedUserInfo>();
+
+        // 1. Email-alias siblings (e.g. mae@gmail.com ↔ mae+filho@gmail.com)
+        var emailLower = user.Email.ToLower();
+        var atIndex   = emailLower.LastIndexOf('@');
+        if (atIndex > 0)
+        {
+            var localPart = emailLower.Substring(0, atIndex);
+            // strip any existing alias so we always search from the base local part
+            var plusIdx = localPart.IndexOf('+');
+            var baseLocal = plusIdx >= 0 ? localPart.Substring(0, plusIdx) : localPart;
+            var domain    = emailLower.Substring(atIndex);
+
+            var allLinked = await _context.Users
+                .Include(u => u.AthleteProfile)
+                .Include(u => u.CoachProfile)
+                .Include(u => u.MemberProfile)
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                .Where(u => u.IsActive
+                         && u.Email.ToLower().StartsWith(baseLocal)
+                         && u.Email.ToLower().EndsWith(domain))
+                .ToListAsync();
+
+            linkedUsers = allLinked
+                .Where(u =>
+                {
+                    var el = u.Email.ToLower();
+                    var ll = el.Substring(0, el.LastIndexOf('@'));
+                    return ll == baseLocal || ll.StartsWith(baseLocal + "+");
+                })
+                .Select(u => new LinkedUserInfo
+                {
+                    Id            = u.Id,
+                    FirstName     = u.FirstName,
+                    LastName      = u.LastName,
+                    DashboardType = u.AthleteProfile != null ? "atleta"
+                                  : u.CoachProfile   != null ? "treinador"
+                                  : u.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
+                                  : "user",
+                    IsSocio = u.AthleteProfile != null || u.MemberProfile != null
+                           || u.UserRoles.Any(ur => ur.Role.Name == "Socio")
+                })
+                .ToList();
+        }
+
+        // 2. Explicit UserFamilyLink records created by an admin
+        var explicitLinks = await _context.UserFamilyLinks
+            .Where(l => l.UserId == userId || l.LinkedUserId == userId)
+            .Include(l => l.User).ThenInclude(u => u.AthleteProfile)
+            .Include(l => l.User).ThenInclude(u => u.CoachProfile)
+            .Include(l => l.User).ThenInclude(u => u.MemberProfile)
+            .Include(l => l.User).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.AthleteProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.CoachProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.MemberProfile)
+            .Include(l => l.LinkedUser).ThenInclude(u => u.UserRoles).ThenInclude(ur => ur.Role)
+            .ToListAsync();
+
+        foreach (var link in explicitLinks)
+        {
+            var other = link.UserId == userId ? link.LinkedUser : link.User;
+            if (other == null || !other.IsActive) continue;
+            if (linkedUsers.Any(lu => lu.Id == other.Id)) continue;
+
+            linkedUsers.Add(new LinkedUserInfo
+            {
+                Id            = other.Id,
+                FirstName     = other.FirstName,
+                LastName      = other.LastName,
+                DashboardType = other.AthleteProfile != null ? "atleta"
+                              : other.CoachProfile   != null ? "treinador"
+                              : other.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
+                              : "user",
+                IsSocio      = other.AthleteProfile != null || other.MemberProfile != null
+                            || other.UserRoles.Any(ur => ur.Role.Name == "Socio"),
+                Relationship = link.Relationship
+            });
+        }
+
+        return linkedUsers;
+    }
+
     private string GenerateMembershipNumber()
     {
         // Generate membership number based on current count + 1

@@ -30,10 +30,11 @@ EXCEL_PATH = "LISTA DE SOCIOS TOTAL.xls"
 # Ajusta o SERVER se necessário
 DB_CONNECTION = (
     "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=DESKTOP-KU8TIMC\\MSSQLSERVERS;"
-    "DATABASE=cdp;"
-    "Trusted_Connection=yes;"
-    "Encrypt=no;"
+    "Server=localhost,14330;"
+    "Database=cdp;"
+    "UID=sa;"
+    "PWD=c8lpFUm1gEhgJb;"
+    "TrustServerCertificate=yes;"
 )
 
 # Limiares de similaridade de nomes (0-100)

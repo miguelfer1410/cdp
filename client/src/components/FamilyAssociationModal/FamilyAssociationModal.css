@@ -282,6 +282,18 @@
     border: 1px solid #6ee7b7;
 }
 
+.status-accepted {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #6ee7b7;
+}
+
+.status-rejected {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
 @media (max-width: 480px) {
     .fam-form-row {
         grid-template-columns: 1fr;

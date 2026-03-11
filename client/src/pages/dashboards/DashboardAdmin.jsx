@@ -25,7 +25,7 @@ const NAV_ITEMS_CONFIG = {
     partners: { id: 'partners', label: 'Parceiros', icon: <FaHandshake /> },
     teams: { id: 'teams', label: 'Equipas', icon: <FaUsers /> },
     people: { id: 'people', label: 'Pessoas', icon: <FaUserFriends /> },
-    //calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> },
+    calendar: { id: 'calendar', label: 'Calendário', icon: <FaCalendarAlt /> },
     fees: { id: 'fees', label: 'Config. Quotas', icon: <FaEuroSign /> },
     payments: { id: 'payments', label: 'Pagamentos', icon: <FaEuroSign /> },
     requests: { id: 'requests', label: 'Requisições', icon: <FaBell /> },
@@ -33,7 +33,7 @@ const NAV_ITEMS_CONFIG = {
     escalaos: { id: 'escalaos', label: 'Escalões', icon: <FaSort /> }
 };
 
-const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people'/*, 'calendar'*/, 'fees', 'payments', 'requests', 'analytics', 'escalaos'];
+const DEFAULT_NAV_ORDER = ['hero', 'news', 'sports', 'partners', 'teams', 'people', 'calendar', 'fees', 'payments', 'requests', 'analytics', 'escalaos'];
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();

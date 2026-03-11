@@ -68,7 +68,6 @@ const News = () => {
               {noticias.map((noticia) => (
                 <div key={noticia.id} className="card news-card">
                   <div className="img-wrapper">
-                    <span className="badge">{noticia.category}</span>
                     <img src={getImageUrl(noticia.imageUrl)} alt={noticia.title} />
                   </div>
                   <div className="card-body">

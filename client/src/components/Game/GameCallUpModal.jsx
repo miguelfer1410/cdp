@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './../Attendance/EventAttendanceModal.css'; // Reusing styles for now, can extract to common later
+import './GameCallUpModal.css';
 
 const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
     const [athletes, setAthletes] = useState([]);
@@ -122,56 +122,51 @@ const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="attendance-modal" onClick={e => e.stopPropagation()}>
+            <div className="game-callup-modal" onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
-                <div className="modal-header">
+                <div className="gcm-header">
                     <h2>
                         <i className="fas fa-bullhorn" />
                         Convocatória para Jogo
                     </h2>
-                    <button className="close-btn" onClick={onClose} aria-label="Fechar">
+                    <button className="gcm-close-btn" onClick={onClose} aria-label="Fechar">
                         &times;
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="modal-body">
+                <div className="gcm-body">
 
                     {/* Event Summary */}
-                    <div className="event-summary" style={{ borderLeftColor: '#d97706', background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' }}>
-                        <h3 style={{ color: '#b45309' }}>{event.title}</h3>
-                        <p className="event-date" style={{ color: '#92400e' }}>
-                            <i className="fas fa-calendar-alt" />
-                            {formatDate(event.startDateTime)}
-                            &nbsp;&bull;&nbsp;
-                            <i className="fas fa-clock" />
-                            {formatTime(event.startDateTime)}
-                        </p>
-                        <p style={{ marginTop: 5, fontSize: '0.9rem', color: '#92400e' }}>
-                            <i className="fas fa-map-marker-alt" /> {event.location || 'Local a definir'}
-                        </p>
+                    <div className="gcm-event-card">
+                        <div className="gcm-event-side-accent" />
+                        <div className="gcm-event-info">
+                            <h3>{event.title}</h3>
+                            <div className="gcm-event-meta">
+                                <span>
+                                    <i className="fas fa-calendar-alt" />
+                                    {formatDate(event.startDateTime)}
+                                </span>
+                                <span>
+                                    <i className="fas fa-clock" />
+                                    {formatTime(event.startDateTime)}
+                                </span>
+                                <span>
+                                    <i className="fas fa-map-marker-alt" />
+                                    {event.location || 'Local a definir'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     {successMessage ? (
-                        <div className="success-message" style={{
-                            padding: '20px',
-                            background: '#f0fdf4',
-                            border: '1px solid #86efac',
-                            color: '#15803d',
-                            borderRadius: '8px',
-                            textAlign: 'center',
-                            fontSize: '1.1rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '10px'
-                        }}>
-                            <i className="fas fa-check-circle" style={{ fontSize: '2rem' }} />
-                            {successMessage}
+                        <div className="gcm-success-pane">
+                            <i className="fas fa-check-circle gcm-success-icon" />
+                            <p style={{ fontWeight: 600, color: '#15803d', margin: 0 }}>{successMessage}</p>
                         </div>
                     ) : loading ? (
-                        <div className="loading-spinner">A carregar equipa…</div>
+                        <div className="loading-spinner">A carregar atletas…</div>
                     ) : error ? (
                         <div className="error-message">
                             <i className="fas fa-exclamation-circle" />
@@ -180,102 +175,65 @@ const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
                     ) : (
                         <>
                             {/* Stats & Actions */}
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: '12px',
-                            }}>
-                                <button
-                                    onClick={handleSelectAll}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: '#003380',
-                                        cursor: 'pointer',
-                                        fontWeight: 600,
-                                        fontSize: '0.9rem',
-                                        textDecoration: 'underline'
-                                    }}
-                                >
+                            <div className="gcm-selection-bar">
+                                <button className="gcm-select-all" onClick={handleSelectAll}>
                                     {selectedAthletes.size === athletes.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
                                 </button>
 
-                                <div style={{
-                                    fontSize: '0.9rem',
-                                    fontWeight: 600,
-                                    color: '#64748b',
-                                }}>
-                                    <span style={{
-                                        background: '#fff7ed',
-                                        color: '#c2410c',
-                                        padding: '4px 12px',
-                                        borderRadius: '20px',
-                                        border: '1px solid #ffedd5',
-                                    }}>
-                                        {selectedAthletes.size} convocados
-                                    </span>
+                                <div className="gcm-count-badge">
+                                    {selectedAthletes.size} convocados
                                 </div>
                             </div>
 
                             {/* List */}
-                            <div className="attendance-list">
-                                <div className="attendance-header-row">
-                                    <div className="col-name" style={{ flex: 1 }}>Atleta</div>
-                                    <div className="col-status" style={{ flex: 0, minWidth: '100px', textAlign: 'center' }}>Selecionar</div>
-                                </div>
-
+                            <div className="gcm-list">
                                 {athletes.map(athlete => {
                                     const isSelected = selectedAthletes.has(athlete.id);
                                     return (
                                         <div
                                             key={athlete.id}
-                                            className="attendance-row"
+                                            className={`gcm-row ${isSelected ? 'selected' : ''}`}
                                             onClick={() => toggleAthlete(athlete.id)}
-                                            style={{ cursor: 'pointer', background: isSelected ? '#fff7ed' : 'transparent' }}
                                         >
-                                            <div className="col-name" style={{ flex: 1 }}>
-                                                <div className="athlete-avatar-small" style={{ background: isSelected ? '#d97706' : '#94a3b8' }}>
-                                                    {getInitials(athlete)}
-                                                </div>
-                                                <span style={{ fontWeight: isSelected ? 700 : 400 }}>{athlete.name}</span>
+                                            <div className="gcm-avatar">
+                                                {getInitials(athlete)}
+                                            </div>
+                                            
+                                            <div className="gcm-athlete-name">
+                                                {athlete.name}
                                             </div>
 
-                                            <div className="col-status" style={{ flex: 0, minWidth: '100px', display: 'flex', justifyContent: 'center' }}>
-                                                <div style={{
-                                                    width: '24px',
-                                                    height: '24px',
-                                                    borderRadius: '6px',
-                                                    border: isSelected ? 'none' : '2px solid #cbd5e1',
-                                                    background: isSelected ? '#d97706' : 'white',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    color: 'white',
-                                                    transition: 'all 0.2s ease'
-                                                }}>
-                                                    {isSelected && <i className="fas fa-check" style={{ fontSize: '0.8rem' }} />}
-                                                </div>
+                                            <div className="gcm-checkbox">
+                                                {isSelected && <i className="fas fa-check" style={{ fontSize: '0.8rem' }} />}
                                             </div>
                                         </div>
                                     );
                                 })}
+                                {athletes.length === 0 && (
+                                    <div style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                                        Nenhum atleta encontrado na equipa.
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}
                 </div>
 
                 {/* Footer */}
-                <div className="modal-footer">
-                    <button className="btn-secondary" onClick={onClose} disabled={saving}>
+                <div className="gcm-footer">
+                    <button className="gcm-btn gcm-btn-cancel" onClick={onClose} disabled={saving}>
                         Cancelar
                     </button>
                     {!successMessage && (
-                        <button className="btn-primary" onClick={handleSave} disabled={saving || loading} style={{ background: '#d97706', borderColor: '#d97706' }}>
+                        <button 
+                            className="gcm-btn gcm-btn-primary" 
+                            onClick={handleSave} 
+                            disabled={saving || loading || selectedAthletes.size === 0}
+                        >
                             {saving ? (
                                 <><i className="fas fa-spinner fa-spin" /> A enviar…</>
                             ) : (
-                                <><i className="fas fa-paper-plane" /> Guardar e Enviar Emails</>
+                                <><i className="fas fa-paper-plane" /> Guardar e Enviar</>
                             )}
                         </button>
                     )}

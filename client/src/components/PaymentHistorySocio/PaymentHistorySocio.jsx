@@ -25,7 +25,7 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [] }) =>
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(
-                `http://localhost:5285/api/payment/history?userId=${userId}&year=${y}`,
+                `http://localhost${y}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!res.ok) throw new Error('Erro ao carregar histórico');

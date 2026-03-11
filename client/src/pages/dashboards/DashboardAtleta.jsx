@@ -26,8 +26,9 @@ const DashboardAtleta = () => {
     const [discountsApplied, setDiscountsApplied] = useState([]);
     const [inscriptionInfo, setInscriptionInfo] = useState([]);
 
-    // Linked users (siblings sharing the same parent email)
-    const [linkedUsers] = useState(() => {
+    // Linked users — refreshed from the API on every mount so newly-accepted
+    // family association requests become visible without forcing a re-login.
+    const [linkedUsers, setLinkedUsers] = useState(() => {
         try {
             const stored = localStorage.getItem('linkedUsers');
             return stored ? JSON.parse(stored) : [];
@@ -36,6 +37,31 @@ const DashboardAtleta = () => {
     const [selectedUserId, setSelectedUserId] = useState(() => {
         return parseInt(localStorage.getItem('userId')) || null;
     });
+
+    // Refresh linked users from server on mount
+    useEffect(() => {
+        const refreshLinkedUsers = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await fetch('http://localhost:5285/api/auth/linked-users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setLinkedUsers(data);
+                    if (data.length > 0) {
+                        localStorage.setItem('linkedUsers', JSON.stringify(data));
+                    } else {
+                        localStorage.removeItem('linkedUsers');
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not refresh linked users:', err);
+            }
+        };
+        refreshLinkedUsers();
+    }, []);
 
     const [paymentReference, setPaymentReference] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState('unpaid');

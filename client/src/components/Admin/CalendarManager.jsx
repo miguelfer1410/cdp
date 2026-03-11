@@ -69,8 +69,12 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                 teamId: restrictedTeamId,
                 sportId: restrictedSportId
             }));
+            setScheduleFormData(prev => ({
+                ...prev,
+                teamId: restrictedTeamId.toString()
+            }));
         }
-    }, [restrictedSportId]);
+    }, [restrictedSportId, restrictedTeamId]);
 
     useEffect(() => {
         fetchEvents();
@@ -78,6 +82,14 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         fetchTeams();
         fetchTrainingSchedules();
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'events') {
+            fetchEvents();
+        } else if (activeTab === 'schedules') {
+            fetchTrainingSchedules();
+        }
+    }, [activeTab]);
 
     const fetchEvents = async () => {
         try {
@@ -165,9 +177,16 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         e.preventDefault();
 
         const token = localStorage.getItem('token');
+        const parsedTeamId = parseInt(scheduleFormData.teamId);
+
+        if (!parsedTeamId || isNaN(parsedTeamId)) {
+            alert('Por favor, selecione uma equipa válida.');
+            return;
+        }
+
         const dataToSend = {
             ...scheduleFormData,
-            teamId: parseInt(scheduleFormData.teamId)
+            teamId: parsedTeamId
         };
 
         try {
@@ -224,6 +243,31 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         }
     };
 
+    const handleCleanupOrphaned = async () => {
+        if (!window.confirm('Isto irá remover todos os treinos que ficaram no calendário de padrões já eliminados. Continuar?')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5285/api/trainingschedules/cleanup-orphaned', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                alert(result.message);
+                await fetchEvents();
+            }
+        } catch (error) {
+            console.error('Error cleaning up orphaned sessions:', error);
+            alert('Erro ao limpar treinos');
+        }
+    };
+
     const handleGenerateEvents = async (scheduleId) => {
         if (!window.confirm('Isto irá apagar todos os treinos existentes e gerar novos baseados no padrão. Continuar?')) {
             return;
@@ -266,7 +310,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
     const resetScheduleForm = () => {
         setScheduleFormData({
-            teamId: '',
+            teamId: restrictedTeamId ? restrictedTeamId.toString() : '',
             daysOfWeek: [],
             startTime: '18:00',
             endTime: '20:00',
@@ -295,6 +339,14 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             default: return '#95a5a6';
         }
     };
+    const getEventPillClass = (eventType) => {
+        switch (eventType) {
+            case 1: return 'cm-event-pill--game';
+            case 2: return 'cm-event-pill--training';
+            case 3: return 'cm-event-pill--other';
+            default: return 'cm-event-pill--default';
+        }
+    };
 
     const formatEventsForCalendar = () => {
         return events.filter(event => {
@@ -303,25 +355,34 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             if (selectedTeamFilter && event.teamId !== parseInt(selectedTeamFilter)) return false;
             if (selectedEventTypeFilter && event.eventType !== parseInt(selectedEventTypeFilter)) return false;
             return true;
-        }).map(event => ({
-            id: event.id,
-            title: event.title,
-            start: event.startDateTime,
-            end: event.endDateTime,
-            backgroundColor: getEventColor(event.eventType),
-            borderColor: getEventColor(event.eventType),
-            extendedProps: {
-                eventType: event.eventType,
-                teamId: event.teamId,
-                sportId: event.sportId,
-                location: event.location,
-                description: event.description,
-                opponentName: event.opponentName,
-                isHomeGame: event.isHomeGame,
-                ticketPriceSocio: event.ticketPriceSocio,
-                ticketPriceNonSocio: event.ticketPriceNonSocio
+        }).map(event => {
+            let displayTitle = event.title;
+            if (event.eventType === 1) { // Game
+                const opponent = event.opponentName || 'Adversário';
+                displayTitle = event.isHomeGame ? `${event.title} - CD Póvoa vs ${opponent}` : `${event.title} - ${opponent} vs CD Póvoa`;
             }
-        }));
+
+            return {
+                id: event.id,
+                title: displayTitle,
+                start: event.startDateTime,
+                end: event.endDateTime,
+                backgroundColor: getEventColor(event.eventType),
+                borderColor: getEventColor(event.eventType),
+                extendedProps: {
+                    originalTitle: event.title,
+                    eventType: event.eventType,
+                    teamId: event.teamId,
+                    sportId: event.sportId,
+                    location: event.location,
+                    description: event.description,
+                    opponentName: event.opponentName,
+                    isHomeGame: event.isHomeGame,
+                    ticketPriceSocio: event.ticketPriceSocio,
+                    ticketPriceNonSocio: event.ticketPriceNonSocio
+                }
+            };
+        });
     };
 
     const handleDateClick = (arg) => {
@@ -591,6 +652,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                             selectable={true}
                             selectMirror={true}
                             dayMaxEvents={true}
+                            slotEventOverlap={false}
                             locale="pt"
                             buttonText={{
                                 today: 'Hoje',
@@ -598,6 +660,13 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 week: 'Semana',
                                 day: 'Dia',
                                 list: 'Lista'
+                            }}
+                            eventDisplay="block"
+                            eventTimeFormat={{
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                meridiem: false,
+                                hour12: false
                             }}
                         />
                     </div>
@@ -612,9 +681,6 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                             <FaClock className="empty-icon" />
                             <h3>Nenhum padrão de treino definido</h3>
                             <p>Crie padrões de treino recorrentes para gerar eventos automaticamente</p>
-                            <button className="btn-add" onClick={() => { resetScheduleForm(); setShowScheduleModal(true); }}>
-                                <FaPlus /> Criar Padrão
-                            </button>
                         </div>
                     ) : (
                         <div className="schedules-grid">

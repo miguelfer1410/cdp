@@ -149,6 +149,7 @@ public class UsersController : ControllerBase
             CreatedAt = u.CreatedAt,
             LastLogin = u.LastLogin,
             AthleteProfileId = u.AthleteProfile?.Id,
+            CoachProfileId = u.CoachProfile?.Id,
             MembershipNumber = u.MemberProfile?.MembershipNumber,
             Sport = u.AthleteProfile != null
                 ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
@@ -342,6 +343,8 @@ public class UsersController : ControllerBase
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
             LastLogin = user.LastLogin,
+            AthleteProfileId = null,
+            CoachProfileId = null,
             MembershipNumber = null,
             Sport = user.AthleteProfile != null
                 ? user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
@@ -1242,19 +1245,23 @@ public class UsersController : ControllerBase
             .Include(l => l.LinkedUser)
             .ToListAsync();
 
-        var result = links.Select(l =>
-        {
-            var other = l.UserId == id ? l.LinkedUser : l.User;
-            return new FamilyLinkResponse
+        var result = links
+            .Select(l =>
             {
-                LinkId = l.Id,
-                UserId = other.Id,
-                FullName = $"{other.FirstName} {other.LastName}".Trim(),
-                Email = other.Email,
-                Relationship = l.Relationship,
-                CreatedAt = l.CreatedAt
-            };
-        });
+                var other = l.UserId == id ? l.LinkedUser : l.User;
+                return new FamilyLinkResponse
+                {
+                    LinkId = l.Id,
+                    UserId = other.Id,
+                    FullName = $"{other.FirstName} {other.LastName}".Trim(),
+                    Email = other.Email,
+                    Relationship = l.Relationship,
+                    CreatedAt = l.CreatedAt
+                };
+            })
+            // Deduplicate: guard against legacy bidirectional rows (UserId↔LinkedUserId both stored)
+            .GroupBy(r => r.UserId)
+            .Select(g => g.First());
 
         return Ok(result);
     }
@@ -1385,6 +1392,7 @@ public class UserResponse
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLogin { get; set; }
     public int? AthleteProfileId { get; set; }
+    public int? CoachProfileId { get; set; }
     public string? MembershipNumber { get; set; }
     public string? Sport { get; set; }
 }
