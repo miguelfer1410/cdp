@@ -23,12 +23,16 @@ public class FamilyAssociationRequest
     [MaxLength(500)]
     public string? RequesterMessage { get; set; }
 
-    // Pending or Seen (admin has viewed it)
     public FamilyAssociationRequestStatus Status { get; set; } = FamilyAssociationRequestStatus.Pending;
 
     public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? SeenAt { get; set; }
+
+    public DateTime? ReviewedAt { get; set; }
+
+    [MaxLength(500)]
+    public string? AdminNote { get; set; }
 
     // Navigation properties
     public User Requester { get; set; } = null!;
@@ -37,5 +41,7 @@ public class FamilyAssociationRequest
 public enum FamilyAssociationRequestStatus
 {
     Pending = 0,
-    Seen = 1
+    Seen = 1,
+    Accepted = 2,
+    Rejected = 3
 }

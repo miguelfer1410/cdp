@@ -163,6 +163,115 @@ public class FamilyAssociationsController : ControllerBase
 
         return Ok(new { message = "Requisição marcada como vista" });
     }
+
+    // POST: api/family-associations/{id}/accept
+    // Admin accepts the request — finds the matching user and creates the family link
+    [HttpPost("{id}/accept")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AcceptRequest(int id)
+    {
+        var request = await _context.FamilyAssociationRequests
+            .Include(r => r.Requester)
+            .FirstOrDefaultAsync(r => r.Id == id);
+
+        if (request == null)
+            return NotFound(new { message = "Requisição não encontrada" });
+
+        if (request.Status == FamilyAssociationRequestStatus.Accepted)
+            return BadRequest(new { message = "Esta requisição já foi aceite." });
+
+        // Search for the matching user by NIF + name + birth date
+        User? matchedUser = null;
+
+        var normalizedName = request.FamilyMemberName.Trim().ToLower();
+
+        var candidates = _context.Users.AsQueryable();
+
+        // Filter by NIF if provided
+        if (!string.IsNullOrWhiteSpace(request.FamilyMemberNif))
+        {
+            candidates = candidates.Where(u => u.Nif == request.FamilyMemberNif.Trim());
+        }
+
+        // Filter by birth date if provided
+        if (request.FamilyMemberBirthDate.HasValue)
+        {
+            var dob = request.FamilyMemberBirthDate.Value.Date;
+            candidates = candidates.Where(u => u.BirthDate != null && u.BirthDate.Value.Date == dob);
+        }
+
+        // Load candidates and filter by name client-side (insensitive)
+        var candidateList = await candidates.ToListAsync();
+        matchedUser = candidateList.FirstOrDefault(u =>
+            $"{u.FirstName} {u.LastName}".Trim().ToLower() == normalizedName);
+
+        if (matchedUser == null)
+        {
+            return NotFound(new
+            {
+                message = $"Nenhum utilizador encontrado com o nome '{request.FamilyMemberName}', NIF '{request.FamilyMemberNif ?? "N/D"}' e data de nascimento '{(request.FamilyMemberBirthDate.HasValue ? request.FamilyMemberBirthDate.Value.ToString("dd/MM/yyyy") : "N/D")}'. Por favor associe manualmente na aba Pessoas."
+            });
+        }
+
+        // Avoid duplicate links
+        var existingLink = await _context.UserFamilyLinks
+            .AnyAsync(l =>
+                (l.UserId == request.RequesterId && l.LinkedUserId == matchedUser.Id) ||
+                (l.UserId == matchedUser.Id && l.LinkedUserId == request.RequesterId));
+
+        if (!existingLink)
+        {
+            _context.UserFamilyLinks.Add(new UserFamilyLink
+            {
+                UserId = request.RequesterId,
+                LinkedUserId = matchedUser.Id,
+                Relationship = "Outro",
+                CreatedAt = DateTime.UtcNow
+            });
+            _context.UserFamilyLinks.Add(new UserFamilyLink
+            {
+                UserId = matchedUser.Id,
+                LinkedUserId = request.RequesterId,
+                Relationship = "Outro",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        request.Status = FamilyAssociationRequestStatus.Accepted;
+        request.ReviewedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = $"Requisição aceite. Associação criada entre {request.Requester.FirstName} e {matchedUser.FirstName} {matchedUser.LastName}.",
+            linkedUserId = matchedUser.Id,
+            linkedUserName = $"{matchedUser.FirstName} {matchedUser.LastName}"
+        });
+    }
+
+    // POST: api/family-associations/{id}/reject
+    // Admin rejects the request
+    [HttpPost("{id}/reject")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RejectRequest(int id, [FromBody] RejectRequestDto dto)
+    {
+        var request = await _context.FamilyAssociationRequests.FindAsync(id);
+
+        if (request == null)
+            return NotFound(new { message = "Requisição não encontrada" });
+
+        if (request.Status == FamilyAssociationRequestStatus.Rejected)
+            return BadRequest(new { message = "Esta requisição já foi recusada." });
+
+        request.Status = FamilyAssociationRequestStatus.Rejected;
+        request.ReviewedAt = DateTime.UtcNow;
+        request.AdminNote = dto.AdminNote?.Trim();
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Requisição recusada." });
+    }
 }
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
@@ -200,4 +309,11 @@ public class FamilyRequestAdminResponse
     public string Status { get; set; } = string.Empty;
     public DateTime RequestedAt { get; set; }
     public DateTime? SeenAt { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public string? AdminNote { get; set; }
+}
+
+public class RejectRequestDto
+{
+    public string? AdminNote { get; set; }
 }

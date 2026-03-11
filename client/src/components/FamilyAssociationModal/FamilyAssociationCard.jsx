@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUserFriends, FaCheckCircle, FaClock, FaEye } from 'react-icons/fa';
+import { FaUserFriends, FaCheckCircle, FaClock, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
 import './FamilyAssociationCard.css';
 
 const API_BASE = 'http://localhost:5285';
@@ -90,8 +90,12 @@ const FamilyAssociationCard = ({ userId }) => {
     };
 
     const getStatusInfo = (status) => {
-        if (status === 'Seen') return { label: 'Visto', icon: <FaEye />, className: 'status-seen' };
-        return { label: 'Pendente', icon: <FaClock />, className: 'status-pending' };
+        switch (status) {
+            case 'Accepted': return { label: 'Aceite', icon: <FaCheck />, className: 'status-accepted' };
+            case 'Rejected': return { label: 'Recusado', icon: <FaTimes />, className: 'status-rejected' };
+            case 'Seen':     return { label: 'Visto', icon: <FaEye />, className: 'status-seen' };
+            default:         return { label: 'Pendente', icon: <FaClock />, className: 'status-pending' };
+        }
     };
 
     return (

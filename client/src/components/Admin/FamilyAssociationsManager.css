@@ -143,29 +143,205 @@
     font-style: italic;
 }
 
-.fam-seen-btn {
+.fam-action-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.fam-accept-btn,
+.fam-reject-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: #003380;
-    color: white;
+    gap: 6px;
+    padding: 7px 14px;
     border: none;
     border-radius: 6px;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+.fam-accept-btn {
+    background: #16a34a;
+    color: white;
+}
+
+.fam-accept-btn:hover {
+    background: #15803d;
+    transform: translateY(-1px);
+}
+
+.fam-reject-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.fam-reject-btn:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+}
+
+.fam-accept-btn:disabled,
+.fam-reject-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+.fam-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    max-width: 480px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    animation: fam-toast-in 0.3s ease;
+}
+
+@keyframes fam-toast-in {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.fam-toast svg { flex-shrink: 0; margin-top: 2px; font-size: 1rem; }
+.fam-toast span { flex: 1; }
+
+.fam-toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    flex-shrink: 0;
+    padding: 0;
+    font-size: 0.85rem;
+    color: inherit;
+}
+.fam-toast-close:hover { opacity: 1; }
+
+.fam-toast--success { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+.fam-toast--warning { background: #fef9c3; color: #713f12; border: 1px solid #fde047; }
+.fam-toast--error   { background: #fee2e2; color: #7f1d1d; border: 1px solid #fca5a5; }
+
+/* ── Reject Modal ─────────────────────────────────────────────────────────── */
+.fam-reject-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.fam-reject-modal {
+    background: white;
+    border-radius: 14px;
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: fam-modal-in 0.25s ease;
+}
+
+@keyframes fam-modal-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.fam-reject-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.fam-reject-modal-icon {
+    color: #dc2626;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.fam-reject-modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.fam-reject-modal-desc {
+    color: #475569;
+    font-size: 0.95rem;
+    margin: 0 0 16px;
+    line-height: 1.5;
+}
+
+.fam-reject-note {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    resize: vertical;
+    font-family: inherit;
+    color: #1e293b;
+    transition: border-color 0.2s;
+}
+.fam-reject-note:focus {
+    outline: none;
+    border-color: #dc2626;
+}
+
+.fam-reject-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.fam-reject-cancel-btn {
+    padding: 9px 18px;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.fam-reject-cancel-btn:hover { background: #f8fafc; }
+
+.fam-reject-confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
 }
+.fam-reject-confirm-btn:hover { background: #b91c1c; }
+.fam-reject-confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.fam-seen-btn:hover {
-    background: #002255;
-}
-
-.fam-seen-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 .fam-manager-loading,
 .fam-manager-empty {
@@ -289,7 +465,13 @@
         max-width: none;
     }
 
-    .fam-seen-btn {
+    .fam-action-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .fam-accept-btn,
+    .fam-reject-btn {
         width: 100%;
         justify-content: center;
         padding: 10px;

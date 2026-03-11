@@ -34,13 +34,15 @@ const Bilheteria = () => {
                     const data = await response.json();
 
                     // Formatar dados para a interface
-                    const formattedEvents = data.map(e => {
-                        const dateObj = new Date(e.startDateTime);
+                    const formattedEvents = data
+                        .filter(e => e.eventType !== 1 || e.isHomeGame)
+                        .map(e => {
+                            const dateObj = new Date(e.startDateTime);
 
-                        const homeTeam = e.isHomeGame ? 'CD Póvoa' : (e.opponentName || 'Adversário');
-                        const awayTeam = e.isHomeGame ? (e.opponentName || 'Adversário') : 'CD Póvoa';
+                            const homeTeam = e.isHomeGame ? 'CD Póvoa' : (e.opponentName || 'Adversário');
+                            const awayTeam = e.isHomeGame ? (e.opponentName || 'Adversário') : 'CD Póvoa';
 
-                        return {
+                            return {
                             ...e, // Keep original data for modal
                             id: e.id,
                             homeTeam,
@@ -379,11 +381,8 @@ const Bilheteria = () => {
                             <div className="benefits-section">
                                 <h3>Vantagens Exclusivas</h3>
                                 <ul>
-                                    <li><FaCheckCircle className="check-icon" /> Acesso a todos os jogos em casa (Campeonato e Taça)</li>
+                                    <li><FaCheckCircle className="check-icon" /> Acesso a todos os jogos em casa </li>
                                     <li><FaCheckCircle className="check-icon" /> Lugar marcado personalizado no pavilhão</li>
-                                    <li><FaCheckCircle className="check-icon" /> 10% de desconto na loja oficial do clube</li>
-                                    <li><FaCheckCircle className="check-icon" /> Prioridade na compra de bilhetes para jogos fora</li>
-                                    <li><FaCheckCircle className="check-icon" /> Newsletter exclusiva do sócio detentor</li>
                                 </ul>
                             </div>
 

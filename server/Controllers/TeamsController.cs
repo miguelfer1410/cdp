@@ -437,6 +437,89 @@ public class TeamsController : ControllerBase
             return StatusCode(500, new { message = "Error adding athletes to team" });
         }
     }
+    // POST: api/teams/{id}/coaches - Add coaches to team
+    [HttpPost("{id}/coaches")]
+    [Authorize]
+    public async Task<IActionResult> AddCoaches(int id, [FromBody] AddCoachesRequest request)
+    {
+        try
+        {
+            var team = await _context.Teams.FindAsync(id);
+            if (team == null)
+            {
+                return NotFound(new { message = "Team not found" });
+            }
+
+            if (request.CoachProfileIds == null || !request.CoachProfileIds.Any())
+            {
+                return BadRequest(new { message = "No coaches provided" });
+            }
+
+            int addedCount = 0;
+
+            foreach (var coachId in request.CoachProfileIds)
+            {
+                var coach = await _context.CoachProfiles.FirstOrDefaultAsync(c => c.Id == coachId || c.UserId == coachId);
+                
+                if (coach != null)
+                {
+                    // Only assign if they are not already assigned to this team
+                    if (coach.TeamId != id)
+                    {
+                        coach.TeamId = id;
+                        addedCount++;
+                    }
+                }
+            }
+
+            if (addedCount > 0)
+            {
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { message = $"{addedCount} coaches added successfully", addedCount = addedCount });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding coaches to team {TeamId}", id);
+            return StatusCode(500, new { message = "Error adding coaches to team" });
+        }
+    }
+
+    // DELETE: api/teams/{teamId}/coaches/{coachId} - Remove coach from team
+    [HttpDelete("{teamId}/coaches/{coachId}")]
+    [Authorize]
+    public async Task<IActionResult> RemoveCoachFromTeam(int teamId, int coachId)
+    {
+        try
+        {
+            var team = await _context.Teams.FindAsync(teamId);
+            if (team == null)
+            {
+                return NotFound(new { message = "Team not found" });
+            }
+
+            // Find the coach
+            var coach = await _context.CoachProfiles.FirstOrDefaultAsync(c => c.Id == coachId || c.UserId == coachId);
+
+            if (coach == null || coach.TeamId != teamId)
+            {
+                return NotFound(new { message = "Coach not found in this team" });
+            }
+
+            // Unassign the team
+            coach.TeamId = null;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Coach removed from team successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing coach {CoachId} from team {TeamId}", coachId, teamId);
+            return StatusCode(500, new { message = "Error removing coach from team" });
+        }
+    }
+
     // DELETE: api/teams/{teamId}/athletes/{athleteId} - Remove athlete from team
     [HttpDelete("{teamId}/athletes/{athleteId}")]
     [Authorize]
@@ -528,4 +611,9 @@ public class TeamAthleteInfo
 public class AddAthletesRequest
 {
     public List<int> AthleteProfileIds { get; set; } = new();
+}
+
+public class AddCoachesRequest
+{
+    public List<int> CoachProfileIds { get; set; } = new();
 }
