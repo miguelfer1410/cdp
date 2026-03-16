@@ -23,7 +23,7 @@ public class StripeService : IStripeService
         StripeConfiguration.ApiKey = _settings.SecretKey;
     }
 
-    public async Task<string> CreateCheckoutSessionAsync(int eventId, string buyerEmail, string buyerName, decimal amount, string successUrl, string cancelUrl)
+    public async Task<string> CreateCheckoutSessionAsync(string eventId, string buyerEmail, string buyerName, decimal amount, string successUrl, string cancelUrl, string? profilesMetadata = null, string? buyerUserId = null)
     {
         var options = new SessionCreateOptions
         {
@@ -46,15 +46,29 @@ public class StripeService : IStripeService
                 },
             },
             Mode = "payment",
-            SuccessUrl = successUrl + "?session_id={CHECKOUT_SESSION_ID}",
+            SuccessUrl = successUrl + "&session_id={CHECKOUT_SESSION_ID}", // Changed ? to & because successUrl already has params
             CancelUrl = cancelUrl,
-            CustomerEmail = buyerEmail,
             Metadata = new Dictionary<string, string>
             {
                 { "EventId", eventId.ToString() },
                 { "BuyerName", buyerName }
             }
         };
+
+        if (profilesMetadata != null)
+        {
+            options.Metadata.Add("Profiles", profilesMetadata);
+        }
+
+        if (buyerUserId != null)
+        {
+            options.Metadata.Add("BuyerUserId", buyerUserId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(buyerEmail))
+        {
+            options.CustomerEmail = buyerEmail;
+        }
 
         var service = new SessionService();
         Session session = await service.CreateAsync(options);

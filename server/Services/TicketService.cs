@@ -16,11 +16,12 @@ public class TicketService : ITicketService
         _logger = logger;
     }
 
-    public async Task<Ticket> CreateTicketAsync(int eventId, string buyerEmail, string buyerName, decimal price, string stripeSessionId)
+    public async Task<Ticket> CreateTicketAsync(int eventId, string buyerEmail, string buyerName, decimal price, string stripeSessionId, int? userId = null)
     {
         var ticket = new Ticket
         {
             EventId = eventId,
+            UserId = userId,
             BuyerEmail = buyerEmail,
             BuyerName = buyerName,
             Price = price,

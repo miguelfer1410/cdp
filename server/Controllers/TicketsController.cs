@@ -35,12 +35,13 @@ public class TicketsController : ControllerBase
         // For now, using NonSocio price as default or request value.
 
         var sessionId = await _stripeService.CreateCheckoutSessionAsync(
-            request.EventId,
+            request.EventId.ToString(),
             request.BuyerEmail,
             request.BuyerName,
             price > 0 ? price : 5.0m, // Fallback price
             request.SuccessUrl,
-            request.CancelUrl
+            request.CancelUrl,
+            null // No profiles metadata for this legacy endpoint
         );
 
         var sessionService = new Stripe.Checkout.SessionService();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
 import '../styles/Bilheteria.css';
 import { FaTicketAlt, FaCalendarAlt, FaMapMarkerAlt, FaInfoCircle, FaCheckCircle, FaUser } from 'react-icons/fa';
 
@@ -27,6 +28,38 @@ const Bilheteria = () => {
     });
 
     useEffect(() => {
+        // Check for success/canceled query params from Stripe
+        const query = new URLSearchParams(window.location.search);
+        if (query.get('success')) {
+            const eventId = query.get('eventId');
+            setPurchaseStep('success');
+            setShowPurchaseModal(true);
+
+            // If the event list is already loaded, we can try to find and set the selected event
+            if (events.length > 0) {
+                const event = events.find(e => e.id.toString() === eventId);
+                if (event) setSelectedEvent(event);
+            } else if (eventId === 'annual-ticket') {
+                setSelectedEvent({
+                    id: 'annual-ticket',
+                    homeTeam: 'Bilhete Anual',
+                    awayTeam: '2025/2026',
+                    date: 'Época 2025/2026',
+                    time: 'Todos os jogos',
+                    location: 'Pavilhão Clube Desportivo da Póvoa',
+                    ticketPriceSocio: 40,
+                    ticketPriceNonSocio: 40,
+                    isAnnual: true
+                });
+            }
+
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        if (query.get('canceled')) {
+            alert('O pagamento foi cancelado.');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         const fetchPublicEvents = async () => {
             try {
                 const response = await fetch('http://localhost:5285/api/events/public');
@@ -138,16 +171,64 @@ const Bilheteria = () => {
         setShowPurchaseModal(true);
     };
 
-    const confirmPurchase = () => {
+    const confirmPurchase = async () => {
         if (linkedUsers.length > 1 && selectedProfiles.length === 0) {
             alert('Por favor, seleciona pelo menos um perfil para continuar.');
             return;
         }
+
         setPurchaseStep('processing');
-        // Simulate API call
-        setTimeout(() => {
-            setPurchaseStep('success');
-        }, 2000);
+
+        try {
+            const stripePromise = loadStripe('pk_test_51QnF4rI18DTPnLzLj7JCcP5PxHpf0KsL7ZBDGIwSzskbAhoOoVGga0qUSmPcp1epTLKuioL247QCegf99m62Da4U00K1o8qdiz');
+            const stripe = await stripePromise;
+
+            const userEmail = localStorage.getItem('userEmail') || '';
+            const userName = localStorage.getItem('userName') || '';
+            const totalAmount = calculateTotal();
+
+            const buyerUserId = localStorage.getItem('userId');
+
+            const response = await fetch('http://localhost:5285/api/Stripe/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    eventId: selectedEvent.id.toString(),
+                    buyerUserId: buyerUserId ? parseInt(buyerUserId) : null,
+                    buyerEmail: userEmail,
+                    buyerName: userName,
+                    amount: totalAmount,
+                    profiles: selectedProfiles.map(p => ({
+                        id: p.id,
+                        name: `${p.firstName} ${p.lastName}`,
+                        price: getTicketPrice(selectedEvent, p)
+                    })),
+                    successUrl: window.location.origin + `/bilheteria?success=true&eventId=${selectedEvent.id}`,
+                    cancelUrl: window.location.origin + '/bilheteria?canceled=true'
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Erro ao criar sessão de pagamento');
+            }
+
+            const { sessionId } = await response.json();
+            const { error } = await stripe.redirectToCheckout({ sessionId });
+
+            if (error) {
+                console.error('Stripe redirect error:', error);
+                alert(error.message);
+                setPurchaseStep('summary');
+            }
+        } catch (err) {
+            console.error('Purchase error:', err);
+            alert(err.message || 'Ocorreu um erro ao processar a compra.');
+            setPurchaseStep('summary');
+        }
     };
 
     const modalidades = ['Todas', ...new Set(events.map(match => match.modalidade))];

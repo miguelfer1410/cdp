@@ -256,7 +256,7 @@ const PeopleManager = () => {
             else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'Email inválido';
             if (!formData.firstName.trim()) errors.firstName = 'Nome é obrigatório';
             if (!formData.lastName.trim()) errors.lastName = 'Apelido é obrigatório';
-            
+
             // Optional fields but with format validation if provided
             if (formData.nif && formData.nif.trim() && formData.nif.length !== 9) {
                 errors.nif = 'NIF deve ter 9 dígitos';
@@ -288,7 +288,7 @@ const PeopleManager = () => {
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) allErrors.email = 'inválido';
         if (!formData.firstName.trim()) allErrors.firstName = 'obrigatório';
         if (!formData.lastName.trim()) allErrors.lastName = 'obrigatório';
-        
+
         // Optional fields validation
         if (formData.nif && formData.nif.trim() && formData.nif.length !== 9) {
             allErrors.nif = 'inválido';

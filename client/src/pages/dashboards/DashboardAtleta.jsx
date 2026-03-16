@@ -113,7 +113,7 @@ const DashboardAtleta = () => {
                 body: JSON.stringify({
                     eventId: event.id,
                     buyerEmail: athleteData.email || athleteData.athleteProfile?.email,
-                    buyerName: athleteData.athleteProfile 
+                    buyerName: athleteData.athleteProfile
                         ? `${athleteData.athleteProfile.firstName || ''} ${athleteData.athleteProfile.lastName || ''}`.trim() || athleteData.fullName
                         : athleteData.fullName,
                     successUrl: window.location.origin + '/payment-success',
@@ -124,7 +124,7 @@ const DashboardAtleta = () => {
             if (!response.ok) throw new Error('Erro ao criar sessão de pagamento');
 
             const { url } = await response.json();
-            
+
             if (url) {
                 window.location.href = url;
             } else {
@@ -439,7 +439,7 @@ const DashboardAtleta = () => {
                                                     </div>
                                                 </div>
                                                 {event.eventType === 1 && (
-                                                    <button 
+                                                    <button
                                                         className="buy-ticket-btn"
                                                         onClick={() => handleBuyTicket(event)}
                                                         style={{
