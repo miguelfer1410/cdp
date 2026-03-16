@@ -17,7 +17,7 @@ const dayTranslations = {
     'Sunday': 'Dom'
 };
 
-const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
+const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashboard = false }) => {
     const [activeTab, setActiveTab] = useState('events'); // 'events' or 'schedules'
     const [events, setEvents] = useState([]);
     const [sports, setSports] = useState([]);
@@ -42,8 +42,8 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         description: '',
         opponentName: '',
         isHomeGame: true,
-        ticketPriceSocio: '',
-        ticketPriceNonSocio: ''
+        ticketPriceSocio: isCoachDashboard ? '3' : '',
+        ticketPriceNonSocio: isCoachDashboard ? '7' : ''
     });
 
     const DAYS_ORDER = [
@@ -423,11 +423,13 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
 
     const handleDateClick = (arg) => {
         resetForm();
-        setFormData({
-            ...formData,
+        setFormData(prev => ({
+            ...prev,
             startDateTime: arg.dateStr + 'T10:00',
-            endDateTime: arg.dateStr + 'T12:00'
-        });
+            endDateTime: arg.dateStr + 'T12:00',
+            ticketPriceSocio: isCoachDashboard ? '3' : '',
+            ticketPriceNonSocio: isCoachDashboard ? '7' : ''
+        }));
         setShowEventModal(true);
     };
 
@@ -519,6 +521,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
     };
 
     const resetForm = () => {
+        const isGame = formData.eventType === 1;
         setFormData({
             title: '',
             eventType: 1,
@@ -530,8 +533,8 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
             description: '',
             opponentName: '',
             isHomeGame: true,
-            ticketPriceSocio: '',
-            ticketPriceNonSocio: ''
+            ticketPriceSocio: isCoachDashboard ? '3' : '',
+            ticketPriceNonSocio: isCoachDashboard ? '7' : ''
         });
         setEditingEvent(null);
     };
@@ -814,7 +817,17 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                             key={v}
                                             type="button"
                                             className={`cm-type-pill cm-type-pill--${v === 1 ? 'game' : v === 2 ? 'training' : 'other'} ${formData.eventType === v ? 'active' : ''}`}
-                                            onClick={() => setFormData({ ...formData, eventType: v })}
+                                            onClick={() => {
+                                                const newPrices = (isCoachDashboard && v === 1)
+                                                    ? { ticketPriceSocio: '3', ticketPriceNonSocio: '7' }
+                                                    : { ticketPriceSocio: '', ticketPriceNonSocio: '' };
+
+                                                setFormData({
+                                                    ...formData,
+                                                    eventType: v,
+                                                    ...newPrices
+                                                });
+                                            }}
                                         >{label}</button>
                                     ))}
                                 </div>
@@ -898,7 +911,6 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                     className="cm-form-input"
                                     value={formData.location}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                    placeholder="Ex: Pavilhão Fernando Linhares"
                                 />
                             </div>
 
@@ -940,6 +952,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                                 value={formData.ticketPriceSocio}
                                                 onChange={(e) => setFormData({ ...formData, ticketPriceSocio: e.target.value })}
                                                 placeholder="€ 0.00"
+                                                disabled={isCoachDashboard}
                                             />
                                         </div>
                                         <div className="cm-form-field">
@@ -952,6 +965,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                                 value={formData.ticketPriceNonSocio}
                                                 onChange={(e) => setFormData({ ...formData, ticketPriceNonSocio: e.target.value })}
                                                 placeholder="€ 0.00"
+                                                disabled={isCoachDashboard}
                                             />
                                         </div>
                                     </div>
@@ -1149,7 +1163,6 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                     className="cm-form-input"
                                     value={scheduleFormData.location}
                                     onChange={(e) => setScheduleFormData({ ...scheduleFormData, location: e.target.value })}
-                                    placeholder="Ex: Pavilhão Fernando Linhares"
                                 />
                             </div>
 
