@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316143212_ReplaceDaySchedules")]
+    partial class ReplaceDaySchedules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1086,14 +1089,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 16, 14, 43, 36, 174, DateTimeKind.Utc).AddTicks(9359),
+                            CreatedAt = new DateTime(2026, 3, 16, 14, 32, 11, 573, DateTimeKind.Utc).AddTicks(8116),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 16, 14, 43, 36, 174, DateTimeKind.Utc).AddTicks(9361),
+                            CreatedAt = new DateTime(2026, 3, 16, 14, 32, 11, 573, DateTimeKind.Utc).AddTicks(8118),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1352,13 +1355,13 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 16, 14, 43, 36, 294, DateTimeKind.Utc).AddTicks(2100),
+                            CreatedAt = new DateTime(2026, 3, 16, 14, 32, 11, 708, DateTimeKind.Utc).AddTicks(8718),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$9GqOuiivcpZZ.Qii5/Pls.rCYisqfTLC9oguspvvdlF1ArS6yn/Uq"
+                            PasswordHash = "$2a$11$NULTco5.SOMFh7lsnoawV.mh/RDTnN5l4rG7nK.OsX1WW2Q89xDc."
                         });
                 });
 
@@ -1425,7 +1428,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 16, 14, 43, 36, 294, DateTimeKind.Utc).AddTicks(2537),
+                            AssignedAt = new DateTime(2026, 3, 16, 14, 32, 11, 708, DateTimeKind.Utc).AddTicks(9168),
                             RoleId = 2,
                             UserId = 1
                         });

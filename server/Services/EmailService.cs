@@ -296,5 +296,90 @@ namespace server.Services
                 throw;
             }
         }
+
+        public async Task SendTicketEmailAsync(string toEmail, string buyerName, string eventTitle, DateTime eventDate, string location, byte[] qrCode)
+        {
+            try
+            {
+                _logger.LogInformation($"Attempting to send ticket email to {toEmail}");
+
+                var emailMessage = new MimeMessage();
+                emailMessage.From.Add(new MailboxAddress(_emailSettings.SenderName, _emailSettings.SenderEmail));
+                emailMessage.To.Add(new MailboxAddress(buyerName, toEmail));
+                emailMessage.Subject = $"O seu Bilhete - {eventTitle} - Clube Desportivo da Póvoa";
+
+                var bodyBuilder = new BodyBuilder();
+                
+                // Add QR code as an inline image
+                var qrImage = bodyBuilder.LinkedResources.Add("ticket_qr.png", qrCode);
+                qrImage.ContentId = MimeKit.Utils.MimeUtils.GenerateMessageId();
+
+                bodyBuilder.HtmlBody = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; background-color: #f4f6f8;'>
+                        <div style='max-width: 600px; margin: 0 auto; padding: 40px 20px;'>
+                            <div style='background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08);'>
+                                
+                                <!-- Header -->
+                                <div style='background: linear-gradient(135deg, #003380, #00509e); padding: 30px 40px; text-align: center;'>
+                                    <h1 style='color: white; margin: 0; font-size: 1.5em;'>Clube Desportivo da Póvoa</h1>
+                                </div>
+                                
+                                <!-- Body -->
+                                <div style='padding: 40px;'>
+                                    <h2 style='color: #003380; margin-top: 0;'>O seu Bilhete</h2>
+                                    
+                                    <p style='font-size: 1em; line-height: 1.6;'>
+                                        Olá <strong>{buyerName}</strong>,
+                                    </p>
+                                    
+                                    <p style='font-size: 1em; line-height: 1.6;'>
+                                        O seu pagamento foi confirmado! Aqui está o seu bilhete para o jogo:
+                                    </p>
+                                    
+                                    <div style='background: #f0f7ff; border: 2px dashed #003380; padding: 25px; margin: 25px 0; border-radius: 8px; text-align: center;'>
+                                        <h3 style='margin: 0 0 10px 0; color: #003380;'>{eventTitle}</h3>
+                                        <p style='margin: 5px 0;'><strong>Data e Hora:</strong> {eventDate.ToString("dd/MM/yyyy HH:mm")}</p>
+                                        <p style='margin: 5px 0;'><strong>Local:</strong> {location}</p>
+                                        
+                                        <div style='margin-top: 25px;'>
+                                            <img src='cid:{qrImage.ContentId}' alt='Ticket QR Code' style='width: 200px; height: 200px; border: 4px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.1);' />
+                                            <p style='font-size: 0.8em; color: #666; margin-top: 10px;'>Apresente este código à entrada do jogo.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <p style='font-size: 1em; line-height: 1.6;'>
+                                        Obrigado pelo seu apoio ao CDP!
+                                    </p>
+                                </div>
+                                
+                                <!-- Footer -->
+                                <div style='background: #f8fafc; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;'>
+                                    <p style='font-size: 0.8em; color: #888; margin: 0;'>
+                                        Este email foi enviado automaticamente pelo sistema do Clube Desportivo da Póvoa.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                ";
+
+                emailMessage.Body = bodyBuilder.ToMessageBody();
+
+                using var smtpClient = new SmtpClient();
+                await smtpClient.ConnectAsync(_emailSettings.SmtpServer, _emailSettings.SmtpPort, MailKit.Security.SecureSocketOptions.SslOnConnect);
+                await smtpClient.AuthenticateAsync(_emailSettings.Username, _emailSettings.Password);
+                await smtpClient.SendAsync(emailMessage);
+                await smtpClient.DisconnectAsync(true);
+
+                _logger.LogInformation($"Ticket email sent successfully to {toEmail}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error sending ticket email: {ex.Message}");
+                throw;
+            }
+        }
     }
 }

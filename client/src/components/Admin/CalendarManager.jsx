@@ -46,16 +46,26 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         ticketPriceNonSocio: ''
     });
 
+    const DAYS_ORDER = [
+        { key: 'Monday', label: 'Segunda' },
+        { key: 'Tuesday', label: 'Terça' },
+        { key: 'Wednesday', label: 'Quarta' },
+        { key: 'Thursday', label: 'Quinta' },
+        { key: 'Friday', label: 'Sexta' },
+        { key: 'Saturday', label: 'Sábado' },
+        { key: 'Sunday', label: 'Domingo' },
+    ];
+
     const [scheduleFormData, setScheduleFormData] = useState({
-        teamId: restrictedTeamId ? restrictedTeamId.toString() : '',
-        daysOfWeek: [],
-        startTime: '18:00',
-        endTime: '20:00',
+        teamId: '',
+        daySchedules: [],   // [{ day, startTime, endTime }]
         location: '',
         validFrom: '',
         validUntil: '',
         isActive: true
     });
+    const [copyFromDay, setCopyFromDay] = useState(null);
+    const [copyTargetDays, setCopyTargetDays] = useState([]);
 
     // Derive the restricted sport from the team (when coach mode is active)
     const restrictedTeam = restrictedTeamId ? teams.find(t => t.id === restrictedTeamId) : null;
@@ -173,43 +183,36 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         }
     };
 
+    // handleScheduleSubmit — sem alterações de lógica, só valida daySchedules
     const handleScheduleSubmit = async (e) => {
         e.preventDefault();
-
-        const token = localStorage.getItem('token');
-        const parsedTeamId = parseInt(scheduleFormData.teamId);
-
-        if (!parsedTeamId || isNaN(parsedTeamId)) {
-            alert('Por favor, selecione uma equipa válida.');
+        if (scheduleFormData.daySchedules.length === 0) {
+            alert('Seleciona pelo menos um dia de treino.');
             return;
         }
-
-        const dataToSend = {
-            ...scheduleFormData,
-            teamId: parsedTeamId
-        };
-
+        if (!scheduleFormData.teamId) {
+            alert('Por favor, selecione uma equipa.');
+            return;
+        }
+        const token = localStorage.getItem('token');
+        const dataToSend = { ...scheduleFormData, teamId: parseInt(scheduleFormData.teamId, 10) };
         try {
             const url = editingSchedule
                 ? `http://localhost:5285/api/trainingschedules/${editingSchedule.id}`
                 : 'http://localhost:5285/api/trainingschedules';
-
             const response = await fetch(url, {
                 method: editingSchedule ? 'PUT' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(dataToSend)
             });
-
             if (response.ok) {
-                const result = await response.json();
+                let scheduleId = editingSchedule?.id;
+                if (response.status !== 204) {
+                    const result = await response.json();
+                    scheduleId = result.id;
+                }
                 await fetchTrainingSchedules();
-
-                // Auto-generate events from the pattern
-                await handleGenerateEvents(result.id);
-
+                await handleGenerateEvents(scheduleId);
                 setShowScheduleModal(false);
                 resetScheduleForm();
             }
@@ -297,9 +300,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
         setEditingSchedule(schedule);
         setScheduleFormData({
             teamId: schedule.teamId.toString(),
-            daysOfWeek: schedule.daysOfWeek,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
+            daySchedules: schedule.daySchedules || [],
             location: schedule.location || '',
             validFrom: schedule.validFrom.split('T')[0],
             validUntil: schedule.validUntil.split('T')[0],
@@ -311,24 +312,59 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
     const resetScheduleForm = () => {
         setScheduleFormData({
             teamId: restrictedTeamId ? restrictedTeamId.toString() : '',
-            daysOfWeek: [],
-            startTime: '18:00',
-            endTime: '20:00',
+            daySchedules: [],
             location: '',
             validFrom: '',
             validUntil: '',
             isActive: true
         });
         setEditingSchedule(null);
+        setCopyFromDay(null);
+        setCopyTargetDays([]);
     };
 
-    const toggleDayOfWeek = (day) => {
+    // Substitui toggleDayOfWeek
+    const toggleDay = (day) => {
+        setScheduleFormData(prev => {
+            const exists = prev.daySchedules.find(d => d.day === day);
+            if (exists) {
+                return { ...prev, daySchedules: prev.daySchedules.filter(d => d.day !== day) };
+            }
+            const last = prev.daySchedules[prev.daySchedules.length - 1];
+            const newEntry = {
+                day,
+                startTime: last?.startTime || '18:00',
+                endTime: last?.endTime || '20:00',
+            };
+            const ordered = [...prev.daySchedules, newEntry].sort(
+                (a, b) => DAYS_ORDER.findIndex(d => d.key === a.day) - DAYS_ORDER.findIndex(d => d.key === b.day)
+            );
+            return { ...prev, daySchedules: ordered };
+        });
+        setCopyFromDay(null);
+        setCopyTargetDays([]);
+    };
+
+    const updateDayTime = (day, field, value) => {
         setScheduleFormData(prev => ({
             ...prev,
-            daysOfWeek: prev.daysOfWeek.includes(day)
-                ? prev.daysOfWeek.filter(d => d !== day)
-                : [...prev.daysOfWeek, day]
+            daySchedules: prev.daySchedules.map(d => d.day === day ? { ...d, [field]: value } : d)
         }));
+    };
+
+    const applyTimeCopy = () => {
+        const source = scheduleFormData.daySchedules.find(d => d.day === copyFromDay);
+        if (!source || copyTargetDays.length === 0) return;
+        setScheduleFormData(prev => ({
+            ...prev,
+            daySchedules: prev.daySchedules.map(d =>
+                copyTargetDays.includes(d.day)
+                    ? { ...d, startTime: source.startTime, endTime: source.endTime }
+                    : d
+            )
+        }));
+        setCopyFromDay(null);
+        setCopyTargetDays([]);
     };
 
     const getEventColor = (eventType) => {
@@ -716,19 +752,19 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                         </div>
                                     </div>
                                     <div className="schedule-body">
-                                        <div className="schedule-time">
-                                            <FaClock /> {schedule.startTime} - {schedule.endTime}
+                                        <div className="schedule-days-list">
+                                            {schedule.daySchedules?.map((ds, idx) => (
+                                                <div key={idx} className="schedule-day-item">
+                                                    <span className="day-name">{dayTranslations[ds.day] || ds.day}</span>
+                                                    <span className="day-time">{ds.startTime} - {ds.endTime}</span>
+                                                </div>
+                                            ))}
                                         </div>
                                         {schedule.location && (
                                             <div className="schedule-location">
                                                 📍 {schedule.location}
                                             </div>
                                         )}
-                                        <div className="schedule-days">
-                                            {schedule.daysOfWeek.map(day => (
-                                                <span key={day} className="day-badge">{dayTranslations[day] || day}</span>
-                                            ))}
-                                        </div>
                                         <div className="schedule-period">
                                             {new Date(schedule.validFrom).toLocaleDateString()} - {new Date(schedule.validUntil).toLocaleDateString()}
                                         </div>
@@ -988,49 +1024,122 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null }) => {
                                 )}
                             </div>
 
+                            {/* ── Day-schedule builder ── */}
                             <div className="cm-form-field">
-                                <label className="cm-form-label">Dias da Semana *</label>
-                                <div className="cm-days-grid">
-                                    {[
-                                        { key: 'Monday', label: 'Seg' },
-                                        { key: 'Tuesday', label: 'Ter' },
-                                        { key: 'Wednesday', label: 'Qua' },
-                                        { key: 'Thursday', label: 'Qui' },
-                                        { key: 'Friday', label: 'Sex' },
-                                        { key: 'Saturday', label: 'Sáb' },
-                                        { key: 'Sunday', label: 'Dom' },
-                                    ].map(({ key, label }) => (
-                                        <button
-                                            key={key}
-                                            type="button"
-                                            className={`cm-day-pill ${scheduleFormData.daysOfWeek.includes(key) ? 'active' : ''}`}
-                                            onClick={() => toggleDayOfWeek(key)}
-                                        >{label}</button>
-                                    ))}
-                                </div>
-                            </div>
+                                <label className="cm-form-label">Dias e Horários *</label>
 
-                            <div className="cm-form-row">
-                                <div className="cm-form-field">
-                                    <label className="cm-form-label">Hora Início *</label>
-                                    <input
-                                        type="time"
-                                        className="cm-form-input"
-                                        value={scheduleFormData.startTime}
-                                        onChange={(e) => setScheduleFormData({ ...scheduleFormData, startTime: e.target.value })}
-                                        required
-                                    />
+                                {/* Tile selector */}
+                                <div className="cm-day-tiles">
+                                    {DAYS_ORDER.map(({ key, label }) => {
+                                        const active = scheduleFormData.daySchedules.some(d => d.day === key);
+                                        return (
+                                            <button key={key} type="button"
+                                                className={`cm-day-tile ${active ? 'active' : ''}`}
+                                                onClick={() => toggleDay(key)}
+                                            >
+                                                {label.slice(0, 3)}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                <div className="cm-form-field">
-                                    <label className="cm-form-label">Hora Fim *</label>
-                                    <input
-                                        type="time"
-                                        className="cm-form-input"
-                                        value={scheduleFormData.endTime}
-                                        onChange={(e) => setScheduleFormData({ ...scheduleFormData, endTime: e.target.value })}
-                                        required
-                                    />
-                                </div>
+
+                                {/* Active day rows */}
+                                {scheduleFormData.daySchedules.length > 0 ? (
+                                    <div className="cm-day-rows">
+                                        {scheduleFormData.daySchedules.map((ds) => {
+                                            const label = DAYS_ORDER.find(d => d.key === ds.day)?.label;
+                                            const isCopying = copyFromDay === ds.day;
+                                            const otherDays = scheduleFormData.daySchedules.filter(d => d.day !== ds.day);
+
+                                            return (
+                                                <div key={ds.day} className={`cm-day-row ${isCopying ? 'cm-day-row--copying' : ''}`}>
+                                                    <div className="cm-day-row-main">
+                                                        <span className="cm-day-row-name">{label}</span>
+
+                                                        <div className="cm-day-row-times">
+                                                            <input
+                                                                type="time"
+                                                                className="cm-time-inp"
+                                                                value={ds.startTime}
+                                                                onChange={(e) => updateDayTime(ds.day, 'startTime', e.target.value)}
+                                                            />
+                                                            <span className="cm-time-arrow">→</span>
+                                                            <input
+                                                                type="time"
+                                                                className="cm-time-inp"
+                                                                value={ds.endTime}
+                                                                onChange={(e) => updateDayTime(ds.day, 'endTime', e.target.value)}
+                                                            />
+                                                        </div>
+
+                                                        <div className="cm-day-row-actions">
+                                                            {otherDays.length > 0 && (
+                                                                <button
+                                                                    type="button"
+                                                                    className={`cm-copy-btn ${isCopying ? 'active' : ''}`}
+                                                                    title="Copiar horário para outros dias"
+                                                                    onClick={() => {
+                                                                        setCopyFromDay(isCopying ? null : ds.day);
+                                                                        setCopyTargetDays([]);
+                                                                    }}
+                                                                >
+                                                                    Copiar
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                className="cm-remove-day-btn"
+                                                                title="Remover dia"
+                                                                onClick={() => toggleDay(ds.day)}
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Copy panel */}
+                                                    {isCopying && (
+                                                        <div className="cm-copy-panel">
+                                                            <span className="cm-copy-panel-label">
+                                                                Aplicar {ds.startTime}–{ds.endTime} a:
+                                                            </span>
+                                                            <div className="cm-copy-targets">
+                                                                {otherDays.map(other => {
+                                                                    const otherLabel = DAYS_ORDER.find(d => d.key === other.day)?.label;
+                                                                    const checked = copyTargetDays.includes(other.day);
+                                                                    return (
+                                                                        <label key={other.day} className={`cm-copy-target ${checked ? 'checked' : ''}`}>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={checked}
+                                                                                onChange={() =>
+                                                                                    setCopyTargetDays(prev =>
+                                                                                        checked ? prev.filter(d => d !== other.day) : [...prev, other.day]
+                                                                                    )
+                                                                                }
+                                                                            />
+                                                                            {otherLabel.slice(0, 3)}
+                                                                        </label>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                className="cm-copy-apply-btn"
+                                                                disabled={copyTargetDays.length === 0}
+                                                                onClick={applyTimeCopy}
+                                                            >
+                                                                Aplicar
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="cm-days-hint">Seleciona os dias de treino em cima</p>
+                                )}
                             </div>
 
                             <div className="cm-form-field">

@@ -93,8 +93,8 @@ const FamilyAssociationCard = ({ userId }) => {
         switch (status) {
             case 'Accepted': return { label: 'Aceite', icon: <FaCheck />, className: 'status-accepted' };
             case 'Rejected': return { label: 'Recusado', icon: <FaTimes />, className: 'status-rejected' };
-            case 'Seen':     return { label: 'Visto', icon: <FaEye />, className: 'status-seen' };
-            default:         return { label: 'Pendente', icon: <FaClock />, className: 'status-pending' };
+            case 'Seen': return { label: 'Visto', icon: <FaEye />, className: 'status-seen' };
+            default: return { label: 'Pendente', icon: <FaClock />, className: 'status-pending' };
         }
     };
 

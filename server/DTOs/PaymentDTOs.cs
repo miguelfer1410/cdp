@@ -7,6 +7,7 @@ public class AthletePaymentStatusDto
     public string Team { get; set; } = string.Empty;
     public string Sport { get; set; } = string.Empty;
     public string PaymentPreference { get; set; } = string.Empty;
+    public string MembershipNumber { get; set; } = string.Empty;
     public string CurrentPeriod { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty; // "Paid", "Pending", "Unpaid", "Late"
     public decimal Amount { get; set; }

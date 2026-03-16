@@ -50,9 +50,7 @@ public class TrainingSchedulesController : ControllerBase
             TeamId = ts.TeamId,
             TeamName = ts.Team.Name,
             SportName = ts.Team.Sport.Name,
-            DaysOfWeek = JsonSerializer.Deserialize<List<string>>(ts.DaysOfWeek) ?? new List<string>(),
-            StartTime = ts.StartTime.ToString(@"hh\:mm"),
-            EndTime = ts.EndTime.ToString(@"hh\:mm"),
+            DaySchedules = JsonSerializer.Deserialize<List<DayScheduleItem>>(ts.DaySchedules) ?? new List<DayScheduleItem>(),
             Location = ts.Location,
             ValidFrom = ts.ValidFrom,
             ValidUntil = ts.ValidUntil,
@@ -88,9 +86,7 @@ public class TrainingSchedulesController : ControllerBase
             TeamId = schedule.TeamId,
             TeamName = schedule.Team.Name,
             SportName = schedule.Team.Sport.Name,
-            DaysOfWeek = JsonSerializer.Deserialize<List<string>>(schedule.DaysOfWeek) ?? new List<string>(),
-            StartTime = schedule.StartTime.ToString(@"hh\:mm"),
-            EndTime = schedule.EndTime.ToString(@"hh\:mm"),
+            DaySchedules = JsonSerializer.Deserialize<List<DayScheduleItem>>(schedule.DaySchedules) ?? new List<DayScheduleItem>(),
             Location = schedule.Location,
             ValidFrom = schedule.ValidFrom,
             ValidUntil = schedule.ValidUntil,
@@ -118,9 +114,7 @@ public class TrainingSchedulesController : ControllerBase
         var schedule = new TrainingSchedule
         {
             TeamId = request.TeamId,
-            DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek),
-            StartTime = TimeSpan.Parse(request.StartTime),
-            EndTime = TimeSpan.Parse(request.EndTime),
+            DaySchedules = JsonSerializer.Serialize(request.DaySchedules),
             Location = request.Location,
             ValidFrom = request.ValidFrom.Date,
             ValidUntil = request.ValidUntil.Date,
@@ -137,9 +131,7 @@ public class TrainingSchedulesController : ControllerBase
         {
             Id = schedule.Id,
             TeamId = schedule.TeamId,
-            DaysOfWeek = request.DaysOfWeek,
-            StartTime = request.StartTime,
-            EndTime = request.EndTime,
+            DaySchedules = request.DaySchedules,
             Location = schedule.Location,
             ValidFrom = schedule.ValidFrom,
             ValidUntil = schedule.ValidUntil,
@@ -160,9 +152,7 @@ public class TrainingSchedulesController : ControllerBase
         }
 
         schedule.TeamId = request.TeamId;
-        schedule.DaysOfWeek = JsonSerializer.Serialize(request.DaysOfWeek);
-        schedule.StartTime = TimeSpan.Parse(request.StartTime);
-        schedule.EndTime = TimeSpan.Parse(request.EndTime);
+        schedule.DaySchedules = JsonSerializer.Serialize(request.DaySchedules);
         schedule.Location = request.Location;
         schedule.ValidFrom = request.ValidFrom.Date;
         schedule.ValidUntil = request.ValidUntil.Date;
@@ -260,8 +250,6 @@ public class TrainingSchedulesController : ControllerBase
             return Unauthorized(new { message = "Utilizador não autenticado" });
         }
 
-        // Parse days of week
-        var daysOfWeek = JsonSerializer.Deserialize<List<string>>(schedule.DaysOfWeek) ?? new List<string>();
 
         // Delete existing training events for this team in the date range
         var existingTrainings = await _context.Events
@@ -277,18 +265,25 @@ public class TrainingSchedulesController : ControllerBase
         var eventsCreated = 0;
         var currentDate = schedule.ValidFrom.Date;
 
+        var daySchedules = JsonSerializer.Deserialize<List<DayScheduleItem>>(schedule.DaySchedules)
+            ?? new List<DayScheduleItem>();
+
         while (currentDate <= schedule.ValidUntil.Date)
         {
             var dayName = currentDate.DayOfWeek.ToString();
+            var match = daySchedules.FirstOrDefault(d => d.Day == dayName);
 
-            if (daysOfWeek.Contains(dayName))
+            if (match != null)
             {
-                var trainingEvent = new Event
+                var startTime = TimeSpan.Parse(match.StartTime);
+                var endTime   = TimeSpan.Parse(match.EndTime);
+
+                _context.Events.Add(new Event
                 {
                     Title = $"Treino - {schedule.Team.Name}",
                     EventType = EventType.Training,
-                    StartDateTime = currentDate.Add(schedule.StartTime),
-                    EndDateTime = currentDate.Add(schedule.EndTime),
+                    StartDateTime = currentDate.Add(startTime),
+                    EndDateTime   = currentDate.Add(endTime),
                     TeamId = schedule.TeamId,
                     SportId = schedule.Team.SportId,
                     Location = schedule.Location,
@@ -296,12 +291,9 @@ public class TrainingSchedulesController : ControllerBase
                     CreatedBy = userId,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Events.Add(trainingEvent);
+                });
                 eventsCreated++;
             }
-
             currentDate = currentDate.AddDays(1);
         }
 
@@ -323,9 +315,7 @@ public class TrainingScheduleResponse
     public int TeamId { get; set; }
     public string TeamName { get; set; } = string.Empty;
     public string SportName { get; set; } = string.Empty;
-    public List<string> DaysOfWeek { get; set; } = new();
-    public string StartTime { get; set; } = string.Empty;
-    public string EndTime { get; set; } = string.Empty;
+    public List<DayScheduleItem> DaySchedules { get; set; } = new();
     public string? Location { get; set; }
     public DateTime ValidFrom { get; set; }
     public DateTime ValidUntil { get; set; }
@@ -335,34 +325,30 @@ public class TrainingScheduleResponse
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
-
-public class TrainingScheduleCreateRequest
-{
-    public int TeamId { get; set; }
-    public List<string> DaysOfWeek { get; set; } = new();
-    public string StartTime { get; set; } = string.Empty;
-    public string EndTime { get; set; } = string.Empty;
-    public string? Location { get; set; }
-    public DateTime ValidFrom { get; set; }
-    public DateTime ValidUntil { get; set; }
-    public bool IsActive { get; set; } = true;
-}
-
-public class TrainingScheduleUpdateRequest
-{
-    public int TeamId { get; set; }
-    public List<string> DaysOfWeek { get; set; } = new();
-    public string StartTime { get; set; } = string.Empty;
-    public string EndTime { get; set; } = string.Empty;
-    public string? Location { get; set; }
-    public DateTime ValidFrom { get; set; }
-    public DateTime ValidUntil { get; set; }
-    public bool IsActive { get; set; }
-}
-
 public class GenerateEventsResponse
 {
     public int EventsDeleted { get; set; }
     public int EventsCreated { get; set; }
     public string Message { get; set; } = string.Empty;
 }
+
+public class DayScheduleItem
+{
+    public string Day { get; set; } = string.Empty;
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+}
+
+// Substitui TrainingScheduleCreateRequest e TrainingScheduleUpdateRequest
+public class TrainingScheduleCreateRequest
+{
+    public int TeamId { get; set; }
+    public List<DayScheduleItem> DaySchedules { get; set; } = new();
+    public string? Location { get; set; }
+    public DateTime ValidFrom { get; set; }
+    public DateTime ValidUntil { get; set; }
+    public bool IsActive { get; set; } = true;
+}
+
+public class TrainingScheduleUpdateRequest : TrainingScheduleCreateRequest { }
+

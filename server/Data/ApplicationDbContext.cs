@@ -37,6 +37,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<EscalaoRequest> EscalaoRequests { get; set; }
     public DbSet<Escalao> Escalaos { get; set; }
     public DbSet<EscalaoSport> EscalaoSports { get; set; }
+    public DbSet<Ticket> Tickets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -417,5 +418,25 @@ public class ApplicationDbContext : DbContext
             new Escalao { Id = 34, Name = "Sub 18 A",  MinAge = 17, MaxAge = 18, IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
             new Escalao { Id = 35, Name = "Traquinas", MinAge = 8,  MaxAge = 9,  IsActive = true, CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
         );
+
+        // Ticket configuration
+        modelBuilder.Entity<Ticket>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.TicketCode).IsUnique();
+            entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Event)
+                .WithMany()
+                .HasForeignKey(e => e.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
     }
 }

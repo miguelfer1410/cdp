@@ -102,6 +102,7 @@ public class UsersController : ControllerBase
                     u.FirstName.ToLower().Contains(token) ||
                     u.LastName.ToLower().Contains(token) ||
                     u.Email.ToLower().Contains(token) ||
+                    (u.Nif != null && u.Nif.Contains(token)) ||
                     (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
                     (u.AthleteProfile != null && (
                         (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||

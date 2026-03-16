@@ -101,6 +101,41 @@ const DashboardAtleta = () => {
         }
     };
 
+    const handleBuyTicket = async (event) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5285/api/tickets/checkout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: event.id,
+                    buyerEmail: athleteData.email || athleteData.athleteProfile?.email,
+                    buyerName: athleteData.athleteProfile 
+                        ? `${athleteData.athleteProfile.firstName || ''} ${athleteData.athleteProfile.lastName || ''}`.trim() || athleteData.fullName
+                        : athleteData.fullName,
+                    successUrl: window.location.origin + '/payment-success',
+                    cancelUrl: window.location.origin + '/payment-cancel'
+                })
+            });
+
+            if (!response.ok) throw new Error('Erro ao criar sessão de pagamento');
+
+            const { url } = await response.json();
+            
+            if (url) {
+                window.location.href = url;
+            } else {
+                throw new Error('URL de pagamento não recebida.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        }
+    };
+
     const checkPaymentStatus = async () => {
         window.location.reload();
     };
@@ -375,7 +410,6 @@ const DashboardAtleta = () => {
                                         Ver Calendário <i className="fas fa-arrow-right"></i>
                                     </button>
                                 </div>
-                                {/* 
                                 <div className="events-list">
                                     {events.length > 0 ? (
                                         events.map(event => (
@@ -404,6 +438,24 @@ const DashboardAtleta = () => {
                                                         {event.location && <span><i className="fas fa-map-marker-alt"></i> {event.location}</span>}
                                                     </div>
                                                 </div>
+                                                {event.eventType === 1 && (
+                                                    <button 
+                                                        className="buy-ticket-btn"
+                                                        onClick={() => handleBuyTicket(event)}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            background: '#003380',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: 'bold',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <i className="fas fa-ticket-alt"></i> Comprar Bilhete
+                                                    </button>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -412,7 +464,6 @@ const DashboardAtleta = () => {
                                         </div>
                                     )}
                                 </div>
-                                */}
                             </div>
 
                             <div className="dashboard-card">

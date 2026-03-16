@@ -11,11 +11,11 @@ import './ClubAnalytics.css';
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 const PALETTE = {
-    blue:   ['#1e3c72', '#2a5298', '#2575fc', '#4a90e2'],
-    coral:  ['#ff7e5f', '#feb47b', '#ff6b6b', '#ffa07a'],
-    green:  ['#11998e', '#38ef7d', '#43e97b', '#56ab2f'],
+    blue: ['#1e3c72', '#2a5298', '#2575fc', '#4a90e2'],
+    coral: ['#ff7e5f', '#feb47b', '#ff6b6b', '#ffa07a'],
+    green: ['#11998e', '#38ef7d', '#43e97b', '#56ab2f'],
     purple: ['#6a11cb', '#8b5cf6', '#a855f7', '#c084fc'],
-    teal:   ['#0072ff', '#00c6ff', '#36d1dc', '#5b86e5'],
+    teal: ['#0072ff', '#00c6ff', '#36d1dc', '#5b86e5'],
     yellow: ['#f7971e', '#ffd200', '#f6d365', '#fda085'],
 };
 
@@ -86,15 +86,15 @@ const DonutCenterOverlay = ({ total, label }) => (
 // ─── SVG Gradient Defs ─────────────────────────────────────────────────────────
 const GradientDefs = () => (
     <defs>
-        <linearGradient id="gradBlue"   x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#2575fc" stopOpacity={0.9} />
             <stop offset="100%" stopColor="#1e3c72" stopOpacity={0.7} />
         </linearGradient>
-        <linearGradient id="gradCoral"  x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="gradCoral" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#ff7e5f" stopOpacity={0.9} />
             <stop offset="100%" stopColor="#feb47b" stopOpacity={0.7} />
         </linearGradient>
-        <linearGradient id="gradGreen"  x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#43e97b" stopOpacity={0.9} />
             <stop offset="100%" stopColor="#11998e" stopOpacity={0.7} />
         </linearGradient>
@@ -102,12 +102,12 @@ const GradientDefs = () => (
             <stop offset="0%" stopColor="#a855f7" stopOpacity={0.9} />
             <stop offset="100%" stopColor="#6a11cb" stopOpacity={0.7} />
         </linearGradient>
-        <linearGradient id="gradTeal"   x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="gradTeal" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#00c6ff" stopOpacity={0.9} />
             <stop offset="100%" stopColor="#0072ff" stopOpacity={0.7} />
         </linearGradient>
         {/* Horizontal gradients for horizontal bar chart */}
-        <linearGradient id="gradBlueH"  x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id="gradBlueH" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#1e3c72" stopOpacity={0.8} />
             <stop offset="100%" stopColor="#2575fc" stopOpacity={0.9} />
         </linearGradient>

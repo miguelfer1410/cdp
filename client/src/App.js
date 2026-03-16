@@ -22,6 +22,8 @@ import DashboardTreinador from './pages/dashboards/DashboardTreinador';
 import AtivarConta from './pages/auth/AtivarConta';
 import VerificationPage from './pages/VerificationPage';
 import Bilheteria from './pages/Bilheteria';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentCancel from './pages/PaymentCancel';
 
 function AppContent() {
   const location = useLocation();
@@ -61,6 +63,8 @@ function AppContent() {
           <Route path="/contactos" element={<Contactos />} />
           <Route path="/ativar-conta" element={<AtivarConta />} />
           <Route path="/verify/:id" element={<VerificationPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancel" element={<PaymentCancel />} />
         </Routes>
       </main>
       {!hideFooter && <Footer />}

@@ -256,13 +256,11 @@ const PeopleManager = () => {
             else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'Email inválido';
             if (!formData.firstName.trim()) errors.firstName = 'Nome é obrigatório';
             if (!formData.lastName.trim()) errors.lastName = 'Apelido é obrigatório';
-            if (!formData.phone.trim()) errors.phone = 'Telefone é obrigatório';
-            if (!formData.birthDate) errors.birthDate = 'Data de nascimento é obrigatória';
-            if (!formData.nif.trim()) errors.nif = 'NIF é obrigatório';
-            else if (formData.nif.length !== 9) errors.nif = 'NIF deve ter 9 dígitos';
-            if (!formData.address.trim()) errors.address = 'Morada é obrigatória';
-            if (!formData.postalCode.trim()) errors.postalCode = 'Código postal é obrigatório';
-            if (!formData.city.trim()) errors.city = 'Localidade é obrigatória';
+            
+            // Optional fields but with format validation if provided
+            if (formData.nif && formData.nif.trim() && formData.nif.length !== 9) {
+                errors.nif = 'NIF deve ter 9 dígitos';
+            }
         }
 
         if (stepId === 'details') {
@@ -290,13 +288,11 @@ const PeopleManager = () => {
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) allErrors.email = 'inválido';
         if (!formData.firstName.trim()) allErrors.firstName = 'obrigatório';
         if (!formData.lastName.trim()) allErrors.lastName = 'obrigatório';
-        if (!formData.phone.trim()) allErrors.phone = 'obrigatório';
-        if (!formData.birthDate) allErrors.birthDate = 'obrigatório';
-        if (!formData.nif.trim()) allErrors.nif = 'obrigatório';
-        else if (formData.nif.length !== 9) allErrors.nif = 'inválido';
-        if (!formData.address.trim()) allErrors.address = 'obrigatório';
-        if (!formData.postalCode.trim()) allErrors.postalCode = 'obrigatório';
-        if (!formData.city.trim()) allErrors.city = 'obrigatório';
+        
+        // Optional fields validation
+        if (formData.nif && formData.nif.trim() && formData.nif.length !== 9) {
+            allErrors.nif = 'inválido';
+        }
 
         // Validate details
         if (formData.hasMemberProfile) {
@@ -467,6 +463,7 @@ const PeopleManager = () => {
 
     const handleSubmit = async () => {
         if (!validateAllSteps()) {
+            alert('Existem erros de validação. Por favor verifique todos os passos.');
             return;
         }
 
@@ -817,7 +814,7 @@ const PeopleManager = () => {
                     {validationErrors.email && <span className="error-message">{validationErrors.email}</span>}
                 </div>
                 <div className="form-group">
-                    <label>NIF *</label>
+                    <label>NIF</label>
                     <input
                         type="text"
                         maxLength="9"
@@ -857,7 +854,7 @@ const PeopleManager = () => {
 
             <div className="form-row">
                 <div className="form-group">
-                    <label>Telefone *</label>
+                    <label>Telefone</label>
                     <input
                         type="tel"
                         placeholder="912345678"
@@ -868,7 +865,7 @@ const PeopleManager = () => {
                     {validationErrors.phone && <span className="error-message">{validationErrors.phone}</span>}
                 </div>
                 <div className="form-group">
-                    <label>Data de Nascimento *</label>
+                    <label>Data de Nascimento</label>
                     <input
                         type="date"
                         className={validationErrors.birthDate ? 'error' : ''}
@@ -885,7 +882,7 @@ const PeopleManager = () => {
 
             <div className="form-row">
                 <div className="form-group full-width">
-                    <label>Morada *</label>
+                    <label>Morada</label>
                     <input
                         type="text"
                         placeholder="Rua Exemplo, nº 123"
@@ -899,7 +896,7 @@ const PeopleManager = () => {
 
             <div className="form-row">
                 <div className="form-group">
-                    <label>Código Postal *</label>
+                    <label>Código Postal</label>
                     <input
                         type="text"
                         placeholder="0000-000"
@@ -910,7 +907,7 @@ const PeopleManager = () => {
                     {validationErrors.postalCode && <span className="error-message">{validationErrors.postalCode}</span>}
                 </div>
                 <div className="form-group">
-                    <label>Cidade *</label>
+                    <label>Cidade</label>
                     <input
                         type="text"
                         placeholder="Póvoa de Varzim"
@@ -1099,7 +1096,7 @@ const PeopleManager = () => {
                                     <option value="">Sem equipa atribuída</option>
                                     {teams.map(team => (
                                         <option key={team.id} value={team.id}>
-                                            {team.name} - {team.sportName}
+                                            {team.name} ({team.sportName})
                                         </option>
                                     ))}
                                 </select>
@@ -1209,7 +1206,7 @@ const PeopleManager = () => {
                                         <option value="">Sem equipa atribuída</option>
                                         {teams.map(team => (
                                             <option key={team.id} value={team.id}>
-                                                {team.name} - {team.sportName}
+                                                {team.name} ({team.sportName})
                                             </option>
                                         ))}
                                     </select>
@@ -1492,7 +1489,7 @@ const PeopleManager = () => {
                     >
                         <option value="">Todas</option>
                         {teams.map(team => (
-                            <option key={team.id} value={team.id}>{team.name}</option>
+                            <option key={team.id} value={team.id}>{team.name} ({team.sportName})</option>
                         ))}
                     </select>
                 </div>
@@ -1515,7 +1512,7 @@ const PeopleManager = () => {
                     <input
                         type="text"
                         className="search-input"
-                        placeholder="Pesquisar por nome ou email..."
+                        placeholder="Pesquisar por nome, email ou NIF..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />

@@ -95,10 +95,10 @@ const FamilyAssociationModal = ({ isOpen, onClose }) => {
 
     const getStatusInfo = (status) => {
         switch (status) {
-            case 'Accepted':  return { label: 'Aceite',   icon: <FaCheckCircle />, className: 'status-accepted' };
-            case 'Rejected':  return { label: 'Recusado', icon: <FaTimesCircle />, className: 'status-rejected' };
-            case 'Seen':      return { label: 'Visto',    icon: <FaEye />,         className: 'status-seen' };
-            default:          return { label: 'Pendente', icon: <FaClock />,        className: 'status-pending' };
+            case 'Accepted': return { label: 'Aceite', icon: <FaCheckCircle />, className: 'status-accepted' };
+            case 'Rejected': return { label: 'Recusado', icon: <FaTimesCircle />, className: 'status-rejected' };
+            case 'Seen': return { label: 'Visto', icon: <FaEye />, className: 'status-seen' };
+            default: return { label: 'Pendente', icon: <FaClock />, className: 'status-pending' };
         }
     };
 

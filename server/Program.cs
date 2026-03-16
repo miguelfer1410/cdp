@@ -20,6 +20,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEasypayService, EasypayService>();
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
+builder.Services.AddScoped<IStripeService, StripeService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -34,7 +37,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:3000",
-            "http://localhost:3001"
+            "http://51.178.43.232:3001"
         )
         .AllowAnyHeader()
         .AllowAnyMethod();

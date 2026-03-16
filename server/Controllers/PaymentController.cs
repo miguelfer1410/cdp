@@ -254,11 +254,32 @@ public class PaymentController : ControllerBase
             if (!string.IsNullOrEmpty(search))
             {
                 var s = search.ToLower();
-                lightQuery = lightQuery.Where(u => u.FirstName.ToLower().Contains(s) || u.LastName.ToLower().Contains(s) || u.Email.ToLower().Contains(s));
+                lightQuery = lightQuery.Where(u => 
+                    u.FirstName.ToLower().Contains(s) || 
+                    u.LastName.ToLower().Contains(s) || 
+                    u.Email.ToLower().Contains(s) ||
+                    (u.Nif != null && u.Nif.Contains(s)) ||
+                    (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(s))
+                );
             }
 
             if (teamId.HasValue)
-                lightQuery = lightQuery.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
+            {
+                if (teamId.Value == -1)
+                {
+                    // Filter for athletes without any active team assignment
+                    lightQuery = lightQuery.Where(u => u.AthleteProfile == null || !u.AthleteProfile.AthleteTeams.Any(at => at.LeftAt == null));
+                }
+                else if (teamId.Value == -2)
+                {
+                    // Filter for athletes with at least one active team assignment
+                    lightQuery = lightQuery.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.LeftAt == null));
+                }
+                else
+                {
+                    lightQuery = lightQuery.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
+                }
+            }
 
             if (sportId.HasValue)
                 lightQuery = lightQuery.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null));
@@ -270,6 +291,7 @@ public class PaymentController : ControllerBase
                     u.Id,
                     MemberProfileId   = u.MemberProfile!.Id,
                     PaymentPreference = u.MemberProfile.PaymentPreference ?? "Monthly",
+                    MembershipNumber  = u.MemberProfile.MembershipNumber,
                     Name              = u.FirstName + " " + u.LastName,
                     Team              = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).FirstOrDefault() ?? "Sem Equipa" : "Sem Equipa",
                     Sport             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).FirstOrDefault() ?? "N/A" : "N/A"
@@ -298,7 +320,7 @@ public class PaymentController : ControllerBase
                 string derivedStatus = payment?.Status switch { "Completed" => "Regularizada", "Pending" => "Pendente", _ => "Unpaid" } ?? "Unpaid";
                 return new
                 {
-                    m.Id, m.MemberProfileId, m.PaymentPreference, m.Name, m.Team, m.Sport,
+                    m.Id, m.MemberProfileId, m.PaymentPreference, m.MembershipNumber, m.Name, m.Team, m.Sport,
                     Status = derivedStatus,
                     PendingEntity    = payment?.Status == "Pending" ? payment.Entity    : null,
                     PendingReference = payment?.Status == "Pending" ? payment.Reference : null,
@@ -348,7 +370,8 @@ public class PaymentController : ControllerBase
                 pagedItems.Add(new AthletePaymentStatusDto
                 {
                     UserId = row.Id, Name = row.Name, Team = row.Team, Sport = row.Sport,
-                    PaymentPreference = row.PaymentPreference, CurrentPeriod = row.Period,
+                    PaymentPreference = row.PaymentPreference, MembershipNumber = row.MembershipNumber,
+                    CurrentPeriod = row.Period,
                     Status = row.Status, Amount = amount, PaymentDetails = paymentDetails
                 });
             }
@@ -703,27 +726,34 @@ public class PaymentController : ControllerBase
 
         // ── 4. Active sport teams ─────────────────────────────────────────────
         var activeTeams = user.AthleteProfile?.AthleteTeams
-            ?.Where(at => at.LeftAt == null && at.Team?.Sport != null)
-            .ToList() ?? new List<AthleteTeam>();
+    ?.Where(at => at.LeftAt == null && at.Team?.Sport != null)
+    .ToList() ?? new List<AthleteTeam>();
 
-        bool anyQuotaIncluded = activeTeams.Any(at => at.Team!.Sport!.QuotaIncluded);
-        
-        // Detect if user is in Escalão 1
-        bool isEscalao1 = activeTeams.Any(at => {
-            var e = at.AthleteProfile?.Escalao?.ToLower() ?? "";
-            return e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1");
-        });
+bool anyQuotaIncluded = activeTeams.Any(at => at.Team!.Sport!.QuotaIncluded);
 
-        // Sort: most-expensive first (discount applied to cheaper ones)
-        // Note: we order by the Normal fee to determine the primary sport
-        var teamsSorted = activeTeams
-            .OrderByDescending(at => GetEscalaoFee(at, false))
-            .ToList();
+// Detect if user is in Escalão 1
+bool isEscalao1 = activeTeams.Any(at => {
+    var e = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+    return e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1");
+});
 
-        bool globalFeeAdded = false;
+// ⚠️ NOVO: deduplica por modalidade — atleta em múltiplas equipas da mesma
+// modalidade só paga UMA vez. Mantém a equipa com a quota mais alta (para
+// ordenação consistente). As inscrições são tratadas separadamente por equipa.
+var activeTeamsBySport = activeTeams
+    .GroupBy(at => at.Team!.Sport!.Id)
+    .Select(g => g.OrderByDescending(at => GetEscalaoFee(at, false)).First())
+    .ToList();
 
-        for (int i = 0; i < teamsSorted.Count; i++)
-        {
+// Sort: most-expensive first (discount applied to cheaper ones)
+var teamsSorted = activeTeamsBySport
+    .OrderByDescending(at => GetEscalaoFee(at, false))
+    .ToList();
+
+bool globalFeeAdded = false;
+
+for (int i = 0; i < teamsSorted.Count; i++)
+{
             var at    = teamsSorted[i];
             var sport = at.Team!.Sport!;
             bool isSecondSport = i > 0;

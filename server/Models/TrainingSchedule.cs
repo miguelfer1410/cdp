@@ -11,15 +11,10 @@ public class TrainingSchedule
     [Required]
     public int TeamId { get; set; }
 
+    // Substitui os campos DaysOfWeek, StartTime, EndTime por:
     [Required]
     [Column(TypeName = "nvarchar(max)")]
-    public string DaysOfWeek { get; set; } = "[]"; // JSON array: ["Monday", "Wednesday", "Friday"]
-
-    [Required]
-    public TimeSpan StartTime { get; set; }
-
-    [Required]
-    public TimeSpan EndTime { get; set; }
+    public string DaySchedules { get; set; } = "[]"; // JSON: [{day, startTime, endTime}]
 
     [MaxLength(200)]
     public string? Location { get; set; }

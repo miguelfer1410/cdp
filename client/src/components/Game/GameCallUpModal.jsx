@@ -198,7 +198,7 @@ const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
                                             <div className="gcm-avatar">
                                                 {getInitials(athlete)}
                                             </div>
-                                            
+
                                             <div className="gcm-athlete-name">
                                                 {athlete.name}
                                             </div>
@@ -225,9 +225,9 @@ const GameCallUpModal = ({ isOpen, onClose, event, teamId }) => {
                         Cancelar
                     </button>
                     {!successMessage && (
-                        <button 
-                            className="gcm-btn gcm-btn-primary" 
-                            onClick={handleSave} 
+                        <button
+                            className="gcm-btn gcm-btn-primary"
+                            onClick={handleSave}
                             disabled={saving || loading || selectedAthletes.size === 0}
                         >
                             {saving ? (

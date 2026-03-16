@@ -154,7 +154,7 @@ const PaymentManager = () => {
                     <FaSearch className="search-icon" />
                     <input
                         type="text"
-                        placeholder="Pesquisar por nome ou email..."
+                        placeholder="Pesquisar por nome, email, NIF ou Nº Sócio..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
@@ -177,7 +177,13 @@ const PaymentManager = () => {
                         <label>Equipa</label>
                         <select value={filterTeam} onChange={(e) => setFilterTeam(e.target.value)}>
                             <option value="all">Todas as Equipas</option>
-                            {teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}
+                            <option value="-1">Sem Equipa</option>
+                            <option value="-2">Com Equipa</option>
+                            {teams.map(team => (
+                                <option key={team.id} value={team.id}>
+                                    {team.name} ({team.sportName})
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div className="filter-item">
@@ -211,6 +217,7 @@ const PaymentManager = () => {
                 <table className="admin-table">
                     <thead>
                         <tr>
+                            <th>Nº Sócio</th>
                             <th>Nome</th>
                             <th>Equipa / Modalidade</th>
                             <th>Tipo de Quota</th>
@@ -224,12 +231,15 @@ const PaymentManager = () => {
                         {loading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i} className="skeleton-row">
-                                    <td colSpan="7"><div className="skeleton-bar"></div></td>
+                                    <td colSpan="8"><div className="skeleton-bar"></div></td>
                                 </tr>
                             ))
                         ) : (athletes?.length || 0) > 0 ? (
                             athletes.map((athlete) => (
                                 <tr key={athlete.userId} className={`row-status-${(athlete.status || '').toLowerCase()}`}>
+                                    <td data-label="Nº Sócio">
+                                        <span className="membership-number">{athlete.membershipNumber}</span>
+                                    </td>
                                     <td data-label="Nome">
                                         <span className="athlete-name">{athlete.name}</span>
                                     </td>
@@ -260,7 +270,7 @@ const PaymentManager = () => {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="7" className="empty-message">
+                                <td colSpan="8" className="empty-message">
                                     <div className="empty-state">
                                         <FaTimes className="empty-icon" />
                                         <p>Nenhum registo encontrado para os filtros selecionados.</p>

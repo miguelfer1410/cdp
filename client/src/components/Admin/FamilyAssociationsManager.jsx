@@ -120,8 +120,8 @@ const FamilyAssociationsManager = () => {
 
     const tabs = [
         { key: 'Pending', label: 'Pendentes', icon: <FaClock /> },
-        { key: 'Seen',    label: 'Vistos',    icon: <FaEye /> },
-        { key: 'Accepted', label: 'Aceites',  icon: <FaCheck /> },
+        { key: 'Seen', label: 'Vistos', icon: <FaEye /> },
+        { key: 'Accepted', label: 'Aceites', icon: <FaCheck /> },
         { key: 'Rejected', label: 'Recusados', icon: <FaTimes /> },
     ];
 
