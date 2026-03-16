@@ -112,6 +112,7 @@ const DashboardAtleta = () => {
                 },
                 body: JSON.stringify({
                     eventId: event.id,
+                    buyerUserId: selectedUserId,
                     buyerEmail: athleteData.email || athleteData.athleteProfile?.email,
                     buyerName: athleteData.athleteProfile
                         ? `${athleteData.athleteProfile.firstName || ''} ${athleteData.athleteProfile.lastName || ''}`.trim() || athleteData.fullName

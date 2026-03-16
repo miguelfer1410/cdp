@@ -119,6 +119,7 @@ public class AuthService : IAuthService
                         Id = u.Id,
                         FirstName = u.FirstName,
                         LastName = u.LastName,
+                        Email = u.Email,
                         DashboardType = u.AthleteProfile != null ? "atleta"
                             : u.CoachProfile != null ? "treinador"
                             : u.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
@@ -156,6 +157,7 @@ public class AuthService : IAuthService
                 Id = other.Id,
                 FirstName = other.FirstName,
                 LastName = other.LastName,
+                Email = other.Email,
                 DashboardType = other.AthleteProfile != null ? "atleta"
                     : other.CoachProfile != null ? "treinador"
                     : other.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
@@ -412,6 +414,7 @@ public class AuthService : IAuthService
                     Id            = u.Id,
                     FirstName     = u.FirstName,
                     LastName      = u.LastName,
+                    Email         = u.Email,
                     DashboardType = u.AthleteProfile != null ? "atleta"
                                   : u.CoachProfile   != null ? "treinador"
                                   : u.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"
@@ -446,6 +449,7 @@ public class AuthService : IAuthService
                 Id            = other.Id,
                 FirstName     = other.FirstName,
                 LastName      = other.LastName,
+                Email         = other.Email,
                 DashboardType = other.AthleteProfile != null ? "atleta"
                               : other.CoachProfile   != null ? "treinador"
                               : other.UserRoles.Any(ur => ur.Role.Name == "Socio") ? "socio"

@@ -193,6 +193,7 @@ const DashboardTreinador = () => {
                     <CalendarManager
                         restrictedTeamId={coachData.coachProfile.teamId}
                         onBack={handleBackFromCalendar}
+                        isCoachDashboard={true}
                     />
                 </div>
             </div>

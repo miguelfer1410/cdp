@@ -18,7 +18,7 @@ const Bilheteria = () => {
     const [showAnnualInfoModal, setShowAnnualInfoModal] = useState(false);
     const [isAnnualTicketPurchase, setIsAnnualTicketPurchase] = useState(false);
     const [selectedProfiles, setSelectedProfiles] = useState([]);
-    const [linkedUsers] = useState(() => {
+    const [linkedUsers, setLinkedUsers] = useState(() => {
         try {
             const stored = localStorage.getItem('linkedUsers');
             const parsed = stored ? JSON.parse(stored) : [];
@@ -26,6 +26,30 @@ const Bilheteria = () => {
             return parsed;
         } catch { return []; }
     });
+
+    // Refresh linked users from server on mount
+    useEffect(() => {
+        const refreshLinkedUsers = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await fetch('http://localhost:5285/api/auth/linked-users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('Refreshed Linked Users:', data);
+                    setLinkedUsers(data);
+                    if (data.length > 0) {
+                        localStorage.setItem('linkedUsers', JSON.stringify(data));
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not refresh linked users in Bilheteria:', err);
+            }
+        };
+        refreshLinkedUsers();
+    }, []);
 
     useEffect(() => {
         // Check for success/canceled query params from Stripe
@@ -204,6 +228,7 @@ const Bilheteria = () => {
                     profiles: selectedProfiles.map(p => ({
                         id: p.id,
                         name: `${p.firstName} ${p.lastName}`,
+                        email: p.email || userEmail,
                         price: getTicketPrice(selectedEvent, p)
                     })),
                     successUrl: window.location.origin + `/bilheteria?success=true&eventId=${selectedEvent.id}`,

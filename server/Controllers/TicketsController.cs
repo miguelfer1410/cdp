@@ -41,7 +41,8 @@ public class TicketsController : ControllerBase
             price > 0 ? price : 5.0m, // Fallback price
             request.SuccessUrl,
             request.CancelUrl,
-            null // No profiles metadata for this legacy endpoint
+            null, // No profiles metadata for this legacy endpoint
+            request.BuyerUserId?.ToString()
         );
 
         var sessionService = new Stripe.Checkout.SessionService();
@@ -79,6 +80,7 @@ public class TicketsController : ControllerBase
 public class CreateCheckoutRequest
 {
     public int EventId { get; set; }
+    public int? BuyerUserId { get; set; }
     public string BuyerEmail { get; set; } = string.Empty;
     public string BuyerName { get; set; } = string.Empty;
     public string SuccessUrl { get; set; } = string.Empty;

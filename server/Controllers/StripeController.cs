@@ -39,8 +39,8 @@ public class StripeController : ControllerBase
     {
         try
         {
-            // Join profile names and IDs into metadata for the webhook
-            var profilesMetadata = string.Join("|", request.Profiles.Select(p => $"{p.Id}:{p.Name}:{p.Price}"));
+            // Join profile names, IDs, prices and emails into metadata for the webhook
+            var profilesMetadata = string.Join("|", request.Profiles.Select(p => $"{p.Id}:{p.Name}:{p.Price}:{p.Email}"));
 
             var session_id = await _stripeService.CreateCheckoutSessionAsync(
                 request.EventId,
@@ -78,6 +78,7 @@ public class StripeController : ControllerBase
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public decimal Price { get; set; }
     }
 
@@ -123,12 +124,12 @@ public class StripeController : ControllerBase
     {
         try 
         {
-            var eventIdStr = session.Metadata["EventId"];
-            var buyerName = session.Metadata["BuyerName"];
+            var eventIdStr = session.Metadata.TryGetValue("EventId", out var eId) ? eId : "N/A";
+            var buyerName = session.Metadata.TryGetValue("BuyerName", out var bName) ? bName : "Unknown";
             var buyerEmail = session.CustomerEmail;
             var amountTotal = (decimal)session.AmountTotal! / 100m;
 
-            _logger.LogInformation("Processing CheckoutSessionCompleted for Event {EventId}, Buyer: {BuyerEmail}", eventIdStr, buyerEmail);
+            _logger.LogInformation("Processing CheckoutSessionCompleted for Session {SessionId}, Event {EventId}, Buyer: {BuyerEmail}, Amount: {Amount}", session.Id, eventIdStr, buyerEmail, amountTotal);
 
             int eventId;
             if (eventIdStr == "annual-ticket")
@@ -143,12 +144,16 @@ public class StripeController : ControllerBase
             }
 
             var gameEvent = await _context.Events.FindAsync(eventId);
+            if (gameEvent == null)
+            {
+                _logger.LogWarning("Event not found for ID {EventId}", eventId);
+            }
             
             // Check for multiple profiles in metadata
             if (session.Metadata.TryGetValue("Profiles", out var profilesMetadata) && !string.IsNullOrEmpty(profilesMetadata))
             {
                 _logger.LogInformation("Creating multiple tickets from metadata: {ProfilesMetadata}", profilesMetadata);
-                // Format: "Id:Name:Price|Id:Name:Price"
+                // Format: "Id:Name:Price:Email|Id:Name:Price:Email"
                 var profileEntries = profilesMetadata.Split('|');
                 foreach (var entry in profileEntries)
                 {
@@ -158,11 +163,16 @@ public class StripeController : ControllerBase
                         var profileId = int.Parse(parts[0]);
                         var profileName = parts[1];
                         var profilePrice = parts.Length > 2 ? decimal.Parse(parts[2]) : (amountTotal / profileEntries.Length);
+                        var profileEmail = parts.Length > 3 ? parts[3] : buyerEmail;
 
-                        var ticket = await _ticketService.CreateTicketAsync(eventId, buyerEmail!, profileName, profilePrice, session.Id, profileId);
-                        _logger.LogInformation("Ticket created for {ProfileName} (User: {UserId}) with Code: {TicketCode}", profileName, profileId, ticket.TicketCode);
+                        // Ensure we have an email
+                        if (string.IsNullOrEmpty(profileEmail)) profileEmail = buyerEmail;
+
+                        _logger.LogInformation("Creating ticket for profile {ProfileId}: {ProfileName} ({ProfileEmail})", profileId, profileName, profileEmail);
+                        var ticket = await _ticketService.CreateTicketAsync(eventId, profileEmail!, profileName, profilePrice, session.Id, profileId);
                         
-                        await SendTicketEmail(ticket, gameEvent, buyerEmail!, profileName);
+                        _logger.LogInformation("Attempting to send email for ticket {TicketCode} to {Email}", ticket.TicketCode, profileEmail);
+                        await SendTicketEmail(ticket, gameEvent, profileEmail!, profileName);
                     }
                 }
             }
@@ -177,32 +187,47 @@ public class StripeController : ControllerBase
 
                 _logger.LogInformation("Creating single ticket for {BuyerName} (User: {UserId})", buyerName, buyerUserId);
                 var ticket = await _ticketService.CreateTicketAsync(eventId, buyerEmail!, buyerName, amountTotal, session.Id, buyerUserId);
+                
+                _logger.LogInformation("Attempting to send email for single ticket {TicketCode} to {Email}", ticket.TicketCode, buyerEmail);
                 await SendTicketEmail(ticket, gameEvent, buyerEmail!, buyerName);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in HandleCheckoutSessionCompleted: {Message}", ex.Message);
+            _logger.LogError(ex, "Error in HandleCheckoutSessionCompleted: {Message}. Inner: {InnerMessage}", ex.Message, ex.InnerException?.Message);
             throw; 
         }
     }
 
     private async Task SendTicketEmail(Ticket ticket, CdpApi.Models.Event? gameEvent, string buyerEmail, string buyerName)
     {
-        if (gameEvent != null)
+        try
         {
-            _logger.LogInformation("Generating QR code for ticket {TicketCode}", ticket.TicketCode);
-            var qrCode = await _ticketService.GenerateQrCodeAsync(ticket.TicketCode);
+            if (gameEvent != null)
+            {
+                _logger.LogInformation("Generating QR code for ticket {TicketCode}", ticket.TicketCode);
+                var qrCode = await _ticketService.GenerateQrCodeAsync(ticket.TicketCode);
 
-            _logger.LogInformation("Sending ticket email to {BuyerEmail}", buyerEmail);
-            await _emailService.SendTicketEmailAsync(
-                buyerEmail,
-                buyerName,
-                gameEvent.Title,
-                gameEvent.StartDateTime,
-                gameEvent.Location ?? "CDP",
-                qrCode
-            );
+                _logger.LogInformation("Calling SendTicketEmailAsync for {BuyerEmail}", buyerEmail);
+                await _emailService.SendTicketEmailAsync(
+                    buyerEmail,
+                    buyerName,
+                    gameEvent.Title,
+                    gameEvent.StartDateTime,
+                    gameEvent.Location ?? "CDP",
+                    qrCode
+                );
+                _logger.LogInformation("SendTicketEmailAsync completed successfully for {BuyerEmail}", buyerEmail);
+            }
+            else
+            {
+                _logger.LogWarning("Cannot send email for ticket {TicketCode} because gameEvent is null", ticket.TicketCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send ticket email to {Email}: {Message}", buyerEmail, ex.Message);
+            // We don't throw here to avoid failing the whole webhook if one email fails
         }
     }
 }
