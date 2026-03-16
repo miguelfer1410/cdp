@@ -37,6 +37,10 @@ public class PaymentController : ControllerBase
         if (!requestedUserId.HasValue || requestedUserId.Value == loggedInId)
             return loggedInId;
 
+        // Admins can access any user's data
+        if (User.IsInRole("Admin"))
+            return requestedUserId.Value;
+
         var loggedInUser = await _context.Users.FindAsync(loggedInId);
         var requestedUser = await _context.Users.FindAsync(requestedUserId.Value);
         if (loggedInUser == null || requestedUser == null) return null;

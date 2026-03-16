@@ -91,8 +91,11 @@ const DashboardAdmin = () => {
         // Decode token to check role
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            console.log(payload)
-            if (payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] !== "Admin") {
+            console.log(payload);
+            const roles = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+            const isAdmin = Array.isArray(roles) ? roles.includes('Admin') : roles === 'Admin';
+
+            if (!isAdmin) {
                 alert('Acesso negado. Apenas administradores podem aceder a esta página.');
                 navigate('/');
                 return;

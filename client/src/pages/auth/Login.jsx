@@ -72,22 +72,17 @@ const Login = () => {
       }
 
       // Redirect based on role
-      switch (primaryRole.toLowerCase()) {
-        case 'admin':
-          navigate('/dashboard-admin');
-          break;
-        case 'atleta':
-          navigate('/dashboard-atleta');
-          break;
-        case 'treinador':
-          navigate('/dashboard-treinador');
-          break;
-        case 'socio':
-        case 'user':
-          navigate('/dashboard-socio');
-          break;
-        default:
-          navigate('/');
+      const rolesLower = roles.map(r => r.toLowerCase());
+      if (rolesLower.includes('admin')) {
+        navigate('/dashboard-admin');
+      } else if (rolesLower.includes('treinador')) {
+        navigate('/dashboard-treinador');
+      } else if (rolesLower.includes('atleta')) {
+        navigate('/dashboard-atleta');
+      } else if (rolesLower.includes('socio') || rolesLower.includes('user')) {
+        navigate('/dashboard-socio');
+      } else {
+        navigate('/');
       }
     } catch (err) {
       console.error('Login error:', err);

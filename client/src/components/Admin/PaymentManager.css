@@ -96,16 +96,18 @@
 
 .search-icon {
     position: absolute;
-    left: 1rem;
+    left: 1.1rem;
     top: 50%;
     transform: translateY(-50%);
     color: #94a3b8;
     pointer-events: none;
+    font-size: 1.1rem;
+    z-index: 10;
 }
 
 .search-input {
     width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    padding: 0.75rem 1rem 0.75rem 3.25rem;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     background: white;
@@ -242,21 +244,25 @@
     border-collapse: collapse;
 }
 
+.admin-table th,
+.admin-table td {
+    padding: 0 1rem;
+    height: 72px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
 .admin-table th {
     background: #f8fafc;
-    padding: 1.25rem 1rem;
     text-align: left;
     font-size: 0.85rem;
     font-weight: 600;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #f1f5f9;
 }
 
 .admin-table td {
-    padding: 1.25rem 1rem;
-    border-bottom: 1px solid #f1f5f9;
     color: #1e293b;
 }
 
@@ -317,17 +323,21 @@
 }
 
 /* Actions */
-.actions-cell {
+.payment-actions-cell {
     text-align: right;
+    vertical-align: middle !important;
+    padding: 0 1rem !important;
 }
 
-.action-buttons {
+.payment-action-buttons {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 0.5rem;
+    height: 100%;
 }
 
-.btn-action {
+.payment-btn-action {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -340,15 +350,27 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn-validate {
+.payment-btn-validate {
     background: #3b82f6;
     color: white;
 }
 
-.btn-validate:hover {
+.payment-btn-validate:hover {
     background: #2563eb;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+}
+
+.payment-btn-profile {
+    background: #f8fafc;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.payment-btn-profile:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    border-color: #cbd5e1;
 }
 
 .btn-revert {

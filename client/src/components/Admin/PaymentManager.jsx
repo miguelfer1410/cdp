@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './PaymentManager.css';
 import {
     FaEuroSign, FaCheckCircle, FaExclamationCircle, FaSearch,
-    FaChevronLeft, FaChevronRight, FaTimes, FaUndo, FaEllipsisH
+    FaChevronLeft, FaChevronRight, FaTimes, FaUndo, FaEllipsisH, FaUser
 } from 'react-icons/fa';
+import PaymentHistorySocio from '../PaymentHistorySocio/PaymentHistorySocio';
 
 const PaymentManager = () => {
     // Data State
@@ -25,6 +26,10 @@ const PaymentManager = () => {
     const [pageSize, setPageSize] = useState(10);
     const [totalCount, setTotalCount] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
+
+    // Detailed Profile Modal 
+    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
     const fetchPaymentStatuses = useCallback(async () => {
         try {
@@ -224,7 +229,7 @@ const PaymentManager = () => {
                             <th>Período</th>
                             <th>Valor</th>
                             <th>Estado</th>
-                            <th className="actions-cell">Ações</th>
+                            <th className="payment-actions-cell">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -253,14 +258,24 @@ const PaymentManager = () => {
                                     <td data-label="Período">{athlete.currentPeriod}</td>
                                     <td data-label="Valor" className="amount-cell">{(athlete.amount || 0).toFixed(2)}€</td>
                                     <td data-label="Estado">{getStatusBadge(athlete.status)}</td>
-                                    <td className="actions-cell">
-                                        <div className="action-buttons">
+                                    <td className="payment-actions-cell">
+                                        <div className="payment-action-buttons">
+                                            <button
+                                                className="payment-btn-action payment-btn-profile"
+                                                title="Ver Ficha / Histórico"
+                                                onClick={() => {
+                                                    setSelectedUserId(athlete.userId);
+                                                    setIsHistoryModalOpen(true);
+                                                }}
+                                            >
+                                                <FaUser /> <span>Ficha</span>
+                                            </button>
                                             {athlete.status !== 'Paid' && athlete.status !== 'Regularizada' && athlete.status !== 'Completed' ? (
-                                                <button className="btn-action btn-validate" title="Validar Pagamento" onClick={() => handleUpdateStatus(athlete.userId, "Completed")}>
+                                                <button className="payment-btn-action payment-btn-validate" title="Validar Pagamento" onClick={() => handleUpdateStatus(athlete.userId, "Completed")}>
                                                     <FaCheckCircle /> <span>Validar</span>
                                                 </button>
                                             ) : (
-                                                <button className="btn-action btn-revert" title="Reverter Pagamento" onClick={() => handleUpdateStatus(athlete.userId, "Unpaid")}>
+                                                <button className="payment-btn-action payment-btn-revert" title="Reverter Pagamento" onClick={() => handleUpdateStatus(athlete.userId, "Unpaid")}>
                                                     <FaUndo /> <span>Reverter</span>
                                                 </button>
                                             )}
@@ -324,6 +339,17 @@ const PaymentManager = () => {
                         <FaChevronRight /><FaChevronRight />
                     </button>
                 </div>
+            )}
+
+            {isHistoryModalOpen && (
+                <PaymentHistorySocio
+                    isOpen={isHistoryModalOpen}
+                    onClose={() => {
+                        setIsHistoryModalOpen(false);
+                        setSelectedUserId(null);
+                    }}
+                    userId={selectedUserId}
+                />
             )}
         </div>
     );

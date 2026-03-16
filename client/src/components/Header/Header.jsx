@@ -17,7 +17,7 @@ const Header = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
-  const [userType, setUserType] = useState('');
+  const [userRoles, setUserRoles] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -42,17 +42,15 @@ const Header = () => {
       setIsLoggedIn(true);
       setUserName(name);
 
-      // If we have roles, use them to determine userType
       if (rolesStr) {
         try {
           const roles = JSON.parse(rolesStr);
-          const primaryRole = roles.includes('Admin') ? 'Admin' : (roles[0] || 'User');
-          setUserType(primaryRole);
+          setUserRoles(roles);
         } catch (e) {
-          setUserType(type || 'User');
+          setUserRoles(type ? [type] : ['User']);
         }
       } else {
-        setUserType(type || 'User');
+        setUserRoles(type ? [type] : ['User']);
       }
     } else if (token && isTokenExpired(token)) {
       clearSession();
@@ -97,29 +95,48 @@ const Header = () => {
     navigate('/');
   };
 
-  const getDashboardLink = () => {
-    console.log(userType);
-    switch (userType.toLowerCase()) {
-      case 'admin':
-        return '/dashboard-admin';
-      case 'atleta':
-        return '/dashboard-atleta';
-      case 'treinador':
-        return '/dashboard-treinador';
-      case 'socio':
-      case 'user':  // Users with 'User' role are members (sócios)
-        return '/dashboard-socio';
-      default:
-        return '/';
-    }
-  };
-
   const getMenuOptions = () => {
-    const commonOptions = [
-      { icon: <FaTachometerAlt />, label: 'Dashboard', link: getDashboardLink() },
-    ];
+    const options = [];
+    const rolesLower = userRoles.map(r => r.toLowerCase());
 
-    return commonOptions;
+    if (rolesLower.includes('admin')) {
+      options.push({ 
+        icon: <FaTachometerAlt />, 
+        label: 'Dashboard Admin', 
+        link: '/dashboard-admin' 
+      });
+    }
+    
+    if (rolesLower.includes('treinador')) {
+      options.push({ 
+        icon: <FaTachometerAlt />, 
+        label: 'Dashboard Treinador', 
+        link: '/dashboard-treinador' 
+      });
+    }
+
+    if (rolesLower.includes('atleta')) {
+      options.push({ 
+        icon: <FaTachometerAlt />, 
+        label: 'Dashboard Atleta', 
+        link: '/dashboard-atleta' 
+      });
+    }
+
+    if (rolesLower.includes('socio') || rolesLower.includes('user')) {
+      options.push({ 
+        icon: <FaTachometerAlt />, 
+        label: 'Dashboard Sócio', 
+        link: '/dashboard-socio' 
+      });
+    }
+
+    // Default fallback if no roles match
+    if (options.length === 0) {
+      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard', link: '/' });
+    }
+
+    return options;
   };
 
   return (
