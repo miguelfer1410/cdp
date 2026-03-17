@@ -59,7 +59,7 @@ const PeopleManager = () => {
         },
         coachProfile: {
             sportId: '',
-            teamId: '',
+            teamIds: [],
             licenseNumber: '',
             licenseLevel: '',
             licenseExpiry: '',
@@ -230,7 +230,7 @@ const PeopleManager = () => {
             hasCoachProfile: false,
             athleteProfile: { id: null, firstName: '', lastName: '', teamId: '' },
             memberProfile: { membershipStatus: 0, memberSince: '', paymentPreference: '' },
-            coachProfile: { sportId: '', teamId: '', licenseNumber: '', licenseLevel: '', licenseExpiry: '', specialization: '' },
+            coachProfile: { sportId: '', teamIds: [], licenseNumber: '', licenseLevel: '', licenseExpiry: '', specialization: '' },
             selectedRoles: []
         });
         setEditingUser(null);
@@ -383,13 +383,13 @@ const PeopleManager = () => {
                     } : { membershipStatus: 0, memberSince: '', paymentPreference: '' },
                     coachProfile: data.coachProfile ? {
                         sportId: data.coachProfile.sportId,
-                        teamId: data.coachProfile.teamId || '',
+                        teamIds: data.coachProfile.teams ? data.coachProfile.teams.map(t => t.id) : [],
                         licenseNumber: data.coachProfile.licenseNumber || '',
                         licenseLevel: data.coachProfile.licenseLevel || '',
                         licenseExpiry: data.coachProfile.licenseExpiry
                             ? data.coachProfile.licenseExpiry.split('T')[0] : '',
                         specialization: data.coachProfile.specialization || ''
-                    } : { sportId: '', teamId: '', licenseNumber: '', licenseLevel: '', licenseExpiry: '', specialization: '' },
+                    } : { sportId: '', teamIds: [], licenseNumber: '', licenseLevel: '', licenseExpiry: '', specialization: '' },
                     selectedRoles: data.roles.map(r => r.id)
                 });
             }
@@ -597,7 +597,7 @@ const PeopleManager = () => {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         sportId: parseInt(formData.coachProfile.sportId),
-                        teamId: formData.coachProfile.teamId ? parseInt(formData.coachProfile.teamId) : null,
+                        teamIds: formData.coachProfile.teamIds.map(tid => parseInt(tid)),
                         licenseNumber: formData.coachProfile.licenseNumber || null,
                         licenseLevel: formData.coachProfile.licenseLevel || null,
                         licenseExpiry: formData.coachProfile.licenseExpiry || null,
@@ -610,7 +610,7 @@ const PeopleManager = () => {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
                         sportId: parseInt(formData.coachProfile.sportId),
-                        teamId: formData.coachProfile.teamId ? parseInt(formData.coachProfile.teamId) : null,
+                        teamIds: formData.coachProfile.teamIds.map(tid => parseInt(tid)),
                         licenseNumber: formData.coachProfile.licenseNumber || null,
                         licenseLevel: formData.coachProfile.licenseLevel || null,
                         licenseExpiry: formData.coachProfile.licenseExpiry || null,
@@ -1194,22 +1194,33 @@ const PeopleManager = () => {
                                     </select>
                                     {validationErrors.coachSport && <span className="error-message">{validationErrors.coachSport}</span>}
                                 </div>
-                                <div className="form-group">
-                                    <label>Equipa Principal</label>
-                                    <select
-                                        value={formData.coachProfile.teamId}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            coachProfile: { ...formData.coachProfile, teamId: e.target.value }
-                                        })}
-                                    >
-                                        <option value="">Sem equipa atribuída</option>
-                                        {teams.map(team => (
-                                            <option key={team.id} value={team.id}>
-                                                {team.name} ({team.sportName})
-                                            </option>
-                                        ))}
-                                    </select>
+                                <div className="form-group full-width">
+                                    <label>Equipas</label>
+                                    <div className="multi-select-teams">
+                                        {teams
+                                            .filter(t => !formData.coachProfile.sportId || t.sportId === parseInt(formData.coachProfile.sportId))
+                                            .map(team => (
+                                                <label key={team.id} className="team-checkbox-item">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.coachProfile.teamIds.includes(team.id)}
+                                                        onChange={(e) => {
+                                                            const newTeamIds = e.target.checked
+                                                                ? [...formData.coachProfile.teamIds, team.id]
+                                                                : formData.coachProfile.teamIds.filter(id => id !== team.id);
+                                                            setFormData({
+                                                                ...formData,
+                                                                coachProfile: { ...formData.coachProfile, teamIds: newTeamIds }
+                                                            });
+                                                        }}
+                                                    />
+                                                    <span className="team-name">{team.name}</span>
+                                                </label>
+                                            ))}
+                                        {teams.filter(t => !formData.coachProfile.sportId || t.sportId === parseInt(formData.coachProfile.sportId)).length === 0 && (
+                                            <p className="no-teams-hint">Selecione uma modalidade para ver as equipas disponíveis.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <div className="form-row">

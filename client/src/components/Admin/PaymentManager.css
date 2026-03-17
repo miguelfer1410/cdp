@@ -322,6 +322,11 @@
     color: #b91c1c;
 }
 
+.status-badge.senior {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
 /* Actions */
 .payment-actions-cell {
     text-align: right;

@@ -100,14 +100,22 @@ const PaymentManager = () => {
         }
     };
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (status, athlete = {}) => {
         const s = status || '';
+        const isSenior = athlete.team?.toLowerCase().includes('senior') || 
+                         athlete.sport?.toLowerCase().includes('senior') ||
+                         athlete.team?.toLowerCase().includes('seniores') || 
+                         athlete.sport?.toLowerCase().includes('seniores');
+
         switch (s) {
             case 'Paid': case 'Regularizada': case 'Completed':
                 return <span className="status-badge paid"><FaCheckCircle /> Pago</span>;
             case 'Pendente': case 'Pending':
                 return <span className="status-badge pending"><FaExclamationCircle /> Pendente</span>;
             case 'Unpaid': case 'Failed':
+                if (isSenior) {
+                    return <span className="status-badge senior"><FaUser /> (senior)</span>;
+                }
                 return <span className="status-badge unpaid"><FaTimes /> Não Pago</span>;
             default:
                 return <span className="status-badge">{s}</span>;
@@ -257,7 +265,7 @@ const PaymentManager = () => {
                                     <td data-label="Tipo Quota">{athlete.paymentPreference === 'Annual' ? 'Anual' : 'Mensal'}</td>
                                     <td data-label="Período">{athlete.currentPeriod}</td>
                                     <td data-label="Valor" className="amount-cell">{(athlete.amount || 0).toFixed(2)}€</td>
-                                    <td data-label="Estado">{getStatusBadge(athlete.status)}</td>
+                                    <td data-label="Estado">{getStatusBadge(athlete.status, athlete)}</td>
                                     <td className="payment-actions-cell">
                                         <div className="payment-action-buttons">
                                             <button

@@ -30,5 +30,5 @@ public class Team
     // Navigation properties
     public Sport Sport { get; set; } = null!;
     public ICollection<AthleteTeam> AthleteTeams { get; set; } = new List<AthleteTeam>();
-    public ICollection<CoachProfile> Coaches { get; set; } = new List<CoachProfile>();
+    public ICollection<CoachTeam> CoachTeams { get; set; } = new List<CoachTeam>();
 }

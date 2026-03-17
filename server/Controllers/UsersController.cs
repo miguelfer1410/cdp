@@ -45,7 +45,8 @@ public class UsersController : ControllerBase
             .Include(u => u.CoachProfile)
                 .ThenInclude(c => c.Sport)
             .Include(u => u.CoachProfile)
-                .ThenInclude(c => c.Team)
+                .ThenInclude(c => c.CoachTeams)
+                    .ThenInclude(ct => ct.Team)
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .AsQueryable();
@@ -79,7 +80,7 @@ public class UsersController : ControllerBase
         {
             query = query.Where(u =>
                 (u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null)) ||
-                (u.CoachProfile != null && u.CoachProfile.TeamId == teamId.Value)
+                (u.CoachProfile != null && u.CoachProfile.CoachTeams.Any(ct => ct.TeamId == teamId.Value))
             );
         }
 
@@ -140,7 +141,7 @@ public class UsersController : ControllerBase
             HasCoachProfile = u.CoachProfile != null,
             CurrentTeam = u.AthleteProfile != null
                 ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Name
-                : (u.CoachProfile != null ? u.CoachProfile.Team?.Name : null),
+                : (u.CoachProfile != null ? u.CoachProfile.CoachTeams.FirstOrDefault()?.Team.Name : null),
             Roles = u.UserRoles.Select(ur => new RoleInfo
             {
                 Id = ur.Role.Id,
@@ -183,7 +184,8 @@ public class UsersController : ControllerBase
             .Include(u => u.CoachProfile)
                 .ThenInclude(c => c.Sport)
             .Include(u => u.CoachProfile)
-                .ThenInclude(c => c.Team)
+                .ThenInclude(c => c.CoachTeams)
+                    .ThenInclude(ct => ct.Team)
             .Include(u => u.UserRoles)
                 .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -239,8 +241,11 @@ public class UsersController : ControllerBase
             {
                 SportId = user.CoachProfile.SportId,
                 SportName = user.CoachProfile.Sport.Name,
-                TeamId = user.CoachProfile.TeamId,
-                TeamName = user.CoachProfile.Team?.Name,
+                Teams = user.CoachProfile.CoachTeams.Select(ct => new TeamInfo
+                {
+                    Id = ct.Team.Id,
+                    Name = ct.Team.Name
+                }).ToList(),
                 LicenseNumber = user.CoachProfile.LicenseNumber,
                 LicenseLevel = user.CoachProfile.LicenseLevel,
                 LicenseExpiry = user.CoachProfile.LicenseExpiry,
@@ -677,7 +682,6 @@ public class UsersController : ControllerBase
         {
             UserId = id,
             SportId = request.SportId,
-            TeamId = request.TeamId,
             LicenseNumber = request.LicenseNumber,
             LicenseLevel = request.LicenseLevel,
             LicenseExpiry = request.LicenseExpiry,
@@ -688,6 +692,21 @@ public class UsersController : ControllerBase
         _context.CoachProfiles.Add(coachProfile);
         await _context.SaveChangesAsync();
 
+        // Add teams
+        if (request.TeamIds != null && request.TeamIds.Any())
+        {
+            foreach (var teamId in request.TeamIds)
+            {
+                _context.CoachTeams.Add(new CoachTeam
+                {
+                    CoachProfileId = coachProfile.Id,
+                    TeamId = teamId,
+                    JoinedAt = DateTime.UtcNow
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
+
         return Ok(new { message = "Perfil de treinador criado com sucesso" });
     }
 
@@ -696,7 +715,10 @@ public class UsersController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdateCoachProfile(int id, [FromBody] CoachProfileRequest request)
     {
-        var user = await _context.Users.Include(u => u.CoachProfile).FirstOrDefaultAsync(u => u.Id == id);
+        var user = await _context.Users
+            .Include(u => u.CoachProfile)
+                .ThenInclude(cp => cp.CoachTeams)
+            .FirstOrDefaultAsync(u => u.Id == id);
         
         if (user == null)
             return NotFound(new { message = "Utilizador não encontrado" });
@@ -705,11 +727,33 @@ public class UsersController : ControllerBase
             return NotFound(new { message = "Utilizador não tem perfil de treinador" });
 
         user.CoachProfile.SportId = request.SportId;
-        user.CoachProfile.TeamId = request.TeamId;
         user.CoachProfile.LicenseNumber = request.LicenseNumber;
         user.CoachProfile.LicenseLevel = request.LicenseLevel;
         user.CoachProfile.LicenseExpiry = request.LicenseExpiry;
         user.CoachProfile.Specialization = request.Specialization;
+
+        // Update teams
+        var currentTeamIds = user.CoachProfile.CoachTeams.Select(ct => ct.TeamId).ToList();
+        var newTeamIds = request.TeamIds ?? new List<int>();
+
+        // Remove teams no longer assigned
+        var teamsToRemove = user.CoachProfile.CoachTeams.Where(ct => !newTeamIds.Contains(ct.TeamId)).ToList();
+        foreach (var ct in teamsToRemove)
+        {
+            _context.CoachTeams.Remove(ct);
+        }
+
+        // Add new teams
+        var teamsToAdd = newTeamIds.Where(tid => !currentTeamIds.Contains(tid)).ToList();
+        foreach (var tid in teamsToAdd)
+        {
+            _context.CoachTeams.Add(new CoachTeam
+            {
+                CoachProfileId = user.CoachProfile.Id,
+                TeamId = tid,
+                JoinedAt = DateTime.UtcNow
+            });
+        }
 
         await _context.SaveChangesAsync();
         return NoContent();
@@ -1429,13 +1473,11 @@ public class CoachProfileInfo
 {
     public int SportId { get; set; }
     public string SportName { get; set; } = string.Empty;
-    public int? TeamId { get; set; }
-    public string? TeamName { get; set; }
+    public List<TeamInfo> Teams { get; set; } = new();
     public string? LicenseNumber { get; set; }
     public string? LicenseLevel { get; set; }
     public DateTime? LicenseExpiry { get; set; }
     public string? Specialization { get; set; }
-
 }
 public class RoleInfo
 {
@@ -1501,7 +1543,7 @@ public class MemberProfileRequest
 public class CoachProfileRequest
 {
     public int SportId { get; set; }
-    public int? TeamId { get; set; }
+    public List<int> TeamIds { get; set; } = new();
     public string? LicenseNumber { get; set; }
     public string? LicenseLevel { get; set; }
     public DateTime? LicenseExpiry { get; set; }

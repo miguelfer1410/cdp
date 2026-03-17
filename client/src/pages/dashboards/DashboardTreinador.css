@@ -101,6 +101,29 @@
     font-size: 1.1rem;
 }
 
+.team-switcher-select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    max-width: 250px;
+}
+
+.team-switcher-select:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: white;
+}
+
+.team-switcher-select option {
+    background: #001f4d;
+    color: white;
+}
+
 /* Quick Stats Cards */
 .quick-stats {
     margin-top: -40px;

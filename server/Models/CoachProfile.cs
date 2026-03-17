@@ -13,7 +13,7 @@ public class CoachProfile
     [Required]
     public int SportId { get; set; }
 
-    public int? TeamId { get; set; } // Primary team they coach (optional)
+    public ICollection<CoachTeam> CoachTeams { get; set; } = new List<CoachTeam>();
 
     [MaxLength(50)]
     public string? LicenseNumber { get; set; }
@@ -31,5 +31,4 @@ public class CoachProfile
     // Navigation properties
     public User User { get; set; } = null!;
     public Sport Sport { get; set; } = null!;
-    public Team? Team { get; set; }
 }

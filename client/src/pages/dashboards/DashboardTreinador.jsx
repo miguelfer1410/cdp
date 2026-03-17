@@ -14,6 +14,8 @@ const DashboardTreinador = () => {
     const [teamData, setTeamData] = useState(null);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [teamLoading, setTeamLoading] = useState(false);
+    const [selectedTeamId, setSelectedTeamId] = useState(null);
     const [error, setError] = useState(null);
     const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
     const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
@@ -74,96 +76,88 @@ const DashboardTreinador = () => {
         navigate(dashboardRoutes[lu.dashboardType] || '/dashboard-socio');
     };
 
+    const fetchTeamData = async (teamId) => {
+        if (!teamId) return;
+        setTeamLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const teamResponse = await fetch(`http://localhost:5285/api/teams/${teamId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (teamResponse.ok) {
+                const team = await teamResponse.json();
+                setTeamData(team);
+
+                // Fetch events and stats...
+                const todayStart = new Date();
+                const todayStartLocal = `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}T00:00:00`;
+
+                const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${teamId}&startDate=${todayStartLocal}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (eventsResponse.ok) {
+                    const eventsData = await eventsResponse.json();
+                    setEvents(eventsData.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime)).slice(0, 3));
+                }
+
+                const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${teamId}&eventType=2&endDate=${todayStartLocal}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (pastTrainingsResponse.ok) {
+                    const pastTrainings = await pastTrainingsResponse.json();
+                    if (pastTrainings.length > 0) {
+                        const lastTraining = pastTrainings[pastTrainings.length - 1];
+                        const attResponse = await fetch(`http://localhost:5285/api/attendance/event/${lastTraining.id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (attResponse.ok) {
+                            const attendanceData = await attResponse.json();
+                            const totalAthletes = team.athletes.length;
+                            const presentCount = attendanceData.filter(a => a.status === 1 || a.status === 3).length;
+                            const attendanceRate = totalAthletes > 0 ? Math.round((presentCount / totalAthletes) * 100) : 0;
+                            setLastTrainingStats({
+                                date: lastTraining.startDateTime,
+                                rate: attendanceRate,
+                                present: presentCount,
+                                total: totalAthletes,
+                                details: attendanceData
+                            });
+                        }
+                    } else {
+                        setLastTrainingStats(null);
+                    }
+                } else {
+                    setLastTrainingStats(null);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching team data:', err);
+        } finally {
+            setTeamLoading(false);
+        }
+    };
+
     const fetchData = async () => {
         try {
             const userId = localStorage.getItem('userId');
             const token = localStorage.getItem('token');
+            if (!userId || !token) throw new Error('User not authenticated');
 
-            if (!userId || !token) {
-                throw new Error('User not authenticated');
-            }
-
-            // Fetch Coach Data
             const userResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            if (!userResponse.ok) {
-                throw new Error('Failed to fetch coach data');
-            }
+            if (!userResponse.ok) throw new Error('Failed to fetch coach data');
 
             const userData = await userResponse.json();
             setCoachData(userData);
 
-            // Fetch Team Data if coach has a team assigned
-            if (userData.coachProfile?.teamId) {
-                const teamResponse = await fetch(`http://localhost:5285/api/teams/${userData.coachProfile.teamId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (teamResponse.ok) {
-                    const teamData = await teamResponse.json();
-                    setTeamData(teamData);
-
-                    // Use local start of today (no 'Z' suffix) to match stored unspecified datetimes
-                    const todayStart = new Date();
-                    const todayStartLocal = `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}T00:00:00`;
-
-                    // Fetch Upcoming Events for the team
-                    const eventsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&startDate=${todayStartLocal}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (eventsResponse.ok) {
-                        const eventsData = await eventsResponse.json();
-                        // Sort by date (ascending) and take next 3
-                        const sortedEvents = eventsData
-                            .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
-                            .slice(0, 3);
-                        setEvents(sortedEvents);
-                    }
-
-                    // Fetch Last Training Statistics
-                    const pastTrainingsResponse = await fetch(`http://localhost:5285/api/events?teamId=${userData.coachProfile.teamId}&eventType=2&endDate=${todayStartLocal}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (pastTrainingsResponse.ok) {
-                        const pastTrainings = await pastTrainingsResponse.json();
-                        if (pastTrainings.length > 0) {
-                            // Get the most recent one (last in the list because API sorts ascending)
-                            const lastTraining = pastTrainings[pastTrainings.length - 1];
-
-                            // Fetch attendance for this training
-                            const attResponse = await fetch(`http://localhost:5285/api/attendance/event/${lastTraining.id}`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-
-                            if (attResponse.ok) {
-                                const attendanceData = await attResponse.json();
-                                const totalAthletes = teamData.athletes.length;
-                                const presentCount = attendanceData.filter(a => a.status === 1 || a.status === 3).length; // Present or Late
-                                const attendanceRate = totalAthletes > 0 ? Math.round((presentCount / totalAthletes) * 100) : 0;
-
-                                setLastTrainingStats({
-                                    date: lastTraining.startDateTime,
-                                    rate: attendanceRate,
-                                    present: presentCount,
-                                    total: totalAthletes,
-                                    details: attendanceData
-                                });
-                            }
-                        }
-                    }
-                }
+            const teams = userData.coachProfile?.teams || [];
+            if (teams.length > 0) {
+                const initialTeamId = selectedTeamId || teams[0].id;
+                setSelectedTeamId(initialTeamId);
+                fetchTeamData(initialTeamId);
             }
-
         } catch (err) {
             console.error('Error fetching data:', err);
             setError(err.message);
@@ -186,12 +180,12 @@ const DashboardTreinador = () => {
     if (error) return <div className="dashboard-error">Erro: {error}</div>;
     if (!coachData) return <div className="dashboard-error">Não foi possível carregar os dados.</div>;
 
-    if (showCalendarManager && coachData?.coachProfile?.teamId) {
+    if (showCalendarManager && selectedTeamId) {
         return (
             <div className="dashboard-wrapper">
                 <div className="container" style={{ padding: '20px 0' }}>
                     <CalendarManager
-                        restrictedTeamId={coachData.coachProfile.teamId}
+                        restrictedTeamId={selectedTeamId}
                         onBack={handleBackFromCalendar}
                         isCoachDashboard={true}
                     />
@@ -238,7 +232,23 @@ const DashboardTreinador = () => {
                                 </div>
                                 <div className="profile-meta-item">
                                     <i className="fas fa-users"></i>
-                                    <span>{coachData.coachProfile?.teamName || 'Sem Equipa Atribuída'}</span>
+                                    {coachData.coachProfile?.teams?.length > 1 ? (
+                                        <select 
+                                            value={selectedTeamId} 
+                                            onChange={(e) => {
+                                                const id = parseInt(e.target.value);
+                                                setSelectedTeamId(id);
+                                                fetchTeamData(id);
+                                            }}
+                                            className="team-switcher-select"
+                                        >
+                                            {coachData.coachProfile.teams.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <span>{coachData.coachProfile?.teams?.[0]?.name || 'Sem Equipa Atribuída'}</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -372,7 +382,7 @@ const DashboardTreinador = () => {
                             {/* Atletas da Equipa */}
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
-                                    <h2><i className="fas fa-users"></i> Atletas - {coachData.coachProfile?.teamName || 'Equipa'}</h2>
+                                    <h2><i className="fas fa-users"></i> Atletas - {teamData?.name || 'Equipa'}</h2>
                                     <button className="view-all-link" onClick={() => setIsTeamModalOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
                                         Ver Todos <i className="fas fa-arrow-right"></i>
                                     </button>
@@ -527,7 +537,7 @@ const DashboardTreinador = () => {
             <CalendarModal
                 isOpen={isCalendarModalOpen}
                 onClose={() => setIsCalendarModalOpen(false)}
-                teamId={coachData?.coachProfile?.teamId}
+                teamId={selectedTeamId}
             />
 
             <EventAttendanceModal
@@ -535,10 +545,10 @@ const DashboardTreinador = () => {
                 onClose={() => {
                     setIsAttendanceModalOpen(false);
                     setSelectedEventForAttendance(null);
-                    // Optionally refresh data here if needed
+                    if (selectedTeamId) fetchTeamData(selectedTeamId);
                 }}
                 event={selectedEventForAttendance}
-                teamId={coachData?.coachProfile?.teamId}
+                teamId={selectedTeamId}
             />
 
             <GameCallUpModal
@@ -548,7 +558,7 @@ const DashboardTreinador = () => {
                     setSelectedEventForCallUp(null);
                 }}
                 event={selectedEventForCallUp}
-                teamId={coachData?.coachProfile?.teamId}
+                teamId={selectedTeamId}
             />
 
             <FamilyAssociationModal

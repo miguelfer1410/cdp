@@ -115,11 +115,11 @@ public class TeamsController : ControllerBase
                     Season = t.Season,
                     IsActive = t.IsActive,
                     CreatedAt = t.CreatedAt,
-                    Coaches = t.Coaches.Select(c => new TeamCoachInfo
+                    Coaches = t.CoachTeams.Select(ct => new TeamCoachInfo
                     {
-                        Id = c.Id,
-                        UserId = c.UserId,
-                        Name = c.User.FirstName + " " + c.User.LastName,
+                        Id = ct.CoachProfile.Id,
+                        UserId = ct.CoachProfile.UserId,
+                        Name = ct.CoachProfile.User.FirstName + " " + ct.CoachProfile.User.LastName,
                         Role = "Treinador"
                     }).ToList(),
                     Athletes = t.AthleteTeams
@@ -464,9 +464,14 @@ public class TeamsController : ControllerBase
                 if (coach != null)
                 {
                     // Only assign if they are not already assigned to this team
-                    if (coach.TeamId != id)
+                    if (!await _context.CoachTeams.AnyAsync(ct => ct.TeamId == id && ct.CoachProfileId == coach.Id))
                     {
-                        coach.TeamId = id;
+                        _context.CoachTeams.Add(new CoachTeam
+                        {
+                            TeamId = id,
+                            CoachProfileId = coach.Id,
+                            JoinedAt = DateTime.UtcNow
+                        });
                         addedCount++;
                     }
                 }
@@ -499,16 +504,16 @@ public class TeamsController : ControllerBase
                 return NotFound(new { message = "Team not found" });
             }
 
-            // Find the coach
-            var coach = await _context.CoachProfiles.FirstOrDefaultAsync(c => c.Id == coachId || c.UserId == coachId);
+            var coachTeam = await _context.CoachTeams
+                .Include(ct => ct.CoachProfile)
+                .FirstOrDefaultAsync(ct => ct.TeamId == teamId && (ct.CoachProfileId == coachId || ct.CoachProfile.UserId == coachId));
 
-            if (coach == null || coach.TeamId != teamId)
+            if (coachTeam == null)
             {
                 return NotFound(new { message = "Coach not found in this team" });
             }
 
-            // Unassign the team
-            coach.TeamId = null;
+            _context.CoachTeams.Remove(coachTeam);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Coach removed from team successfully" });

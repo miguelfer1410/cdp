@@ -27,6 +27,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<CoachProfile> CoachProfiles { get; set; }
     public DbSet<Team> Teams { get; set; }
     public DbSet<AthleteTeam> AthleteTeams { get; set; }
+    public DbSet<CoachTeam> CoachTeams { get; set; }
     public DbSet<Event> Events { get; set; }
     public DbSet<TrainingSchedule> TrainingSchedules { get; set; }
     public DbSet<Attendance> Attendances { get; set; }
@@ -121,11 +122,23 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SportId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // CoachTeam configuration (many-to-many)
+        modelBuilder.Entity<CoachTeam>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.CoachProfileId, e.TeamId }).IsUnique();
+
+            entity.HasOne(e => e.CoachProfile)
+                .WithMany(c => c.CoachTeams)
+                .HasForeignKey(e => e.CoachProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Team)
-                .WithMany(t => t.Coaches)
+                .WithMany(t => t.CoachTeams)
                 .HasForeignKey(e => e.TeamId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Team configuration

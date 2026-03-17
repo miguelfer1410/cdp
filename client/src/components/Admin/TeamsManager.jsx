@@ -1204,19 +1204,19 @@ const TeamsManager = () => {
                                         <div className="roster-grid">
                                             {viewingTeam.coaches && viewingTeam.coaches.length > 0 ? (
                                                 viewingTeam.coaches.map(coach => (
-                                                    <div key={coach.id} className="roster-card">
+                                                    <div key={coach.userId} className="roster-card">
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
                                                             <div className="roster-card-avatar">
-                                                                {coach.name.charAt(0)}
+                                                                {coach.name?.charAt(0)}
                                                             </div>
                                                             <div className="roster-card-info">
                                                                 <span className="roster-card-name">{coach.name}</span>
-                                                                <span className="roster-card-role">{coach.role}</span>
+                                                                <span className="roster-card-role">{coach.role || 'Treinador'}</span>
                                                             </div>
                                                         </div>
                                                         <button
                                                             className="btn-remove-athlete"
-                                                            onClick={() => handleRemoveCoach(coach.id)}
+                                                            onClick={() => handleRemoveCoach(coach.userId)}
                                                             title="Remover da equipa"
                                                         >
                                                             <FaTrash />
