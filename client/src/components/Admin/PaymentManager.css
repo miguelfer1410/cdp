@@ -276,6 +276,107 @@
     color: #0f172a;
 }
 
+/* Membership number inline edit */
+.membership-view-container {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.membership-number {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #1e293b;
+}
+
+.membership-edit-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, background 0.15s;
+    line-height: 1;
+}
+
+tr:hover .membership-edit-btn {
+    opacity: 1;
+}
+
+.membership-edit-btn:hover {
+    color: #3b82f6;
+    background: #eff6ff;
+}
+
+.membership-edit-container {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.membership-input {
+    width: 90px;
+    padding: 0.3rem 0.5rem;
+    border: 1.5px solid #3b82f6;
+    border-radius: 7px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    transition: border-color 0.2s;
+}
+
+.membership-edit-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.membership-btn-confirm,
+.membership-btn-cancel {
+    border: none;
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.membership-btn-confirm {
+    background: #22c55e;
+    color: white;
+}
+.membership-btn-confirm:hover { background: #16a34a; }
+
+.membership-btn-cancel {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.membership-btn-cancel:hover { background: #e2e8f0; color: #1e293b; }
+
+.membership-duplicate-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+    width: 100%;
+    line-height: 1.4;
+}
+
 .team-sport-cell {
     display: flex;
     flex-direction: column;
@@ -387,6 +488,21 @@
     background: #e2e8f0;
     color: #0f172a;
 }
+
+.payment-btn-withdraw {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+}
+
+.payment-btn-withdraw:hover {
+    background: #ffedd5;
+    color: #9a3412;
+    border-color: #fb923c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(194, 65, 12, 0.15);
+}
+
 
 /* Pagination */
 .pagination {

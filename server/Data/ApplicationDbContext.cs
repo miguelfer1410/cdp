@@ -87,7 +87,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId).IsUnique();
-            entity.HasIndex(e => e.MembershipNumber).IsUnique();
+            entity.HasIndex(e => e.MembershipNumber); // Not unique — allow manual duplicates with admin warning
 
             entity.HasOne(e => e.User)
                 .WithOne(u => u.MemberProfile)

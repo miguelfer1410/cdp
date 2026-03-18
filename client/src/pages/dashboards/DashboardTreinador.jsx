@@ -233,8 +233,8 @@ const DashboardTreinador = () => {
                                 <div className="profile-meta-item">
                                     <i className="fas fa-users"></i>
                                     {coachData.coachProfile?.teams?.length > 1 ? (
-                                        <select 
-                                            value={selectedTeamId} 
+                                        <select
+                                            value={selectedTeamId}
                                             onChange={(e) => {
                                                 const id = parseInt(e.target.value);
                                                 setSelectedTeamId(id);

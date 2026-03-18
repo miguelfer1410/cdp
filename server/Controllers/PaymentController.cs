@@ -633,6 +633,89 @@ public class PaymentController : ControllerBase
         }
     }
 
+    // PUT: api/payment/admin/membership-number
+    [HttpPut("admin/membership-number")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> UpdateMembershipNumber([FromBody] UpdateMembershipNumberDto request)
+    {
+        try
+        {
+            var user = await _context.Users
+                .Include(u => u.MemberProfile)
+                .FirstOrDefaultAsync(u => u.Id == request.UserId);
+
+            if (user == null || user.MemberProfile == null)
+                return NotFound(new { message = "Utilizador ou perfil de sócio não encontrado." });
+
+            // Check for duplicates (excluding this user and only active users)
+            var duplicate = await _context.Users
+                .Include(u => u.MemberProfile)
+                .Where(u => u.Id != request.UserId &&
+                            u.IsActive &&
+                            u.MemberProfile != null &&
+                            u.MemberProfile.MembershipNumber == request.MembershipNumber)
+                .Select(u => new { u.Id, Name = u.FirstName + " " + u.LastName })
+                .FirstOrDefaultAsync();
+
+            // Always save
+            user.MemberProfile.MembershipNumber = request.MembershipNumber;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                duplicate = duplicate != null ? new { userId = duplicate.Id, name = duplicate.Name } : null
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating membership number");
+            return StatusCode(500, new { message = "Erro ao atualizar número de sócio." });
+        }
+    }
+
+    // POST: api/payment/admin/mark-withdrawn
+    [HttpPost("admin/mark-withdrawn")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> MarkAthleteWithdrawn([FromBody] MarkWithdrawnDto request)
+    {
+        try
+        {
+            var user = await _context.Users
+                .Include(u => u.MemberProfile)
+                .Include(u => u.AthleteProfile)
+                    .ThenInclude(ap => ap.AthleteTeams)
+                .FirstOrDefaultAsync(u => u.Id == request.UserId);
+
+            if (user == null || user.MemberProfile == null)
+                return NotFound(new { message = "Utilizador ou perfil de sócio não encontrado." });
+
+            // Mark user as inactive
+            user.IsActive = false;
+
+            // Mark member profile as inactive
+            user.MemberProfile.MembershipStatus = MembershipStatus.Inactive;
+
+            // Set LeftAt for all active athlete teams
+            if (user.AthleteProfile != null)
+            {
+                foreach (var team in user.AthleteProfile.AthleteTeams.Where(t => t.LeftAt == null))
+                {
+                    team.LeftAt = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Atleta marcado como desistente com sucesso." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking athlete as withdrawn");
+            return StatusCode(500, new { message = "Erro ao marcar atleta como desistente." });
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════════════════
     // CORE CALCULATION ENGINE
     // ════════════════════════════════════════════════════════════════════════════

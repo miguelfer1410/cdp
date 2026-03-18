@@ -29,3 +29,14 @@ public class ManualPaymentUpdateDto
     public int PeriodYear { get; set; }
     public string Status { get; set; } = string.Empty; // "Completed", "Pending", "Failed"
 }
+
+public class UpdateMembershipNumberDto
+{
+    public int UserId { get; set; }
+    public string MembershipNumber { get; set; } = string.Empty;
+}
+
+public class MarkWithdrawnDto
+{
+    public int UserId { get; set; }
+}

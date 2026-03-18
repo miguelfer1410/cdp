@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './PaymentManager.css';
 import {
     FaEuroSign, FaCheckCircle, FaExclamationCircle, FaSearch,
-    FaChevronLeft, FaChevronRight, FaTimes, FaUndo, FaEllipsisH, FaUser
+    FaChevronLeft, FaChevronRight, FaTimes, FaUndo, FaEllipsisH, FaUser,
+    FaEdit, FaCheck, FaExclamationTriangle, FaUserTimes
 } from 'react-icons/fa';
 import PaymentHistorySocio from '../PaymentHistorySocio/PaymentHistorySocio';
 
@@ -30,6 +31,11 @@ const PaymentManager = () => {
     // Detailed Profile Modal 
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+    // Membership number inline editing
+    const [editingMembershipId, setEditingMembershipId] = useState(null);
+    const [editingMembershipValue, setEditingMembershipValue] = useState('');
+    const [membershipDuplicates, setMembershipDuplicates] = useState({}); // { userId: { userId, name } }
 
     const fetchPaymentStatuses = useCallback(async () => {
         try {
@@ -81,6 +87,65 @@ const PaymentManager = () => {
     // Reset page when filters or pageSize change
     useEffect(() => { setPage(1); }, [searchTerm, filterStatus, filterTeam, filterSport, currentMonth, currentYear, pageSize]);
 
+    const startEditMembership = (athlete) => {
+        setEditingMembershipId(athlete.userId);
+        setEditingMembershipValue(athlete.membershipNumber || '');
+    };
+
+    const cancelEditMembership = () => {
+        setEditingMembershipId(null);
+        setEditingMembershipValue('');
+    };
+
+    const confirmEditMembership = async (userId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
+            const response = await fetch(`${apiUrl}/payment/admin/membership-number`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, membershipNumber: editingMembershipValue })
+            });
+            if (!response.ok) throw new Error('Failed to update membership number');
+            const data = await response.json();
+
+            // Update the local athlete list immediately
+            setAthletes(prev => prev.map(a =>
+                a.userId === userId ? { ...a, membershipNumber: editingMembershipValue } : a
+            ));
+
+            // Store duplicate info (or clear it)
+            setMembershipDuplicates(prev => ({
+                ...prev,
+                [userId]: data.duplicate || null
+            }));
+        } catch (error) {
+            console.error('Error updating membership number:', error);
+            alert('Erro ao atualizar número de sócio.');
+        } finally {
+            setEditingMembershipId(null);
+            setEditingMembershipValue('');
+        }
+    };
+
+    const handleMarkWithdrawn = async (athlete) => {
+        if (!window.confirm(`Tem a certeza que deseja marcar "${athlete.name}" como desistente?\n\nEsta ação irá desativar a conta e encerrar todas as equipas ativas.`)) return;
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
+            const response = await fetch(`${apiUrl}/payment/admin/mark-withdrawn`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: athlete.userId })
+            });
+            if (!response.ok) throw new Error('Failed to mark athlete as withdrawn');
+            fetchPaymentStatuses();
+        } catch (error) {
+            console.error('Error marking athlete as withdrawn:', error);
+            alert('Erro ao marcar atleta como desistente.');
+        }
+    };
+
     const handleUpdateStatus = async (userId, newStatus) => {
         const actionText = newStatus === 'Completed' ? 'validar' : 'reverter';
         if (!window.confirm(`Tem a certeza que deseja ${actionText} este pagamento?`)) return;
@@ -102,10 +167,10 @@ const PaymentManager = () => {
 
     const getStatusBadge = (status, athlete = {}) => {
         const s = status || '';
-        const isSenior = athlete.team?.toLowerCase().includes('senior') || 
-                         athlete.sport?.toLowerCase().includes('senior') ||
-                         athlete.team?.toLowerCase().includes('seniores') || 
-                         athlete.sport?.toLowerCase().includes('seniores');
+        const isSenior = athlete.team?.toLowerCase().includes('senior') ||
+            athlete.sport?.toLowerCase().includes('senior') ||
+            athlete.team?.toLowerCase().includes('seniores') ||
+            athlete.sport?.toLowerCase().includes('seniores');
 
         switch (s) {
             case 'Paid': case 'Regularizada': case 'Completed':
@@ -251,7 +316,36 @@ const PaymentManager = () => {
                             athletes.map((athlete) => (
                                 <tr key={athlete.userId} className={`row-status-${(athlete.status || '').toLowerCase()}`}>
                                     <td data-label="Nº Sócio">
-                                        <span className="membership-number">{athlete.membershipNumber}</span>
+                                        {editingMembershipId === athlete.userId ? (
+                                            <div className="membership-edit-container">
+                                                <input
+                                                    className="membership-input"
+                                                    value={editingMembershipValue}
+                                                    onChange={e => setEditingMembershipValue(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') confirmEditMembership(athlete.userId);
+                                                        if (e.key === 'Escape') cancelEditMembership();
+                                                    }}
+                                                    autoFocus
+                                                    maxLength={20}
+                                                />
+                                                <div className="membership-edit-actions">
+                                                    <button className="membership-btn-confirm" title="Confirmar" onClick={() => confirmEditMembership(athlete.userId)}><FaCheck /></button>
+                                                    <button className="membership-btn-cancel" title="Cancelar" onClick={cancelEditMembership}><FaTimes /></button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="membership-view-container">
+                                                <span className="membership-number">{athlete.membershipNumber}</span>
+                                                <button className="membership-edit-btn" title="Editar Nº Sócio" onClick={() => startEditMembership(athlete)}><FaEdit /></button>
+                                                {membershipDuplicates[athlete.userId] && (
+                                                    <div className="membership-duplicate-warning" title={`Nº duplicado: ${membershipDuplicates[athlete.userId].name}`}>
+                                                        <FaExclamationTriangle />
+                                                        <span>Duplicado: <strong>{membershipDuplicates[athlete.userId].name}</strong></span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                     <td data-label="Nome">
                                         <span className="athlete-name">{athlete.name}</span>
@@ -287,6 +381,13 @@ const PaymentManager = () => {
                                                     <FaUndo /> <span>Reverter</span>
                                                 </button>
                                             )}
+                                            <button
+                                                className="payment-btn-action payment-btn-withdraw"
+                                                title="Marcar como Desistente"
+                                                onClick={() => handleMarkWithdrawn(athlete)}
+                                            >
+                                                <FaUserTimes /> <span>Desistiu</span>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
