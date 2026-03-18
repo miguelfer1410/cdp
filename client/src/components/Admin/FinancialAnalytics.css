@@ -194,6 +194,69 @@
     font-size: 0.95rem;
 }
 
+/* ── Adicionar no fim de FinancialAnalytics.css ── */
+
+/* Grid de breakdown (modalidade + escalão) */
+.charts-grid--breakdown {
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+    .charts-grid--breakdown {
+        grid-template-columns: 1fr;
+    }
+}
+
+/*
+ * Container com scroll vertical para gráficos de barras horizontais.
+ * Limita a altura visível a ~400px; se o gráfico for maior, aparece
+ * scroll — sem cortar ou agrupar barras.
+ */
+.hbar-scroll-container {
+    overflow-y: auto;
+    max-height: 440px;
+    padding-right: 4px;
+    /* Scrollbar discreta */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.hbar-scroll-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.hbar-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.hbar-scroll-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.hbar-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Badge com contagem de escalões */
+.chart-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(0, 51, 128, 0.1);
+    color: #003380;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+
+/* Ícones de cor teal nos títulos */
+.chart-h-icon.teal {
+    color: #0d9488;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .period-filter-bar {

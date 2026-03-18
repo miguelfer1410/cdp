@@ -6,6 +6,6 @@ namespace server.Services
         Task SendPasswordResetEmailAsync(string toEmail, string resetLink);
         Task SendAccountActivationEmailAsync(string toEmail, string firstName, string activationLink);
         Task SendGameCallUpEmailAsync(string toEmail, string athleteName, string eventTitle, DateTime eventDate, string location);
-        Task SendTicketEmailAsync(string toEmail, string buyerName, string eventTitle, DateTime eventDate, string location, byte[] qrCode);
+        Task SendTicketEmailAsync(string toEmail, string buyerName, string eventTitle, DateTime eventDate, string location, byte[] qrCode, string ticketCode, decimal price);
     }
 }

@@ -483,6 +483,7 @@ public class UsersController : ControllerBase
             UserId = id,
             FirstName = request.FirstName,
             LastName = request.LastName,
+            Escalao = request.Escalao,
             Height = request.Height,
             Weight = request.Weight,
             MedicalCertificateExpiry = request.MedicalCertificateExpiry,
@@ -522,6 +523,7 @@ public class UsersController : ControllerBase
 
         athleteProfile.FirstName = request.FirstName;
         athleteProfile.LastName = request.LastName;
+        athleteProfile.Escalao = request.Escalao;
         athleteProfile.Height = request.Height;
         athleteProfile.Weight = request.Weight;
         athleteProfile.MedicalCertificateExpiry = request.MedicalCertificateExpiry;
@@ -1527,6 +1529,7 @@ public class AthleteProfileRequest
 {
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
+    public string? Escalao { get; set; }
     public int? Height { get; set; }
     public int? Weight { get; set; }
     public DateTime? MedicalCertificateExpiry { get; set; }

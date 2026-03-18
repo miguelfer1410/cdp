@@ -16,7 +16,8 @@ import {
 import { Pie, Bar, Line, Doughnut } from 'react-chartjs-2';
 import {
     FaMoneyBillWave, FaRegHourglass, FaChartLine,
-    FaCalendarAlt, FaTimesCircle, FaExchangeAlt, FaChartBar
+    FaCalendarAlt, FaTimesCircle, FaExchangeAlt, FaChartBar,
+    FaFutbol, FaLayerGroup
 } from 'react-icons/fa';
 import './FinancialAnalytics.css';
 
@@ -285,6 +286,46 @@ const FinancialAnalytics = () => {
         }],
     };
 
+    const SPORT_PALETTE = [
+        'rgba(37,117,252,0.82)',
+        'rgba(255,126,95,0.82)',
+        'rgba(17,153,142,0.82)',
+        'rgba(106,17,203,0.82)',
+        'rgba(247,151,30,0.82)',
+        'rgba(0,198,255,0.82)',
+        'rgba(67,233,123,0.82)',
+        'rgba(248,87,166,0.82)',
+        'rgba(255,210,0,0.82)',
+        'rgba(0,114,255,0.82)',
+        'rgba(255,74,74,0.82)',
+        'rgba(0,212,170,0.82)',
+    ];
+
+    // 7. Horizontal Bar – receita por modalidade
+    const sportRows = data.revenueBySport ?? [];
+    const sportBarData = {
+        labels: sportRows.map(s => s.sport),
+        datasets: [{
+            label: 'Receita (€)',
+            data: sportRows.map(s => s.totalAmount),
+            backgroundColor: sportRows.map((_, i) => SPORT_PALETTE[i % SPORT_PALETTE.length]),
+            borderRadius: 6,
+            borderSkipped: false,
+        }],
+    };
+
+    // 8. Horizontal Bar – receita por escalão (TODOS, sem agrupar)
+    const escalaoRows = data.revenueByEscalao ?? [];
+    const escalaoBarData = {
+        labels: escalaoRows.map(r => r.escalao),
+        datasets: [{
+            label: 'Receita (€)',
+            data: escalaoRows.map(r => r.totalAmount),
+            backgroundColor: escalaoRows.map((_, i) => SPORT_PALETTE[i % SPORT_PALETTE.length]),
+            borderRadius: 6,
+            borderSkipped: false,
+        }],
+    };
     // ── chart options ──────────────────────────────────────────────────────────
     const pieOpts = (fmtCb) => ({
         responsive: true, maintainAspectRatio: false,
@@ -328,6 +369,50 @@ const FinancialAnalytics = () => {
     });
 
     const bestLabel = kpi.best ? monthLabel(kpi.best.month) : '—';
+
+    const hBarOpts = (rows = []) => ({
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                ...TOOLTIP_BASE,
+                callbacks: {
+                    label: ctx => ` €${ctx.raw.toFixed(2)}`,
+                    afterLabel: ctx => {
+                        const row = rows[ctx.dataIndex];
+                        return row ? ` ${row.count} pagamento${row.count !== 1 ? 's' : ''}` : '';
+                    },
+                },
+            },
+        },
+        scales: {
+            x: {
+                ...AXIS_BASE,
+                ticks: {
+                    ...AXIS_BASE.ticks,
+                    callback: v => '€' + v.toLocaleString('pt-PT'),
+                },
+                grid: { color: 'rgba(0,0,0,0.04)' },
+            },
+            y: {
+                ...AXIS_BASE,
+                grid: { display: false },
+                ticks: {
+                    ...AXIS_BASE.ticks,
+                    font: { size: 12, family: "'Inter', sans-serif", weight: '500' },
+                },
+            },
+        },
+        animation: { duration: 1200, easing: 'easeOutQuart' },
+    });
+
+    // Altura dinâmica: 44px por barra + margem
+    const BAR_HEIGHT = 44;
+    const BAR_MIN = 180;
+    const escalaoChartHeight = Math.max(BAR_MIN, escalaoRows.length * BAR_HEIGHT);
+    const sportChartHeight = Math.max(BAR_MIN, sportRows.length * BAR_HEIGHT);
 
     return (
         <div className="financial-analytics-container">
@@ -504,6 +589,45 @@ const FinancialAnalytics = () => {
                     </div>
                 </div>
             </div>
+
+            {(sportRows.length > 0 || escalaoRows.length > 0) && (
+                <div className="charts-grid charts-grid--breakdown">
+
+                    {/* Receita por Modalidade */}
+                    <div className="chart-item">
+                        <h3>
+                            <FaFutbol className="chart-h-icon blue" />
+                            Receita por Modalidade
+                        </h3>
+                        <div className="hbar-scroll-container">
+                            <div style={{ height: sportChartHeight }}>
+                                {sportRows.length > 0
+                                    ? <Bar data={sportBarData} options={hBarOpts(sportRows)} />
+                                    : <div className="no-data-msg">Sem dados de modalidades.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Receita por Escalão — todos, com scroll se necessário */}
+                    <div className="chart-item">
+                        <h3>
+                            <FaLayerGroup className="chart-h-icon teal" />
+                            Receita por Escalão
+                            <span className="chart-badge">{escalaoRows.length} escalão{escalaoRows.length !== 1 ? 'ões' : ''}</span>
+                        </h3>
+                        <div className="hbar-scroll-container">
+                            <div style={{ height: escalaoChartHeight }}>
+                                {escalaoRows.length > 0
+                                    ? <Bar data={escalaoBarData} options={hBarOpts(escalaoRows)} />
+                                    : <div className="no-data-msg">Sem dados de escalões.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            )}
 
         </div>
     );

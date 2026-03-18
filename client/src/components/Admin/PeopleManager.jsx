@@ -50,6 +50,7 @@ const PeopleManager = () => {
             id: null,
             firstName: '',
             lastName: '',
+            escalao: '',
             teamId: ''
         },
         memberProfile: {
@@ -228,7 +229,7 @@ const PeopleManager = () => {
             hasAthleteProfile: false,
             hasMemberProfile: false,
             hasCoachProfile: false,
-            athleteProfile: { id: null, firstName: '', lastName: '', teamId: '' },
+            athleteProfile: { id: null, firstName: '', lastName: '', escalao: '', teamId: '' },
             memberProfile: { membershipStatus: 0, memberSince: '', paymentPreference: '' },
             coachProfile: { sportId: '', teamIds: [], licenseNumber: '', licenseLevel: '', licenseExpiry: '', specialization: '' },
             selectedRoles: []
@@ -373,8 +374,9 @@ const PeopleManager = () => {
                         id: data.athleteProfile.id,
                         firstName: data.athleteProfile.firstName || '',
                         lastName: data.athleteProfile.lastName || '',
+                        escalao: data.athleteProfile.escalao || '',
                         teamId: data.athleteProfile.teams && data.athleteProfile.teams.length > 0 ? data.athleteProfile.teams[0].id : ''
-                    } : { id: null, firstName: '', lastName: '', teamId: '' },
+                    } : { id: null, firstName: '', lastName: '', escalao: '', teamId: '' },
                     memberProfile: data.memberProfile ? {
                         membershipStatus: data.memberProfile.membershipStatus,
                         memberSince: data.memberProfile.memberSince
@@ -533,6 +535,7 @@ const PeopleManager = () => {
                 const payload = {
                     firstName: ap.firstName || null,
                     lastName: ap.lastName || null,
+                    escalao: ap.escalao || null,
                     height: null,
                     weight: null,
                     medicalCertificateExpiry: null,
@@ -1058,49 +1061,34 @@ const PeopleManager = () => {
 
             {/* Athlete Details - Single Profile */}
             {hasAthleteProfile && (
-                <div className="detail-section">
-                    <div className="detail-section-header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div className="detail-section-icon athlete"><FaRunning /></div>
-                            <h4>Perfil de Atleta</h4>
+                <div className="detail-section-body">
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Escalão Socioeconómico</label>
+                            <select
+                                value={formData.athleteProfile.escalao}
+                                onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, escalao: e.target.value } })}
+                            >
+                                <option value="">Sem Escalão</option>
+                                <option value="Escalão 1">Escalão 1</option>
+                                <option value="Escalão 2">Escalão 2</option>
+                            </select>
                         </div>
                     </div>
-                    <div className="detail-section-body">
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Nome do Atleta</label>
-                                <input
-                                    type="text"
-                                    placeholder="João"
-                                    value={formData.athleteProfile.firstName}
-                                    onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, firstName: e.target.value } })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Apelido do Atleta</label>
-                                <input
-                                    type="text"
-                                    placeholder="Silva"
-                                    value={formData.athleteProfile.lastName}
-                                    onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, lastName: e.target.value } })}
-                                />
-                            </div>
-                        </div>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>Equipa</label>
-                                <select
-                                    value={formData.athleteProfile.teamId}
-                                    onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, teamId: e.target.value } })}
-                                >
-                                    <option value="">Sem equipa atribuída</option>
-                                    {teams.map(team => (
-                                        <option key={team.id} value={team.id}>
-                                            {team.name} ({team.sportName})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Equipa</label>
+                            <select
+                                value={formData.athleteProfile.teamId}
+                                onChange={(e) => setFormData({ ...formData, athleteProfile: { ...formData.athleteProfile, teamId: e.target.value } })}
+                            >
+                                <option value="">Sem equipa atribuída</option>
+                                {teams.map(team => (
+                                    <option key={team.id} value={team.id}>
+                                        {team.name} ({team.sportName})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>

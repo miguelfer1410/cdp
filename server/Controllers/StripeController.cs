@@ -199,7 +199,7 @@ public class StripeController : ControllerBase
         }
     }
 
-    private async Task SendTicketEmail(Ticket ticket, CdpApi.Models.Event? gameEvent, string buyerEmail, string buyerName)
+     private async Task SendTicketEmail(Ticket ticket, CdpApi.Models.Event? gameEvent, string buyerEmail, string buyerName)
     {
         try
         {
@@ -207,7 +207,7 @@ public class StripeController : ControllerBase
             {
                 _logger.LogInformation("Generating QR code for ticket {TicketCode}", ticket.TicketCode);
                 var qrCode = await _ticketService.GenerateQrCodeAsync(ticket.TicketCode);
-
+ 
                 _logger.LogInformation("Calling SendTicketEmailAsync for {BuyerEmail}", buyerEmail);
                 await _emailService.SendTicketEmailAsync(
                     buyerEmail,
@@ -215,7 +215,9 @@ public class StripeController : ControllerBase
                     gameEvent.Title,
                     gameEvent.StartDateTime,
                     gameEvent.Location ?? "CDP",
-                    qrCode
+                    qrCode,
+                    ticket.TicketCode,   // <-- NOVO: código do bilhete para o PDF
+                    ticket.Price          // <-- NOVO: preço para o PDF
                 );
                 _logger.LogInformation("SendTicketEmailAsync completed successfully for {BuyerEmail}", buyerEmail);
             }
@@ -227,7 +229,8 @@ public class StripeController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send ticket email to {Email}: {Message}", buyerEmail, ex.Message);
-            // We don't throw here to avoid failing the whole webhook if one email fails
+            // Não lança exceção para não falhar o webhook completo se um email falhar
         }
     }
+ 
 }

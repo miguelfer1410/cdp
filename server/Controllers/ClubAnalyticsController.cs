@@ -119,9 +119,9 @@ public class ClubAnalyticsController : ControllerBase
     {
         var allPayments = await _context.Payments.ToListAsync();
 
-        var totalRevenue = allPayments.Where(p => p.Status == "Completed").Sum(p => p.Amount);
-        var pendingRevenue = allPayments.Where(p => p.Status == "Pending").Sum(p => p.Amount);
-        var failedRevenue = allPayments.Where(p => p.Status == "Failed").Sum(p => p.Amount);
+        var totalRevenue      = allPayments.Where(p => p.Status == "Completed").Sum(p => p.Amount);
+        var pendingRevenue    = allPayments.Where(p => p.Status == "Pending").Sum(p => p.Amount);
+        var failedRevenue     = allPayments.Where(p => p.Status == "Failed").Sum(p => p.Amount);
         var totalTransactions = allPayments.Count;
 
         var paymentsByStatus = allPayments
@@ -140,7 +140,7 @@ public class ClubAnalyticsController : ControllerBase
             .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => new {
-                Month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                Month       = $"{g.Key.Year}-{g.Key.Month:D2}",
                 TotalAmount = g.Sum(p => p.Amount)
             })
             .ToList();
@@ -150,7 +150,7 @@ public class ClubAnalyticsController : ControllerBase
             .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => new {
-                Month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                Month           = $"{g.Key.Year}-{g.Key.Month:D2}",
                 TotalCount      = g.Count(),
                 CompletedAmount = g.Where(p => p.Status == "Completed").Sum(p => p.Amount),
                 PendingAmount   = g.Where(p => p.Status == "Pending").Sum(p => p.Amount),
@@ -161,6 +161,90 @@ public class ClubAnalyticsController : ControllerBase
             })
             .ToList();
 
+        // ── Revenue by Sport ──────────────────────────────────────────────────
+        // Join: Payment → MemberProfile → User → AthleteProfile → AthleteTeams (active) → Team → Sport
+        var revenueBySport = await _context.Payments
+            .Where(p => p.Status == "Completed")
+            .Join(_context.MemberProfiles,
+                p  => p.MemberProfileId,
+                mp => mp.Id,
+                (p, mp) => new { Payment = p, mp.UserId })
+            .Join(_context.Users,
+                x => x.UserId,
+                u => u.Id,
+                (x, u) => new { x.Payment, User = u })
+            .GroupJoin(_context.AthleteProfiles,
+                x  => x.User.Id,
+                ap => ap.UserId,
+                (x, aps) => new { x.Payment, AthleteProfiles = aps })
+            .SelectMany(
+                x => x.AthleteProfiles.DefaultIfEmpty(),
+                (x, ap) => new { x.Payment, AthleteProfile = ap })
+            .GroupJoin(
+                _context.AthleteTeams.Where(at => at.LeftAt == null)
+                    .Include(at => at.Team).ThenInclude(t => t.Sport),
+                x  => x.AthleteProfile != null ? (int?)x.AthleteProfile.Id : null,
+                at => (int?)at.AthleteProfileId,
+                (x, ats) => new { x.Payment, AthleteTeams = ats })
+            .SelectMany(
+                x => x.AthleteTeams.DefaultIfEmpty(),
+                (x, at) => new {
+                    x.Payment,
+                    SportName = at != null && at.Team != null && at.Team.Sport != null
+                        ? at.Team.Sport.Name
+                        : "Sem Modalidade"
+                })
+            .GroupBy(x => x.SportName)
+            .Select(g => new {
+                Sport       = g.Key,
+                TotalAmount = g.Sum(x => x.Payment.Amount),
+                Count       = g.Count()
+            })
+            .OrderByDescending(g => g.TotalAmount)
+            .ToListAsync();
+
+        // ── Revenue by Escalão (competitive Team Escalão) ─────────────────────
+        // Join: Payment → MemberProfile → User → AthleteProfile → AthleteTeams (active) → Team → Escalao
+        var revenueByEscalao = await _context.Payments
+            .Where(p => p.Status == "Completed")
+            .Join(_context.MemberProfiles,
+                p  => p.MemberProfileId,
+                mp => mp.Id,
+                (p, mp) => new { Payment = p, mp.UserId })
+            .Join(_context.Users,
+                x => x.UserId,
+                u => u.Id,
+                (x, u) => new { x.Payment, User = u })
+            .GroupJoin(_context.AthleteProfiles,
+                x  => x.User.Id,
+                ap => ap.UserId,
+                (x, aps) => new { x.Payment, AthleteProfiles = aps })
+            .SelectMany(
+                x => x.AthleteProfiles.DefaultIfEmpty(),
+                (x, ap) => new { x.Payment, AthleteProfile = ap })
+            .GroupJoin(
+                _context.AthleteTeams.Where(at => at.LeftAt == null)
+                    .Include(at => at.Team).ThenInclude(t => t.Escalao),
+                x  => x.AthleteProfile != null ? (int?)x.AthleteProfile.Id : null,
+                at => (int?)at.AthleteProfileId,
+                (x, ats) => new { x.Payment, AthleteTeams = ats })
+            .SelectMany(
+                x => x.AthleteTeams.DefaultIfEmpty(),
+                (x, at) => new {
+                    x.Payment,
+                    EscalaoName = at != null && at.Team != null && at.Team.Escalao != null
+                        ? at.Team.Escalao.Name
+                        : "Sem Escalão"
+                })
+            .GroupBy(x => x.EscalaoName)
+            .Select(g => new {
+                Escalao     = g.Key,
+                TotalAmount = g.Sum(x => x.Payment.Amount),
+                Count       = g.Count()
+            })
+            .OrderByDescending(g => g.TotalAmount)
+            .ToListAsync();
+
         return Ok(new
         {
             totalRevenue,
@@ -170,7 +254,9 @@ public class ClubAnalyticsController : ControllerBase
             paymentsByStatus,
             revenueByMethod,
             revenueByMonth,
-            paymentStatsByMonth
+            paymentStatsByMonth,
+            revenueBySport,
+            revenueByEscalao
         });
     }
 }
