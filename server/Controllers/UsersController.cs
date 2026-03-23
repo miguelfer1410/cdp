@@ -604,15 +604,20 @@ public class UsersController : ControllerBase
         // Generate membership number
         var lastNumber = await _context.MemberProfiles.OrderByDescending(m => m.Id).Select(m => m.MembershipNumber).FirstOrDefaultAsync();
         var nextNumber = 1;
-        if (!string.IsNullOrEmpty(lastNumber) && int.TryParse(lastNumber.Replace("CDP-", ""), out var num))
+        if (!string.IsNullOrEmpty(lastNumber))
         {
-            nextNumber = num + 1;
+            // Extract numeric part regardless of prefix
+            var numericPart = new string(lastNumber.Where(char.IsDigit).ToArray());
+            if (int.TryParse(numericPart, out var num))
+            {
+                nextNumber = num + 1;
+            }
         }
 
         var memberProfile = new MemberProfile
         {
             UserId = id,
-            MembershipNumber = $"CDP-{nextNumber:D5}",
+            MembershipNumber = nextNumber.ToString(),
             MembershipStatus = request.MembershipStatus,
             MemberSince = request.MemberSince ?? DateTime.UtcNow,
             PaymentPreference = request.PaymentPreference,
@@ -878,9 +883,8 @@ public class UsersController : ControllerBase
         int nextNumber = 1;
         if (lastMember != null && !string.IsNullOrEmpty(lastMember.MembershipNumber))
         {
-            // Assuming format CDP-00001
-            if (lastMember.MembershipNumber.StartsWith("CDP-") && 
-                int.TryParse(lastMember.MembershipNumber.Substring(4), out int lastNum))
+            var numericPart = new string(lastMember.MembershipNumber.Where(char.IsDigit).ToArray());
+            if (int.TryParse(numericPart, out int lastNum))
             {
                 nextNumber = lastNum + 1;
             }
@@ -889,7 +893,7 @@ public class UsersController : ControllerBase
         int count = 0;
         foreach (var user in usersToFix)
         {
-            var membershipNumber = $"CDP-{nextNumber:D5}";
+            var membershipNumber = nextNumber.ToString();
             
             var memberProfile = new MemberProfile
             {
@@ -912,8 +916,8 @@ public class UsersController : ControllerBase
         return Ok(new { 
             message = "Correção concluída com sucesso.", 
             fixedCount = count,
-            firstNewNumber = $"CDP-{(nextNumber - count):D5}",
-            lastNewNumber = $"CDP-{(nextNumber - 1):D5}"
+            firstNewNumber = (nextNumber - count).ToString(),
+            lastNewNumber = (nextNumber - 1).ToString()
         });
     }
 
@@ -935,8 +939,8 @@ public class UsersController : ControllerBase
         int nextNumber = 1;
         if (lastMember != null && !string.IsNullOrEmpty(lastMember.MembershipNumber))
         {
-            if (lastMember.MembershipNumber.StartsWith("CDP-") && 
-                int.TryParse(lastMember.MembershipNumber.Substring(4), out int lastNum))
+            var numericPart = new string(lastMember.MembershipNumber.Where(char.IsDigit).ToArray());
+            if (int.TryParse(numericPart, out int lastNum))
             {
                 nextNumber = lastNum + 1;
             }
@@ -992,7 +996,7 @@ public class UsersController : ControllerBase
                 var memberProfile = new MemberProfile
                 {
                     UserId = user.Id,
-                    MembershipNumber = $"CDP-{nextNumber:D5}",
+                    MembershipNumber = $"{nextNumber:D5}",
                     MembershipStatus = MembershipStatus.Active,
                     MemberSince = DateTime.UtcNow,
                     PaymentPreference = "Monthly",
@@ -1042,8 +1046,8 @@ public class UsersController : ControllerBase
         int nextNumber = 1;
         if (lastMember != null && !string.IsNullOrEmpty(lastMember.MembershipNumber))
         {
-            if (lastMember.MembershipNumber.StartsWith("CDP-") && 
-                int.TryParse(lastMember.MembershipNumber.Substring(4), out int lastNum))
+            var numericPart = new string(lastMember.MembershipNumber.Where(char.IsDigit).ToArray());
+            if (int.TryParse(numericPart, out int lastNum))
             {
                 nextNumber = lastNum + 1;
             }
@@ -1111,7 +1115,7 @@ public class UsersController : ControllerBase
                 var memberProfile = new MemberProfile
                 {
                     UserId = user.Id,
-                    MembershipNumber = $"CDP-{nextNumber:D5}",
+                    MembershipNumber = $"{nextNumber:D5}",
                     MembershipStatus = MembershipStatus.Active,
                     MemberSince = DateTime.UtcNow,
                     PaymentPreference = "Monthly",

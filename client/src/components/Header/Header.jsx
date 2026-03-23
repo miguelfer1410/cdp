@@ -18,6 +18,8 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
   const [userRoles, setUserRoles] = useState([]);
+  const [linkedUsers, setLinkedUsers] = useState([]);
+  const [userId, setUserId] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -28,6 +30,10 @@ const Header = () => {
     localStorage.removeItem('userType');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('roles');
+    localStorage.removeItem('linkedUsers');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('primaryUserId');
+    localStorage.removeItem('acceptedRegulation');
     setIsLoggedIn(false);
     setDropdownOpen(false);
   };
@@ -37,20 +43,30 @@ const Header = () => {
     const name = localStorage.getItem('userName');
     const type = localStorage.getItem('userType');
     const rolesStr = localStorage.getItem('roles');
+    const linkedUsersStr = localStorage.getItem('linkedUsers');
+    const storedUserId = localStorage.getItem('userId');
 
     if (token && name && !isTokenExpired(token)) {
       setIsLoggedIn(true);
       setUserName(name);
+      setUserId(storedUserId ? parseInt(storedUserId) : null);
 
       if (rolesStr) {
         try {
-          const roles = JSON.parse(rolesStr);
-          setUserRoles(roles);
+          setUserRoles(JSON.parse(rolesStr));
         } catch (e) {
           setUserRoles(type ? [type] : ['User']);
         }
       } else {
         setUserRoles(type ? [type] : ['User']);
+      }
+
+      if (linkedUsersStr) {
+        try {
+          setLinkedUsers(JSON.parse(linkedUsersStr));
+        } catch (e) {
+          setLinkedUsers([]);
+        }
       }
     } else if (token && isTokenExpired(token)) {
       clearSession();
@@ -90,50 +106,111 @@ const Header = () => {
     localStorage.removeItem('userType');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('roles');
+    localStorage.removeItem('linkedUsers');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('primaryUserId');
+    localStorage.removeItem('acceptedRegulation');
     setIsLoggedIn(false);
     setDropdownOpen(false);
     navigate('/');
   };
 
+  const handleSwitchUser = async (targetUserId, link) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5285/api/auth/switch-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ targetUserId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('roles', JSON.stringify(data.roles));
+        localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
+        localStorage.setItem('userEmail', data.email);
+        localStorage.setItem('userId', data.id.toString());
+        localStorage.setItem('acceptedRegulation', data.acceptedRegulation ? 'true' : 'false');
+        if (data.linkedUsers) {
+          localStorage.setItem('linkedUsers', JSON.stringify(data.linkedUsers));
+        }
+
+        // Use navigate + reload to ensure all components refresh with the new token/roles
+        navigate(link);
+        window.location.reload();
+      } else {
+        const err = await response.json();
+        alert(err.message || 'Erro ao trocar de utilizador');
+      }
+    } catch (err) {
+      console.error('Error switching user:', err);
+    }
+  };
+
   const getMenuOptions = () => {
     const options = [];
-    const rolesLower = userRoles.map(r => r.toLowerCase());
+    const primaryUserId = parseInt(localStorage.getItem('primaryUserId') || localStorage.getItem('userId'));
 
-    if (rolesLower.includes('admin')) {
-      options.push({ 
-        icon: <FaTachometerAlt />, 
-        label: 'Dashboard Admin', 
-        link: '/dashboard-admin' 
-      });
-    }
+    // Check all users (current + linked) to find available dashboards
+    const allUsersData = [
+      { id: userId, roles: userRoles },
+      ...linkedUsers.map(lu => ({ id: lu.id, roles: lu.roles || [lu.dashboardType] || [] }))
+    ];
+
+    const hasAdmin = allUsersData.some(u => u.roles.some(r => r.toLowerCase() === 'admin'));
+    const hasAtleta = allUsersData.some(u => u.roles.some(r => r.toLowerCase() === 'atleta'));
+    const hasTreinador = allUsersData.some(u => u.roles.some(r => r.toLowerCase() === 'treinador'));
     
-    if (rolesLower.includes('treinador')) {
-      options.push({ 
-        icon: <FaTachometerAlt />, 
-        label: 'Dashboard Treinador', 
-        link: '/dashboard-treinador' 
+    // Sócio is shown only if there's someone who is "exclusively" a socio (no other major roles)
+    const hasExclusiveSocio = allUsersData.some(u => {
+      const roles = u.roles.map(r => r.toLowerCase());
+      const isSocio = roles.includes('socio') || roles.includes('user');
+      const hasOther = roles.includes('admin') || roles.includes('atleta') || roles.includes('treinador');
+      return isSocio && !hasOther;
+    });
+
+    if (hasAdmin) {
+      const u = allUsersData.find(u => u.roles.some(r => r.toLowerCase() === 'admin'));
+      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard Admin', link: '/dashboard-admin', userId: u.id });
+    }
+    if (hasAtleta) {
+      const u = allUsersData.find(u => u.roles.some(r => r.toLowerCase() === 'atleta'));
+      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard Atleta', link: '/dashboard-atleta', userId: u.id });
+    }
+    if (hasTreinador) {
+      const u = allUsersData.find(u => u.roles.some(r => r.toLowerCase() === 'treinador'));
+      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard Treinador', link: '/dashboard-treinador', userId: u.id });
+    }
+    if (hasExclusiveSocio) {
+      const u = allUsersData.find(u => {
+        const roles = u.roles.map(r => r.toLowerCase());
+        const isSocio = roles.includes('socio') || roles.includes('user');
+        const hasOther = roles.includes('admin') || roles.includes('atleta') || roles.includes('treinador');
+        return isSocio && !hasOther;
       });
+      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard Sócio', link: '/dashboard-socio', userId: u.id });
     }
 
-    if (rolesLower.includes('atleta')) {
-      options.push({ 
-        icon: <FaTachometerAlt />, 
-        label: 'Dashboard Atleta', 
-        link: '/dashboard-atleta' 
-      });
-    }
+    // 3. Sort options to maintain consistent order: Admin, Atleta, Treinador, Socio
+    const order = { 'admin': 1, 'atleta': 2, 'treinador': 3, 'socio': 4 };
+    options.sort((a, b) => {
+      const getType = (opt) => {
+        if (opt.link.includes('admin')) return 'admin';
+        if (opt.link.includes('atleta')) return 'atleta';
+        if (opt.link.includes('treinador')) return 'treinador';
+        if (opt.link.includes('socio')) return 'socio';
+        return 'other';
+      };
+      return (order[getType(a)] || 99) - (order[getType(b)] || 99);
+    });
 
-    if (rolesLower.includes('socio') || rolesLower.includes('user')) {
-      options.push({ 
-        icon: <FaTachometerAlt />, 
-        label: 'Dashboard Sócio', 
-        link: '/dashboard-socio' 
-      });
-    }
-
-    // Default fallback if no roles match
+    // Fallback if no roles match
     if (options.length === 0) {
-      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard', link: '/' });
+      options.push({ icon: <FaTachometerAlt />, label: 'Dashboard', link: '/', userId: primaryUserId });
     }
 
     return options;
@@ -201,9 +278,14 @@ const Header = () => {
                       key={index}
                       to={option.link}
                       className="dropdown-item"
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        setMobileMenuOpen(false);
+                      onClick={(e) => {
+                        if (option.userId && option.userId !== userId) {
+                          e.preventDefault();
+                          handleSwitchUser(option.userId, option.link);
+                        } else {
+                          setDropdownOpen(false);
+                          setMobileMenuOpen(false);
+                        }
                       }}
                     >
                       {option.icon}

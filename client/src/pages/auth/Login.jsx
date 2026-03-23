@@ -55,7 +55,10 @@ const Login = () => {
       // Backend now returns roles array instead of userType
       const roles = data.roles || ['User'];
       console.log(roles);
-      const primaryRole = roles.includes('Admin') ? 'Admin' : (roles[0] || 'User');
+      const primaryRole = roles.includes('Atleta') ? 'Atleta' : 
+                         roles.includes('Treinador') ? 'Treinador' :
+                         roles.includes('Admin') ? 'Admin' :
+                         (roles[0] || 'User');
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('roles', JSON.stringify(roles));
@@ -64,6 +67,9 @@ const Login = () => {
       localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
       localStorage.setItem('userEmail', data.email);
       localStorage.setItem('userId', data.id);
+      localStorage.setItem('primaryUserId', data.id);
+      localStorage.setItem('acceptedRegulation', data.acceptedRegulation ? 'true' : 'false');
+      window.dispatchEvent(new CustomEvent('check-regulation'));
       // Store all linked users (siblings sharing same email) for athlete tab switching
       if (data.linkedUsers && data.linkedUsers.length > 0) {
         localStorage.setItem('linkedUsers', JSON.stringify(data.linkedUsers));
@@ -71,19 +77,22 @@ const Login = () => {
         localStorage.removeItem('linkedUsers');
       }
 
-      // Redirect based on role
-      const rolesLower = roles.map(r => r.toLowerCase());
-      if (rolesLower.includes('admin')) {
-        navigate('/dashboard-admin');
-      } else if (rolesLower.includes('treinador')) {
-        navigate('/dashboard-treinador');
-      } else if (rolesLower.includes('atleta')) {
-        navigate('/dashboard-atleta');
-      } else if (rolesLower.includes('socio') || rolesLower.includes('user')) {
-        navigate('/dashboard-socio');
-      } else {
-        navigate('/');
+      // Redirect based on role only if regulation is accepted
+      if (data.acceptedRegulation) {
+        const rolesLower = roles.map(r => r.toLowerCase());
+        if (rolesLower.includes('atleta')) {
+          window.location.href = '/dashboard-atleta';
+        } else if (rolesLower.includes('treinador')) {
+          window.location.href = '/dashboard-treinador';
+        } else if (rolesLower.includes('admin')) {
+          window.location.href = '/dashboard-admin';
+        } else if (rolesLower.includes('socio') || rolesLower.includes('user')) {
+          window.location.href = '/dashboard-socio';
+        } else {
+          window.location.href = '/';
+        }
       }
+      // If not accepted, they stay on the login page and App.js show the RegulationModal
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Email ou password incorretos. Por favor, tente novamente.');

@@ -90,11 +90,14 @@ const DashboardSocio = () => {
             atleta: '/dashboard-atleta',
             treinador: '/dashboard-treinador',
             socio: '/dashboard-socio',
+            admin: '/dashboard-admin',
             user: '/dashboard-socio'
         };
+        const type = lu.dashboardType?.toLowerCase() || 'socio';
+        const route = dashboardRoutes[type] || '/dashboard-socio';
         localStorage.setItem('userId', lu.id);
-        if (dashboardRoutes[lu.dashboardType] !== '/dashboard-socio') {
-            navigate(dashboardRoutes[lu.dashboardType]);
+        if (route !== '/dashboard-socio') {
+            navigate(route);
         } else {
             setCurrentUserId(lu.id); // ← fica na mesma página mas recarrega dados
         }
@@ -249,11 +252,6 @@ const DashboardSocio = () => {
                                     onClick={() => handleLinkedTabClick(lu)}
                                     className={`athlete-tab ${currentUserId === lu.id ? 'active' : ''}`}
                                 >
-                                    <i className={
-                                        lu.dashboardType === 'atleta' ? 'fas fa-running' :
-                                            lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
-                                                'fas fa-id-card'
-                                    }></i>
                                     {`${lu.firstName} ${lu.lastName}`.trim() || `Conta ${lu.id}`}
                                 </button>
                             ))}
@@ -398,11 +396,6 @@ const DashboardSocio = () => {
                                 onClick={() => handleLinkedTabClick(lu)}
                                 className={`athlete-tab ${currentUserId === lu.id ? 'active' : ''}`}
                             >
-                                <i className={
-                                    lu.dashboardType === 'atleta' ? 'fas fa-running' :
-                                        lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
-                                            'fas fa-id-card'
-                                }></i>
                                 {`${lu.firstName} ${lu.lastName}`.trim() || `Conta ${lu.id}`}
                             </button>
                         ))}

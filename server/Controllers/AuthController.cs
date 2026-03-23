@@ -117,4 +117,38 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "Erro ao obter utilizadores associados." });
         }
     }
+
+    /// <summary>
+    /// Switched the context to a linked user account, providing a new JWT token.
+    /// This allows accessing dashboards of linked accounts with different roles.
+    /// </summary>
+    [HttpPost("switch-user")]
+    [Authorize]
+    public async Task<IActionResult> SwitchUser([FromBody] SwitchUserRequest request)
+    {
+        var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                               ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(currentUserIdClaim) || !int.TryParse(currentUserIdClaim, out int currentUserId))
+            return Unauthorized(new { message = "Token inválido ou sessão expirada." });
+
+        try
+        {
+            _logger.LogInformation("Attempting to switch user from {CurrentUserId} to {TargetUserId}", currentUserId, request.TargetUserId);
+            var response = await _authService.SwitchUserAsync(currentUserId, request.TargetUserId);
+
+            if (response == null)
+            {
+                _logger.LogWarning("Switch user denied from {CurrentUserId} to {TargetUserId}", currentUserId, request.TargetUserId);
+                return BadRequest(new { message = "Não é possível trocar para este utilizador." });
+            }
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during user switch from {CurrentUserId} to {TargetUserId}", currentUserId, request.TargetUserId);
+            return StatusCode(500, new { message = "Ocorreu um erro ao trocar de utilizador." });
+        }
+    }
 }

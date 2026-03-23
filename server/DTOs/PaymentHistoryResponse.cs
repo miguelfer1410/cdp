@@ -13,4 +13,5 @@ public class PaymentHistoryResponse
     public string? Entity { get; set; }
     public string? Reference { get; set; }
     public string? PaymentMethod { get; set; }
+    public List<InscriptionInfoDto>? Inscriptions { get; set; }
 }

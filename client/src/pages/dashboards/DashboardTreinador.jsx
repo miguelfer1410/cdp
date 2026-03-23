@@ -70,10 +70,12 @@ const DashboardTreinador = () => {
             atleta: '/dashboard-atleta',
             treinador: '/dashboard-treinador',
             socio: '/dashboard-socio',
+            admin: '/dashboard-admin',
             user: '/dashboard-socio'
         };
+        const type = lu.dashboardType?.toLowerCase() || 'socio';
         localStorage.setItem('userId', lu.id);
-        navigate(dashboardRoutes[lu.dashboardType] || '/dashboard-socio');
+        navigate(dashboardRoutes[type] || '/dashboard-socio');
     };
 
     const fetchTeamData = async (teamId) => {
@@ -206,11 +208,7 @@ const DashboardTreinador = () => {
                                 onClick={() => handleLinkedTabClick(lu)}
                                 className={`athlete-tab ${currentUserId === lu.id ? 'active' : ''}`}
                             >
-                                <i className={
-                                    lu.dashboardType === 'atleta' ? 'fas fa-running' :
-                                        lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
-                                            'fas fa-id-card'
-                                }></i>
+
                                 {`${lu.firstName} ${lu.lastName}`.trim() || `Conta ${lu.id}`}
                             </button>
                         ))}

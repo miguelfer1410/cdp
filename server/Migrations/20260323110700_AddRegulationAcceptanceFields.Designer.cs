@@ -4,6 +4,7 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CdpApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260323110700_AddRegulationAcceptanceFields")]
+    partial class AddRegulationAcceptanceFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1107,14 +1110,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 23, 11, 20, 57, 906, DateTimeKind.Utc).AddTicks(7645),
+                            CreatedAt = new DateTime(2026, 3, 23, 11, 6, 59, 735, DateTimeKind.Utc).AddTicks(5769),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 23, 11, 20, 57, 906, DateTimeKind.Utc).AddTicks(7647),
+                            CreatedAt = new DateTime(2026, 3, 23, 11, 6, 59, 735, DateTimeKind.Utc).AddTicks(5771),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1150,12 +1153,6 @@ namespace CdpApi.Migrations
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal>("InscriptionFeeMinis")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("InscriptionFeeMinisDiscount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("InscriptionFeeNormal")
                         .HasColumnType("decimal(18,2)");
@@ -1450,13 +1447,13 @@ namespace CdpApi.Migrations
                         {
                             Id = 1,
                             AcceptedRegulation = false,
-                            CreatedAt = new DateTime(2026, 3, 23, 11, 20, 58, 45, DateTimeKind.Utc).AddTicks(3638),
+                            CreatedAt = new DateTime(2026, 3, 23, 11, 6, 59, 979, DateTimeKind.Utc).AddTicks(3557),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$ouXqMlPbaiUJSxMFZLo9MO2udkVdlaurx3T.TnOG82Oo3qkFzlDrS"
+                            PasswordHash = "$2a$11$eZZkKwH8gbhCtPLfe5OOw.T2dsA4QUPl8A2CyaEe1OZ4pA.uxaSvu"
                         });
                 });
 
@@ -1523,7 +1520,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 23, 11, 20, 58, 45, DateTimeKind.Utc).AddTicks(4145),
+                            AssignedAt = new DateTime(2026, 3, 23, 11, 6, 59, 979, DateTimeKind.Utc).AddTicks(5135),
                             RoleId = 2,
                             UserId = 1
                         });

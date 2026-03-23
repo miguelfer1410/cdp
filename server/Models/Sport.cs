@@ -40,6 +40,14 @@ public class Sport
     [Range(0, 1000)]
     public decimal InscriptionFeeNormal { get; set; } = 0;
 
+    /// <summary>Taxa de inscrição Minis</summary>
+    [Range(0, 1000)]
+    public decimal InscriptionFeeMinis { get; set; } = 0;
+
+    /// <summary>Taxa de inscrição Minis Irmãos/2ª Mod.</summary>
+    [Range(0, 1000)]
+    public decimal InscriptionFeeMinisDiscount { get; set; } = 0;
+
     // ── Quota inclusion flag ─────────────────────────────────────────────
     /// <summary>
     /// true  → mensalidade JÁ inclui a quota de sócio (Basquetebol, Voleibol, etc.)

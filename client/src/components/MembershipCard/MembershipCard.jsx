@@ -51,7 +51,7 @@ const MembershipCard = ({
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(
-                `http://localhost:5285/api/membershipcard/download?userId=${userId}`,
+                `http://localhost.232:5285/api/membershipcard/download?userId=${userId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (response.ok) {

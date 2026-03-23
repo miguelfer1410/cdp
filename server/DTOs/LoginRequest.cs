@@ -11,3 +11,8 @@ public class LoginRequest
     [Required(ErrorMessage = "Password is required")]
     public string Password { get; set; } = string.Empty;
 }
+public class SwitchUserRequest
+{
+    [Required]
+    public int TargetUserId { get; set; }
+}

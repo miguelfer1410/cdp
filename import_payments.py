@@ -122,7 +122,7 @@ def get_connection():
 
 def find_member_profile(cursor, socio_num):
     """Devolve (MemberProfileId, UserId) ou None."""
-    mn = f"CDP-{str(socio_num).zfill(5)}"
+    mn = str(socio_num).zfill(5)
     cursor.execute("SELECT Id, UserId FROM MemberProfiles WHERE MembershipNumber = ?", mn)
     row = cursor.fetchone()
     return (row[0], row[1]) if row else None

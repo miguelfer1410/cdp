@@ -16,5 +16,6 @@ public class UserProfileResponse
     public string? MembershipStatus { get; set; }
     public DateTime? MemberSince { get; set; }
     public DateTime CreatedAt { get; set; }
+    public bool AcceptedRegulation { get; set; }
     public bool IsActive { get; set; }
 }

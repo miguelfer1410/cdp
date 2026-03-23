@@ -731,70 +731,110 @@ const PeopleManager = () => {
         return sport ? sport.name : '-';
     };
 
-    const handleExport = () => {
-        if (!users || users.length === 0) {
-            alert('Não há dados para exportar.');
-            return;
+    const handleExport = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const params = new URLSearchParams();
+
+            // Use same filters as current view
+            if (filters.profileType !== 'all') params.append('profileType', filters.profileType);
+            if (filters.roleId) params.append('roleId', filters.roleId);
+            if (filters.isActive !== null) params.append('isActive', filters.isActive);
+            if (filters.teamId) params.append('teamId', filters.teamId);
+            if (filters.sportId) params.append('sportId', filters.sportId);
+            if (filters.search) params.append('search', filters.search);
+
+            // Fetch ALL records (using a very large pageSize to bypass pagination)
+            params.append('page', 1);
+            params.append('pageSize', 10000); 
+
+            const response = await fetch(`http://localhost:5285/api/users?${params}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                alert('Erro ao exportar dados.');
+                return;
+            }
+
+            const data = await response.json();
+            const allUsers = data.items || [];
+
+            if (allUsers.length === 0) {
+                alert('Não há dados para exportar.');
+                return;
+            }
+
+            // Define headers
+            const headers = [
+                'Nome Completo',
+                'Email',
+                'Telefone',
+                'NIF',
+                'Data Nascimento',
+                'Morada',
+                'Código Postal',
+                'Cidade',
+                'Perfis',
+                'Modalidade',
+                'Equipa',
+                'Estado Sócio',
+                'Funções'
+            ];
+
+            // Format data rows
+            const rows = allUsers.map(user => {
+                const profiles = getProfileBadges(user).map(b => b.label).join(', ');
+                const rolesNames = user.roles ? user.roles.map(r => r.name).join(', ') : '';
+                const memberStatus = (user.hasMemberProfile && user.memberProfile) ? getMemberStatusLabel(user.memberProfile.membershipStatus) : '-';
+
+                // Strip alias from email
+                const rawEmail = user.email || '';
+                const atIdx = rawEmail.lastIndexOf('@');
+                const localPart = atIdx > 0 ? rawEmail.substring(0, atIdx) : rawEmail;
+                const domain = atIdx > 0 ? rawEmail.substring(atIdx) : '';
+                const plusIdx = localPart.indexOf('+');
+                const cleanEmail = plusIdx > -1
+                    ? localPart.substring(0, plusIdx) + domain
+                    : rawEmail;
+
+                return [
+                    `"${user.fullName || ''}"`,
+                    `"${cleanEmail}"`,
+                    `="${user.phone || ''}"`,
+                    `="${user.nif || ''}"`,
+                    `"${user.birthDate ? user.birthDate.split('T')[0] : ''}"`,
+                    `"${user.address || ''}"`,
+                    `"${user.postalCode || ''}"`,
+                    `"${user.city || ''}"`,
+                    `"${profiles}"`,
+                    `"${user.sport || ''}"`,
+                    `"${user.currentTeam || ''}"`,
+                    `"${memberStatus}"`,
+                    `"${rolesNames}"`
+                ].join(';');
+            });
+
+            // Combine headers and rows
+            const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // Add BOM for Excel support
+
+            // Create blob and download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `lista_pessoas_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting users:', error);
+            alert('Ocorreu um erro ao exportar os dados.');
+        } finally {
+            setLoading(false);
         }
-
-        // Define headers
-        const headers = [
-            'Nome Completo',
-            'Email',
-            'Telefone',
-            'NIF',
-            'Data Nascimento',
-            'Morada',
-            'Código Postal',
-            'Cidade',
-            'Perfis',
-            'Equipa',
-            'Estado Sócio',
-            'Código Postal',
-            'Cidade',
-            'Perfis',
-            'Modalidade',
-            'Equipa',
-            'Estado Sócio',
-            'Funções'
-        ];
-
-        // Format data rows
-        const rows = users.map(user => {
-            const profiles = getProfileBadges(user).map(b => b.label).join(', ');
-            const roles = user.roles ? user.roles.map(r => r.name).join(', ') : '';
-            const memberStatus = (user.hasMemberProfile && user.memberProfile) ? getMemberStatusLabel(user.memberProfile.membershipStatus) : '-';
-
-            return [
-                `"${user.fullName}"`,
-                `"${user.email}"`,
-                `"${user.phone || ''}"`,
-                `"${user.nif || ''}"`,
-                `"${user.birthDate ? user.birthDate.split('T')[0] : ''}"`,
-                `"${user.address || ''}"`,
-                `"${user.postalCode || ''}"`,
-                `"${user.city || ''}"`,
-                `"${profiles}"`,
-                `"${profiles}"`,
-                `"${user.sport || ''}"`,
-                `"${user.currentTeam || ''}"`,
-                `"${memberStatus}"`,
-                `"${roles}"`
-            ].join(';');
-        });
-
-        // Combine headers and rows
-        const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // Add BOM for Excel support
-
-        // Create blob and download link
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `lista_pessoas_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     const renderPersonalStep = () => (

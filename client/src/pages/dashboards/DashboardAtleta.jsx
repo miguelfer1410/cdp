@@ -72,6 +72,7 @@ const DashboardAtleta = () => {
     const [paymentPreference, setPaymentPreference] = useState('Monthly');
     const [nextPeriod, setNextPeriod] = useState(null); // { month, year }
     const [paymentHistory, setPaymentHistory] = useState([]);
+    const [historyInscriptions, setHistoryInscriptions] = useState([]);
     const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
     const [isExemptFromGlobalFee, setIsExemptFromGlobalFee] = useState(false);
 
@@ -203,13 +204,16 @@ const DashboardAtleta = () => {
                     });
                     if (historyResponse.ok) {
                         const historyData = await historyResponse.json();
-                        setPaymentHistory(historyData);
+                        setPaymentHistory(Array.isArray(historyData) ? historyData : (historyData.payments || []));
+                        setHistoryInscriptions(Array.isArray(historyData) ? [] : (historyData.inscriptions || []));
                     } else {
                         setPaymentHistory([]);
+                        setHistoryInscriptions([]);
                     }
                 } catch (hErr) {
                     console.error('Error fetching payment history:', hErr);
                     setPaymentHistory([]);
+                    setHistoryInscriptions([]);
                 }
 
                 // 3. Fetch Team + Events
@@ -317,15 +321,17 @@ const DashboardAtleta = () => {
                                 atleta: null, // stay on this page, just switch userId
                                 treinador: '/dashboard-treinador',
                                 socio: '/dashboard-socio',
+                                admin: '/dashboard-admin',
                                 user: '/dashboard-socio'
                             };
                             const handleClick = () => {
-                                const route = dashboardRoutes[lu.dashboardType];
-                                if (route) {
+                                const type = lu.dashboardType?.toLowerCase() || 'socio';
+                                if (type === 'atleta') {
+                                    setSelectedUserId(lu.id);
+                                } else {
+                                    const route = dashboardRoutes[type] || '/dashboard-socio';
                                     localStorage.setItem('userId', lu.id);
                                     navigate(route);
-                                } else {
-                                    setSelectedUserId(lu.id);
                                 }
                             };
                             return (
@@ -334,11 +340,6 @@ const DashboardAtleta = () => {
                                     onClick={handleClick}
                                     className={`athlete-tab ${selectedUserId === lu.id ? 'active' : ''}`}
                                 >
-                                    <i className={
-                                        lu.dashboardType === 'atleta' ? 'fas fa-running' :
-                                            lu.dashboardType === 'treinador' ? 'fas fa-user-tie' :
-                                                'fas fa-id-card'
-                                    }></i>
                                     {`${lu.firstName} ${lu.lastName}`.trim() || `Atleta ${lu.id}`}
                                 </button>
                             );
@@ -739,12 +740,38 @@ const DashboardAtleta = () => {
                                 {(() => {
                                     const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
                                     const MONTHS_PT_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                                    const yearPayments = paymentHistory.filter(p => p.periodYear === historyYear);
+                                    let yearPayments = paymentHistory.filter(p => p.periodYear === historyYear);
+                                    
+                                    // Inject current month if it is pending/unpaid
+                                    const isCurrentYear = historyYear === new Date().getFullYear();
+                                    const currentMonthNum = new Date().getMonth() + 1;
+                                    if (isCurrentYear && paymentStatus !== 'Regularizada' && paymentStatus !== '-') {
+                                        const isAnnual = paymentPreference === 'Annual';
+                                        const alreadyExists = yearPayments.some(p => p.periodYear === historyYear && (isAnnual ? p.periodMonth == null : p.periodMonth === currentMonthNum));
+                                        
+                                        if (!alreadyExists) {
+                                            yearPayments.push({
+                                                id: 'current-unpaid',
+                                                amount: quotaAmount,
+                                                status: paymentStatus === 'Pendente' ? 'Pending' : 'Unpaid',
+                                                periodMonth: isAnnual ? null : currentMonthNum,
+                                                periodYear: historyYear
+                                            });
+                                            // Sort descending by month
+                                            yearPayments.sort((a, b) => (b.periodMonth || 0) - (a.periodMonth || 0));
+                                        }
+                                    }
+
                                     // Overdue entries for this year
                                     const yearOverdue = (overdueMonths || []).filter(m => m.periodYear === historyYear);
-                                    const hasAnything = yearPayments.length > 0 || yearOverdue.length > 0;
+                                    const yearInscriptions = historyInscriptions.filter(i => {
+                                        if (!i.paid) return true; // pendentes aparecem sempre
+                                        if (i.paymentDate) return new Date(i.paymentDate).getFullYear() === historyYear;
+                                        return false;
+                                    });
+                                    const hasAnything = yearPayments.length > 0 || yearOverdue.length > 0 || yearInscriptions.length > 0;
 
-                                    if (paymentHistory.length === 0 && overdueMonths.length === 0) {
+                                    if (paymentHistory.length === 0 && overdueMonths.length === 0 && historyInscriptions.length === 0) {
                                         return (
                                             <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
                                                 <i className="fas fa-receipt" style={{ fontSize: '2rem', marginBottom: '10px', display: 'block', opacity: 0.3 }}></i>
@@ -829,6 +856,35 @@ const DashboardAtleta = () => {
                                                                         alignItems: 'center',
                                                                         gap: '4px',
                                                                         whiteSpace: 'nowrap'
+                                                                    }}>
+                                                                        <i className={`fas ${badgeIcon}`}></i>
+                                                                        {badgeLabel}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                    {/* Inscriptions */}
+                                                    {yearInscriptions.map((ins, idx) => {
+                                                        const isPaid = ins.paid;
+                                                        const badgeCss = isPaid
+                                                            ? { background: '#ecfdf5', color: '#059669', border: '1px solid #6ee7b7' }
+                                                            : { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' };
+                                                        const badgeLabel = isPaid ? 'Pago' : 'Não Pago';
+                                                        const badgeIcon = isPaid ? 'fa-check-circle' : 'fa-times-circle';
+                                                        return (
+                                                            <tr key={`ins-${ins.athleteTeamId}`} style={{ borderBottom: '1px solid #f0f4ff', backgroundColor: '#fff' }}>
+                                                                <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
+                                                                    Inscrição: {ins.sportName}
+                                                                </td>
+                                                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#003380' }}>
+                                                                    {ins.amount?.toFixed(2)} €
+                                                                </td>
+                                                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                                                                    <span style={{
+                                                                        ...badgeCss,
+                                                                        borderRadius: '20px', padding: '3px 10px', fontSize: '0.78rem',
+                                                                        fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap'
                                                                     }}>
                                                                         <i className={`fas ${badgeIcon}`}></i>
                                                                         {badgeLabel}

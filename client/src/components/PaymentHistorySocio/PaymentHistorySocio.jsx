@@ -12,11 +12,13 @@ const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR = 1984;
 
-const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [] }) => {
+const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAdmin = false, onPaymentSuccess = null }) => {
     const [year, setYear] = useState(CURRENT_YEAR);
     const [payments, setPayments] = useState([]);
+    const [inscriptions, setInscriptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     const fetchHistory = useCallback(async (y) => {
         if (!userId) return;
@@ -30,14 +32,49 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [] }) =>
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!res.ok) throw new Error('Erro ao carregar histórico');
-            setPayments(await res.json());
+            const data = await res.json();
+            setPayments(data.payments || []);
+            setInscriptions(data.inscriptions || []);
         } catch (e) {
             setError(e.message);
             setPayments([]);
+            setInscriptions([]);
         } finally {
             setLoading(false);
         }
     }, [userId]);
+
+    const handlePayInscription = async (athleteTeamId, sportName) => {
+        if (!window.confirm(`Deseja marcar a inscrição de "${sportName}" como paga manualmente?`)) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
+            const res = await fetch(`${apiUrl}/payment/inscription/mark-paid`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ athleteTeamId })
+            });
+
+            if (!res.ok) throw new Error('Erro ao validar inscrição');
+
+            // Refresh local history
+            fetchHistory(year);
+            
+            // Notify parent to refresh list if needed
+            if (onPaymentSuccess) onPaymentSuccess();
+
+        } catch (err) {
+            console.error('Error paying inscription:', err);
+            alert('Erro ao validar inscrição: ' + err.message);
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (isOpen) fetchHistory(year);
@@ -60,10 +97,13 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [] }) =>
     if (!isOpen) return null;
 
     // ── Derived ───────────────────────────────────────────────────────────────
-    const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);
+    const totalPayments = payments.reduce((s, p) => s + (p.amount || 0), 0);
+    const totalInscriptions = inscriptions.filter(i => i.paid).reduce((s, i) => s + (i.amount || 0), 0);
+    const totalPaid = totalPayments + totalInscriptions;
+
     const isLifetime = payments.some(p => p.periodYear >= 2099);
     const overdueThisYear = overdueMonths.filter(m => m.periodYear === year);
-    const isEmpty = payments.length === 0 && overdueThisYear.length === 0;
+    const isEmpty = payments.length === 0 && overdueThisYear.length === 0 && inscriptions.length === 0;
     const canGoBack = year > MIN_YEAR;
     const canGoForward = year < CURRENT_YEAR;
 
@@ -195,7 +235,38 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [] }) =>
                     {!loading && !error && !isEmpty && (
                         <div className="phs-list">
 
-                            {/* Overdue first */}
+                            {/* Inscriptions always first if available */}
+                            {inscriptions.map((ins, idx) => (
+                                <div key={`ins-${idx}`} className={`phs-item phs-item--inscription ${ins.paid ? 'phs-item--p-paid' : 'phs-item--p-unpaid'}`}>
+                                    <div className="phs-item-left">
+                                        <span className={`phs-item-dot ${ins.paid ? 'phs-dot--green' : 'phs-dot--red'}`}>
+                                            {ins.paid ? <FaCheckCircle /> : <FaExclamationCircle />}
+                                        </span>
+                                        <div className="phs-item-info">
+                                            <span className="phs-item-period">Inscrição: {ins.sportName}</span>
+                                            {!ins.paid && isAdmin && (
+                                                <button 
+                                                    className="phs-btn-pay-manual" 
+                                                    onClick={() => handlePayInscription(ins.athleteTeamId, ins.sportName)}
+                                                    disabled={actionLoading}
+                                                >
+                                                    <FaEuroSign /> Pagar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="phs-item-right">
+                                        <span className={`phs-item-amount ${ins.paid ? '' : 'phs-amount--red'}`}>
+                                            {ins.amount?.toFixed(2)} €
+                                        </span>
+                                        <span className={`phs-item-badge ${ins.paid ? 'phs-badge--paid' : 'phs-badge--overdue'}`}>
+                                            {ins.paid ? 'Pago' : 'Não Pago'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Overdue next */}
                             {overdueThisYear.map((m, i) => (
                                 <div key={`overdue-${i}`} className="phs-item phs-item--overdue">
                                     <div className="phs-item-left">

@@ -67,6 +67,7 @@ public class UserController : ControllerBase
                 MembershipStatus = user.MemberProfile?.MembershipStatus.ToString(),
                 MemberSince = user.MemberProfile?.MemberSince,
                 CreatedAt = user.CreatedAt,
+                AcceptedRegulation = user.AcceptedRegulation,
                 IsActive = user.IsActive
             };
 
@@ -135,6 +136,7 @@ public class UserController : ControllerBase
                 MembershipStatus = user.MemberProfile?.MembershipStatus.ToString(),
                 MemberSince = user.MemberProfile?.MemberSince,
                 CreatedAt = user.CreatedAt,
+                AcceptedRegulation = user.AcceptedRegulation,
                 IsActive = user.IsActive
             };
 
@@ -145,6 +147,47 @@ public class UserController : ControllerBase
             _logger.LogError(ex, "Error updating user profile");
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new { message = "An error occurred while updating profile" });
+        }
+    }
+
+    /// <summary>
+    /// Accept the internal regulation
+    /// </summary>
+    [HttpPost("accept-regulation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AcceptRegulation()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized(new { message = "Invalid token" });
+            }
+
+            var userId = int.Parse(userIdClaim.Value);
+
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            user.AcceptedRegulation = true;
+            user.RegulationAcceptedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Regulation accepted successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error accepting regulation");
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "An error occurred while accepting regulation" });
         }
     }
 }

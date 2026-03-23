@@ -66,10 +66,10 @@ def extract_base_email(email: str) -> str:
 
 
 def format_membership_number(socio_num) -> str:
-    """Converte número do Excel para formato CDP-XXXXX."""
+    """Converte número do Excel para formato decimal."""
     try:
         num = int(float(str(socio_num)))
-        return f"CDP-{num:05d}"
+        return str(num)
     except (ValueError, TypeError):
         return str(socio_num)
 

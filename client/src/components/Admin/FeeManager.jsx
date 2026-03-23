@@ -49,6 +49,8 @@ const FeeManager = () => {
                 feeEscalao2Normal: s.feeEscalao2Normal ?? 0,
                 feeDiscount: s.feeDiscount ?? 0,
                 inscriptionFeeNormal: s.inscriptionFeeNormal ?? 0,
+                inscriptionFeeMinis: s.inscriptionFeeMinis ?? 0,
+                inscriptionFeeMinisDiscount: s.inscriptionFeeMinisDiscount ?? 0,
                 quotaIncluded: s.quotaIncluded ?? true
             })));
         } catch (err) {
@@ -95,6 +97,8 @@ const FeeManager = () => {
                     feeEscalao2Normal: parseFloat(sport.feeEscalao2Normal) || 0,
                     feeDiscount: parseFloat(sport.feeDiscount) || 0,
                     inscriptionFeeNormal: parseFloat(sport.inscriptionFeeNormal) || 0,
+                    inscriptionFeeMinis: parseFloat(sport.inscriptionFeeMinis) || 0,
+                    inscriptionFeeMinisDiscount: parseFloat(sport.inscriptionFeeMinisDiscount) || 0,
                     quotaIncluded: sport.quotaIncluded,
                 })
             });
@@ -177,12 +181,19 @@ const FeeManager = () => {
                         <div className="fee-card-body fee-card-body--col">
                             <div className="fee-section">
                                 <div className="fee-section-label">Mensalidades</div>
-                                <div className="fee-row fee-row--5cols">
+                                <div className="fee-row fee-row--4cols">
                                     <FeeInput label="Sem Escalão" field="feeNormalNormal" sport={sport} onChange={handleSportField} />
                                     <FeeInput label="Escalão 1" field="feeEscalao1Normal" sport={sport} onChange={handleSportField} />
                                     <FeeInput label="Escalão 2" field="feeEscalao2Normal" sport={sport} onChange={handleSportField} />
                                     <FeeInput label="Irmão / 2ª Mod." field="feeDiscount" sport={sport} onChange={handleSportField} />
-                                    <FeeInput label="Inscrição" field="inscriptionFeeNormal" sport={sport} onChange={handleSportField} />
+                                </div>
+                            </div>
+                            <div className="fee-section">
+                                <div className="fee-section-label">Inscrições</div>
+                                <div className="fee-row fee-row--3cols">
+                                    <FeeInput label="Normal" field="inscriptionFeeNormal" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Minis Normal" field="inscriptionFeeMinis" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Minis Irmãos/2ª Mod." field="inscriptionFeeMinisDiscount" sport={sport} onChange={handleSportField} />
                                 </div>
                             </div>
 

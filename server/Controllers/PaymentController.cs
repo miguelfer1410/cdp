@@ -146,6 +146,9 @@ public class PaymentController : ControllerBase
             var overdueMonths = new List<object>();
             decimal overdueTotal = 0;
 
+            decimal unpaidInscriptions = result.InscriptionInfo?.Where(i => !i.Paid).Sum(i => i.FeeDiscount) ?? 0;
+            decimal quotaOnly = result.Total - unpaidInscriptions;
+
             if (preference == "Monthly")
             {
                 // Find when the member first registered
@@ -172,9 +175,9 @@ public class PaymentController : ControllerBase
                         {
                             periodMonth = checkMonth,
                             periodYear  = checkYear,
-                            amount      = result.Total
+                            amount      = quotaOnly
                         });
-                        overdueTotal += result.Total;
+                        overdueTotal += quotaOnly;
                     }
 
                     // Advance to next month
@@ -183,12 +186,12 @@ public class PaymentController : ControllerBase
                 }
             }
 
-            // totalDue = overdue from past months + current month (if unpaid)
-            decimal totalDue = overdueTotal + (status == "Regularizada" ? 0 : result.Total);
+            // totalDue = overdue from past months + current month (if unpaid) plus inscriptions
+            decimal totalDue = overdueTotal + (status == "Regularizada" ? 0 : quotaOnly) + unpaidInscriptions;
 
             return Ok(new
             {
-                amount            = result.Total,
+                amount            = quotaOnly,
                 breakdown         = result.Breakdown,
                 discountsApplied  = result.DiscountsApplied,
                 inscriptionInfo   = result.InscriptionInfo,
@@ -361,23 +364,40 @@ public class PaymentController : ControllerBase
             var pagedItems = new List<AthletePaymentStatusDto>();
             foreach (var row in pageSlice)
             {
-                decimal amount = 0;
-                if (fullUserMap.TryGetValue(row.Id, out var fullUser))
-                {
-                    var calc = await CalculateQuotaWithBreakdown(fullUser);
-                    amount = calc.Total;
-                }
                 PaymentDetailsDto? paymentDetails = !string.IsNullOrEmpty(row.PendingReference)
                     ? new PaymentDetailsDto { Entity = row.PendingEntity ?? "", Reference = row.PendingReference ?? "" }
                     : null;
 
-                pagedItems.Add(new AthletePaymentStatusDto
+                var dto = new AthletePaymentStatusDto
                 {
                     UserId = row.Id, Name = row.Name, Team = row.Team, Sport = row.Sport,
                     PaymentPreference = row.PaymentPreference, MembershipNumber = row.MembershipNumber,
                     CurrentPeriod = row.Period,
-                    Status = row.Status, Amount = amount, PaymentDetails = paymentDetails
-                });
+                    Status = row.Status, Amount = 0, PaymentDetails = paymentDetails,
+                    PendingInscriptions = new List<InscriptionInfoDto>()
+                };
+
+                // Remove the warning indicator populate logic here if you want to be super clean,
+                // but keep the data for the modal to use.
+                if (fullUserMap.TryGetValue(row.Id, out var fullUser))
+                {
+                    var calc = await CalculateQuotaWithBreakdown(fullUser);
+                    dto.Amount = calc.Total;
+                    if (calc.InscriptionInfo != null)
+                    {
+                        dto.PendingInscriptions = calc.InscriptionInfo
+                            .Where(i => !i.Paid)
+                            .Select(i => new InscriptionInfoDto 
+                            { 
+                                AthleteTeamId = i.AthleteTeamId, 
+                                SportName = i.SportName, 
+                                Amount = i.FeeDiscount 
+                            })
+                            .ToList();
+                    }
+                }
+
+                pagedItems.Add(dto);
             }
 
             return Ok(new PaginatedResponse<AthletePaymentStatusDto>
@@ -536,6 +556,7 @@ public class PaymentController : ControllerBase
 
             var user = await _context.Users
                 .Include(u => u.MemberProfile)
+                .Include(u => u.AthleteProfile).ThenInclude(ap => ap.AthleteTeams).ThenInclude(at => at.Team).ThenInclude(t => t.Sport)
                 .FirstOrDefaultAsync(u => u.Id == targetUserId);
 
             if (user?.MemberProfile == null) return BadRequest();
@@ -547,22 +568,70 @@ public class PaymentController : ControllerBase
 
             var payments = await query.OrderByDescending(p => p.PaymentDate).ToListAsync();
 
-            return Ok(payments.Select(p => new
+            var inscriptions = new List<InscriptionInfoDto>();
+            if (user.AthleteProfile != null)
             {
-                id          = p.Id,
-                amount      = p.Amount,
-                status      = p.Status,
-                method      = p.PaymentMethod,
-                description = p.Description,
-                periodMonth = p.PeriodMonth,
-                periodYear  = p.PeriodYear,
-                paymentDate = p.PaymentDate
-            }));
+                var calc = await CalculateQuotaWithBreakdown(user);
+                if (calc.InscriptionInfo != null)
+                {
+                    inscriptions = calc.InscriptionInfo.Select(i => new InscriptionInfoDto
+                    {
+                        AthleteTeamId = i.AthleteTeamId,
+                        SportName = i.SportName,
+                        Amount = i.FeeDiscount,
+                        Paid = i.Paid,
+                        PaymentDate = i.PaidDate
+                    }).ToList();
+                }
+            }
+
+            return Ok(new
+            {
+                payments = payments.Select(p => new
+                {
+                    id          = p.Id,
+                    amount      = p.Amount,
+                    status      = p.Status,
+                    method      = p.PaymentMethod,
+                    description = p.Description,
+                    periodMonth = p.PeriodMonth,
+                    periodYear  = p.PeriodYear,
+                    paymentDate = p.PaymentDate
+                }),
+                inscriptions = inscriptions
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching payment history");
             return StatusCode(500, new { message = "Erro ao obter histórico." });
+        }
+    }
+
+    // PUT: api/payment/admin/fix-legacy-inscriptions
+    [HttpPut("admin/fix-legacy-inscriptions")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> FixLegacyInscriptions()
+    {
+        try
+        {
+            var athleteTeams = await _context.AthleteTeams
+                .Where(at => !at.InscriptionPaid)
+                .ToListAsync();
+
+            foreach (var at in athleteTeams)
+            {
+                at.InscriptionPaid = true;
+                at.InscriptionPaidDate = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = $"{athleteTeams.Count} inscrições marcadas como pagas." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fixing legacy inscriptions");
+            return StatusCode(500, new { message = "Erro ao processar correção." });
         }
     }
 
@@ -575,56 +644,87 @@ public class PaymentController : ControllerBase
         {
             var user = await _context.Users
                 .Include(u => u.MemberProfile)
+                .Include(u => u.AthleteProfile)
+                    .ThenInclude(ap => ap.AthleteTeams)
+                        .ThenInclude(at => at.Team)
+                            .ThenInclude(t => t.Sport)
                 .FirstOrDefaultAsync(u => u.Id == request.UserId);
 
             if (user == null || user.MemberProfile == null)
                 return NotFound(new { message = "Utilizador ou perfil de sócio não encontrado" });
 
-            var existingPayment = await _context.Payments
-                .Where(p => p.MemberProfileId == user.MemberProfile.Id &&
-                            p.PeriodYear == request.PeriodYear &&
-                            p.PeriodMonth == request.PeriodMonth)
-                .OrderByDescending(p => p.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            if (existingPayment != null)
+            // Collect periods to process
+            var periodsToProcess = new List<ManualPaymentPeriodDto>();
+            if (request.SelectedPeriods != null && request.SelectedPeriods.Any())
             {
-                existingPayment.Status = request.Status;
-                if (request.Status == "Completed") existingPayment.PaymentDate = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-                return Ok(new { message = "Pagamento atualizado com sucesso" });
+                periodsToProcess.AddRange(request.SelectedPeriods);
             }
-            else
+            else if (request.MarkInscriptionsPaid == null || !request.MarkInscriptionsPaid.Any())
             {
-                var fullUser = await _context.Users
-                    .Include(u => u.MemberProfile)
-                    .Include(u => u.AthleteProfile)
-                        .ThenInclude(ap => ap.AthleteTeams)
-                            .ThenInclude(at => at.Team)
-                                .ThenInclude(t => t.Sport)
-                    .FirstOrDefaultAsync(u => u.Id == request.UserId);
+                // Only fallback to current period if no inscriptions are being marked as paid either
+                var calc = await CalculateQuotaWithBreakdown(user);
+                periodsToProcess.Add(new ManualPaymentPeriodDto 
+                { 
+                    Month = request.PeriodMonth ?? 0, 
+                    Year = request.PeriodYear, 
+                    Amount = calc.Total 
+                });
+            }
 
-                var calc   = await CalculateQuotaWithBreakdown(fullUser!);
-                var amount = calc.Total;
+            foreach (var p in periodsToProcess)
+            {
+                var existingPayment = await _context.Payments
+                    .Where(pInDb => pInDb.MemberProfileId == user.MemberProfile.Id &&
+                                pInDb.PeriodYear == p.Year &&
+                                pInDb.PeriodMonth == (p.Month > 0 ? (int?)p.Month : null))
+                    .OrderByDescending(pInDb => pInDb.CreatedAt)
+                    .FirstOrDefaultAsync();
 
-                var newPayment = new Payment
+                if (existingPayment != null)
                 {
-                    MemberProfileId = user.MemberProfile.Id,
-                    Amount          = amount,
-                    Status          = request.Status,
-                    PaymentMethod   = "Manual",
-                    PaymentDate     = request.Status == "Completed" ? DateTime.UtcNow : DateTime.MinValue,
-                    Description     = request.PeriodMonth.HasValue
-                        ? $"Quota Manual - {request.PeriodMonth.Value}/{request.PeriodYear}"
-                        : $"Quota Manual - {request.PeriodYear}",
-                    PeriodMonth     = request.PeriodMonth,
-                    PeriodYear      = request.PeriodYear,
-                    CreatedAt       = DateTime.UtcNow
-                };
-                _context.Payments.Add(newPayment);
-                await _context.SaveChangesAsync();
-                return Ok(new { message = "Pagamento manual registado com sucesso" });
+                    existingPayment.Status = request.Status;
+                    if (request.Status == "Completed")
+                    {
+                        existingPayment.PaymentDate = DateTime.UtcNow;
+                        existingPayment.Amount = p.Amount;
+                    }
+                }
+                else
+                {
+                    var newPayment = new Payment
+                    {
+                        MemberProfileId = user.MemberProfile.Id,
+                        Amount          = p.Amount,
+                        Status          = request.Status,
+                        PaymentMethod   = "Manual",
+                        PaymentDate     = request.Status == "Completed" ? DateTime.UtcNow : DateTime.MinValue,
+                        Description     = p.Month > 0
+                            ? $"Quota Manual - {p.Month}/{p.Year}"
+                            : $"Quota Manual - {p.Year}",
+                        PeriodMonth     = p.Month > 0 ? p.Month : null,
+                        PeriodYear      = p.Year,
+                        CreatedAt       = DateTime.UtcNow
+                    };
+                    _context.Payments.Add(newPayment);
+                }
             }
+
+            // Process inscriptions to mark as paid
+            if (request.MarkInscriptionsPaid != null && request.MarkInscriptionsPaid.Any())
+            {
+                var athleteTeams = await _context.AthleteTeams
+                    .Where(at => request.MarkInscriptionsPaid.Contains(at.Id))
+                    .ToListAsync();
+
+                foreach (var at in athleteTeams)
+                {
+                    at.InscriptionPaid = true;
+                    at.InscriptionPaidDate = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = periodsToProcess.Count > 1 ? "Pagamentos processados com sucesso" : "Pagamento processado com sucesso" });
         }
         catch (Exception ex)
         {
@@ -713,6 +813,129 @@ public class PaymentController : ControllerBase
         {
             _logger.LogError(ex, "Error marking athlete as withdrawn");
             return StatusCode(500, new { message = "Erro ao marcar atleta como desistente." });
+        }
+    }
+
+    // GET: api/payment/admin/export-all-status
+    [HttpGet("admin/export-all-status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<AthletePaymentExportDto>>> GetExportAthletePaymentStatuses(
+        [FromQuery] int year,
+        [FromQuery] string? search = null,
+        [FromQuery] int? teamId = null,
+        [FromQuery] int? sportId = null)
+    {
+        try
+        {
+            // PHASE 1: Lightweight query - same filters as main table
+            var query = _context.Users.Where(u => u.MemberProfile != null && u.IsActive);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                var s = search.ToLower();
+                query = query.Where(u => 
+                    u.FirstName.ToLower().Contains(s) || 
+                    u.LastName.ToLower().Contains(s) || 
+                    u.Email.ToLower().Contains(s) ||
+                    (u.Nif != null && u.Nif.Contains(s)) ||
+                    (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(s))
+                );
+            }
+
+            if (teamId.HasValue)
+            {
+                if (teamId.Value == -1)
+                    query = query.Where(u => u.AthleteProfile == null || !u.AthleteProfile.AthleteTeams.Any(at => at.LeftAt == null));
+                else if (teamId.Value == -2)
+                    query = query.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.LeftAt == null));
+                else
+                    query = query.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
+            }
+
+            if (sportId.HasValue)
+                query = query.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null));
+
+            var members = await query
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    u.Phone,
+                    u.Nif,
+                    MemberProfileId   = u.MemberProfile!.Id,
+                    PaymentPreference = u.MemberProfile.PaymentPreference ?? "Monthly",
+                    MembershipNumber  = u.MemberProfile.MembershipNumber,
+                    Name              = u.FirstName + " " + u.LastName,
+                    Team              = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).FirstOrDefault() ?? "Sem Equipa" : "Sem Equipa",
+                    Sport             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).FirstOrDefault() ?? "N/A" : "N/A"
+                })
+                .ToListAsync();
+
+            // Load all payments for all these members (regardless of year)
+            var memberIds = members.Select(m => m.MemberProfileId).ToList();
+            var allPayments = await _context.Payments
+                .Where(p => memberIds.Contains(p.MemberProfileId))
+                .Select(p => new { p.MemberProfileId, p.Status, p.PeriodMonth, p.PeriodYear })
+                .ToListAsync();
+
+            var paymentsByMemberAndYear = allPayments
+                .GroupBy(p => new { p.MemberProfileId, p.PeriodYear })
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var currentYear = DateTime.UtcNow.Year;
+            var result = new List<AthletePaymentExportDto>();
+
+            foreach (var m in members)
+            {
+                // Determine the year range for this specific member
+                var memberPayments = allPayments.Where(p => p.MemberProfileId == m.MemberProfileId).ToList();
+                var firstYear = memberPayments.Any() ? memberPayments.Min(p => p.PeriodYear) ?? currentYear : currentYear;
+                
+                // Allow exporting from the earliest record up to the requested/current year
+                for (int y = firstYear; y <= year; y++)
+                {
+                    bool isAnnual = m.PaymentPreference == "Annual";
+                    var yearPayments = paymentsByMemberAndYear.TryGetValue(new { m.MemberProfileId, PeriodYear = (int?)y }, out var list) ? list : new();
+                    
+                    string[] monthlyStatuses = new string[12];
+                    for (int i = 1; i <= 12; i++)
+                    {
+                        if (isAnnual)
+                        {
+                            var annualPay = yearPayments.FirstOrDefault(p => p.PeriodMonth == null);
+                            monthlyStatuses[i - 1] = annualPay?.Status switch { "Completed" => "Pago (Anual)", "Pending" => "Pendente", _ => "Não Pago" };
+                        }
+                        else
+                        {
+                            var p = yearPayments.FirstOrDefault(pay => pay.PeriodMonth == i);
+                            monthlyStatuses[i - 1] = p?.Status switch { "Completed" => "Pago", "Pending" => "Pendente", _ => "Não Pago" };
+                        }
+                    }
+
+                    result.Add(new AthletePaymentExportDto
+                    {
+                        UserId = m.Id,
+                        Name = m.Name,
+                        Email = m.Email,
+                        Phone = m.Phone ?? "",
+                        Nif = m.Nif ?? "",
+                        MembershipNumber = m.MembershipNumber ?? "",
+                        Team = m.Team,
+                        Sport = m.Sport,
+                        PaymentPreference = m.PaymentPreference,
+                        MonthlyStatus = monthlyStatuses,
+                        Year = y
+                    });
+                }
+            }
+
+            return Ok(result.OrderBy(r => r.Name).ThenByDescending(r => r.Year).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting all athlete statuses");
+            return StatusCode(500, new { message = "Erro ao exportar estados de pagamento" });
         }
     }
 
@@ -944,17 +1167,56 @@ for (int i = 0; i < teamsSorted.Count; i++)
 
         // ── 6. Inscription info (pending inscriptions) ────────────────────────
         var inscriptionInfo = activeTeams
-            .Select(at => new InscriptionInfo
-            {
-                AthleteTeamId = at.Id,
-                SportName     = at.Team!.Sport!.Name,
-                Escalao       = at.AthleteProfile?.Escalao,
-                Paid          = at.InscriptionPaid,
-                PaidDate      = at.InscriptionPaidDate,
-                FeeNormal     = at.Team.Sport.InscriptionFeeNormal,
-                FeeDiscount   = hasSiblingAthlete ? at.Team.Sport.FeeDiscount : at.Team.Sport.InscriptionFeeNormal
+            .Select(at => {
+                var sport = at.Team!.Sport!;
+                var escalao = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+                var teamName = at.Team?.Name?.ToLower() ?? "";
+                bool isMini = escalao.Contains("mini") || teamName.Contains("mini");
+                
+                // Deduce if this is a 2nd sport for inscriptions
+                bool isSecondSport = false;
+                if (teamsSorted.Count > 1 && teamsSorted[0].Team!.SportId != sport.Id) {
+                    isSecondSport = true;
+                }
+                
+                bool getsDiscount = hasSiblingAthlete || isSecondSport;
+
+                decimal baseFee = isMini ? sport.InscriptionFeeMinis : sport.InscriptionFeeNormal;
+                decimal discountedFee = baseFee;
+
+                if (isMini) {
+                    discountedFee = getsDiscount && sport.InscriptionFeeMinisDiscount > 0 ? sport.InscriptionFeeMinisDiscount : sport.InscriptionFeeMinis;
+                } else {
+                    discountedFee = getsDiscount && sport.FeeDiscount > 0 ? sport.FeeDiscount : sport.InscriptionFeeNormal;
+                }
+
+                return new InscriptionInfo
+                {
+                    AthleteTeamId = at.Id,
+                    SportName     = sport.Name,
+                    Escalao       = at.AthleteProfile?.Escalao,
+                    Paid          = at.InscriptionPaid,
+                    PaidDate      = at.InscriptionPaidDate,
+                    FeeNormal     = baseFee,
+                    FeeDiscount   = discountedFee
+                };
             })
             .ToList();
+
+        // ── 7. Add unpaid inscriptions to Total and Breakdown ───────────────
+        foreach (var info in inscriptionInfo)
+        {
+            if (!info.Paid)
+            {
+                total += info.FeeDiscount;
+                breakdown.Add(new BreakdownItem
+                {
+                    Label      = $"Inscrição - {info.SportName}",
+                    Amount     = info.FeeDiscount,
+                    IsDiscount = false
+                });
+            }
+        }
 
         return new QuotaCalculationResult
         {

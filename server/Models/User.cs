@@ -51,6 +51,10 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? LastLogin { get; set; }
+    
+    public bool AcceptedRegulation { get; set; } = false;
+
+    public DateTime? RegulationAcceptedAt { get; set; }
 
     public bool IsActive { get; set; } = true;
 

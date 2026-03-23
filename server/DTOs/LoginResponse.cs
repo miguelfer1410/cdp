@@ -9,6 +9,7 @@ public class LoginResponse
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
+    public bool AcceptedRegulation { get; set; }
     // All users sharing the same base email (for sibling/child athlete accounts)
     public List<LinkedUserInfo> LinkedUsers { get; set; } = new();
 }
@@ -20,6 +21,7 @@ public class LinkedUserInfo
     public string LastName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string DashboardType { get; set; } = string.Empty; // "atleta", "treinador", "socio", "user"
+    public List<string> Roles { get; set; } = new();
     public bool IsSocio { get; set; }
     public string? Relationship { get; set; }
 }

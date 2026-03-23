@@ -24,6 +24,7 @@ import VerificationPage from './pages/VerificationPage';
 import Bilheteria from './pages/Bilheteria';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
+import RegulationModal from './components/RegulationModal/RegulationModal';
 
 function AppContent() {
   const location = useLocation();
@@ -39,6 +40,54 @@ function AppContent() {
   ];
 
   const hideFooter = noFooterRoutes.some(route => location.pathname.startsWith(route));
+
+  const [showRegulationModal, setShowRegulationModal] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkRegulation = () => {
+      const token = localStorage.getItem('token');
+      const accepted = localStorage.getItem('acceptedRegulation');
+      if (token && accepted === 'false') {
+        setShowRegulationModal(true);
+      } else {
+        setShowRegulationModal(false);
+      }
+    };
+
+    window.addEventListener('check-regulation', checkRegulation);
+    checkRegulation();
+
+    return () => {
+      window.removeEventListener('check-regulation', checkRegulation);
+    };
+  }, [location]);
+
+  const handleAcceptedRegulation = () => {
+    setShowRegulationModal(false);
+    
+    // If the user is on the login page, redirect them now that they've accepted
+    if (location.pathname === '/login') {
+      const rolesStr = localStorage.getItem('roles');
+      if (rolesStr) {
+        try {
+          const roles = JSON.parse(rolesStr).map(r => r.toLowerCase());
+          if (roles.includes('atleta')) {
+            window.location.href = '/dashboard-atleta';
+          } else if (roles.includes('treinador')) {
+            window.location.href = '/dashboard-treinador';
+          } else if (roles.includes('admin')) {
+            window.location.href = '/dashboard-admin';
+          } else if (roles.includes('socio') || roles.includes('user')) {
+            window.location.href = '/dashboard-socio';
+          } else {
+            window.location.href = '/';
+          }
+        } catch (e) {
+          window.location.href = '/';
+        }
+      }
+    }
+  };
 
   return (
     <div className="App">
@@ -67,6 +116,9 @@ function AppContent() {
           <Route path="/payment-cancel" element={<PaymentCancel />} />
         </Routes>
       </main>
+      {showRegulationModal && (
+        <RegulationModal onAccepted={handleAcceptedRegulation} />
+      )}
       {!hideFooter && <Footer />}
     </div>
   );

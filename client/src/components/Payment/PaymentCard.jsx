@@ -46,14 +46,13 @@ const InscriptionAlert = ({ inscriptionInfo }) => {
 
     return (
         <div className="payment-inscription-alert">
-            <FaExclamationTriangle />
+            <FaExclamationTriangle style={{ color: '#d97706', fontSize: '1.2rem', marginTop: '3px' }}/>
             <div>
-                <strong>Taxa de inscrição pendente</strong>
-                <ul>
+                <strong style={{ display: 'block', marginBottom: '4px', color: '#92400e' }}>Taxa de Inscrição Pendente</strong>
+                <ul style={{ margin: 0, paddingLeft: '18px', color: '#b45309', fontSize: '0.9rem' }}>
                     {unpaid.map(i => (
-                        <li key={i.athleteTeamId}>
-                            {i.sportName}{i.escalao ? ` — ${i.escalao}` : ''}: <strong>{i.feeDiscount.toFixed(2)} €</strong>
-                            <span className="inscription-note">(pagar na secretaria)</span>
+                        <li key={`alert-${i.athleteTeamId}`}>
+                            {i.sportName}{i.escalao ? ` — ${i.escalao}` : ''}: <strong style={{ marginLeft: '4px' }}>{i.feeDiscount.toFixed(2)} €</strong>
                         </li>
                     ))}
                 </ul>
@@ -158,14 +157,16 @@ const PaymentCard = ({
     );
 
     // ── UNPAID state ──────────────────────────────────────────────────────────
-    const effectiveAmount = (overdueMonths && overdueMonths.length > 0 && totalDue != null) ? totalDue : quotaAmount;
+    const hasUnpaidInscriptions = inscriptionInfo?.some(i => !i.paid && i.feeDiscount > 0) ?? false;
+    const effectiveAmount = totalDue != null ? totalDue : quotaAmount;
+
     const renderUnpaid = () => (
         <div className="payment-status-box payment-status-box--unpaid">
             <div className="payment-status-icon"><FaExclamationTriangle /></div>
             <div style={{ flex: 1 }}>
-                <h4>Quota por Pagar</h4>
+                <h4>{hasUnpaidInscriptions && paymentStatus === 'Regularizada' ? 'Inscrição por Pagar' : 'A Pagamento'}</h4>
                 <p>
-                    {paymentPreference === 'Annual' ? 'Quota Anual' : 'Quota Mensal'}{overdueMonths && overdueMonths.length > 0 ? ' + Meses em Atraso' : ''}:{' '}
+                    {paymentPreference === 'Annual' ? 'Quota Anual' : 'Quota Mensal'}{overdueMonths && overdueMonths.length > 0 ? ' + Meses em Atraso' : ''}{hasUnpaidInscriptions ? ' + Inscrição' : ''}:{' '}
                     <strong style={{ color: '#003380' }}>
                         {effectiveAmount !== null ? `${effectiveAmount?.toFixed(2)} €` : '…'}
                     </strong>
@@ -245,10 +246,13 @@ const PaymentCard = ({
                 <DiscountBadge discounts={discountsApplied} />
 
                 {/* Main status */}
-                {paymentStatus === 'Regularizada' && (!overdueMonths || overdueMonths.length === 0) && renderPaid()}
-                {paymentStatus === 'Regularizada' && overdueMonths && overdueMonths.length > 0 && renderUnpaid()}
+                {paymentStatus === 'Regularizada' && (!overdueMonths || overdueMonths.length === 0) && !hasUnpaidInscriptions && renderPaid()}
+                {paymentStatus === 'Regularizada' && ((overdueMonths && overdueMonths.length > 0) || hasUnpaidInscriptions) && renderUnpaid()}
                 {paymentStatus === 'Pendente' && renderPending()}
                 {paymentStatus !== 'Regularizada' && paymentStatus !== 'Pendente' && renderUnpaid()}
+
+                {/* Inscription Alert */}
+                <InscriptionAlert inscriptionInfo={inscriptionInfo} />
 
                 {/* Advance payment */}
                 {renderAdvance()}
