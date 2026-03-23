@@ -254,6 +254,27 @@
     line-height: 1;
 }
 
+.socio-number.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.socio-number.clickable:hover {
+    background: #d1d5db;
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.table-inline-input {
+    padding: 2px 8px;
+    border: 1px solid #003380;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    width: 80px;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 51, 128, 0.1);
+}
+
 /* Table Responsive Cards */
 @media (max-width: 900px) {
     .users-table thead {

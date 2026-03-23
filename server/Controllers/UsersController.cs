@@ -617,7 +617,7 @@ public class UsersController : ControllerBase
         var memberProfile = new MemberProfile
         {
             UserId = id,
-            MembershipNumber = nextNumber.ToString(),
+            MembershipNumber = request.MembershipNumber ?? nextNumber.ToString(),
             MembershipStatus = request.MembershipStatus,
             MemberSince = request.MemberSince ?? DateTime.UtcNow,
             PaymentPreference = request.PaymentPreference,
@@ -646,6 +646,11 @@ public class UsersController : ControllerBase
         user.MemberProfile.MembershipStatus = request.MembershipStatus;
         user.MemberProfile.MemberSince = request.MemberSince;
         user.MemberProfile.PaymentPreference = request.PaymentPreference;
+        
+        if (!string.IsNullOrEmpty(request.MembershipNumber))
+        {
+            user.MemberProfile.MembershipNumber = request.MembershipNumber;
+        }
 
         await _context.SaveChangesAsync();
         return NoContent();
@@ -1545,6 +1550,7 @@ public class MemberProfileRequest
     public MembershipStatus MembershipStatus { get; set; } = MembershipStatus.Pending;
     public DateTime? MemberSince { get; set; }
     public string? PaymentPreference { get; set; }
+    public string? MembershipNumber { get; set; }
 }
 
 public class CoachProfileRequest

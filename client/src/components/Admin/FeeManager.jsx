@@ -188,7 +188,7 @@ const FeeManager = () => {
                                     <FeeInput label="Irmão / 2ª Mod." field="feeDiscount" sport={sport} onChange={handleSportField} />
                                 </div>
                             </div>
-                            {/*
+
                             <div className="fee-section">
                                 <div className="fee-section-label">Inscrições</div>
                                 <div className="fee-row fee-row--4cols">
@@ -201,7 +201,6 @@ const FeeManager = () => {
                                     )}
                                 </div>
                             </div>
-                            */}
 
                             <button
                                 className="save-btn save-btn--full"

@@ -396,11 +396,9 @@ const PaymentManager = () => {
                 </div>
                 <div className="header-period">
 
-                    {/*
                     <button className="export-btn" onClick={handleExport} disabled={loading} title="Exportar para Excel">
                         <FaFileExcel /> <span>Exportar Excel</span>
                     </button>
-                     */}
                     <div className="period-selector">
                         <select value={currentMonth} onChange={(e) => setCurrentMonth(parseInt(e.target.value))} className="admin-select month-select">
                             {Array.from({ length: 12 }, (_, i) => (

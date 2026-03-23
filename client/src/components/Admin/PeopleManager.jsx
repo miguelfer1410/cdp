@@ -69,6 +69,8 @@ const PeopleManager = () => {
         selectedRoles: []
     });
     const [linkedMembers, setLinkedMembers] = useState([]);
+    const [editingMemberId, setEditingMemberId] = useState(null);
+    const [tempMembershipNumber, setTempMembershipNumber] = useState('');
 
     const relationships = ['Pai', 'Mãe', 'Filho(a)', 'Irmão/Irmã', 'Cônjuge', 'Outro'];
 
@@ -379,11 +381,12 @@ const PeopleManager = () => {
                         teamId: data.athleteProfile.teams && data.athleteProfile.teams.length > 0 ? data.athleteProfile.teams[0].id : ''
                     } : { id: null, firstName: '', lastName: '', escalao: '', teamId: '' },
                     memberProfile: data.memberProfile ? {
+                        membershipNumber: data.memberProfile.membershipNumber || '',
                         membershipStatus: data.memberProfile.membershipStatus,
                         memberSince: data.memberProfile.memberSince
                             ? data.memberProfile.memberSince.split('T')[0] : '',
                         paymentPreference: data.memberProfile.paymentPreference || ''
-                    } : { membershipStatus: 0, memberSince: '', paymentPreference: '' },
+                    } : { membershipNumber: '', membershipStatus: 0, memberSince: '', paymentPreference: '' },
                     coachProfile: data.coachProfile ? {
                         sportId: data.coachProfile.sportId,
                         teamIds: data.coachProfile.teams ? data.coachProfile.teams.map(t => t.id) : [],
@@ -442,6 +445,55 @@ const PeopleManager = () => {
             }
         } catch (error) {
             console.error('Error updating relationship:', error);
+        }
+    };
+
+    const handleUpdateMembershipNumber = async (userId, user) => {
+        if (tempMembershipNumber === user.membershipNumber) {
+            setEditingMemberId(null);
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            // We need to fetch current member profile details to update just the number
+            // or we can just send the new number if the backend allows partial updates in the PUT.
+            // Based on my backend change, PUT api/users/{id}/member-profile handles MembershipNumber.
+            // However, we need to provide the other required fields like MembershipStatus and MemberSince.
+            // Since we don't have full member profile in the 'user' object from the list (only membershipNumber),
+            // we should fetch the user details first or rely on the fact that the list might have enough.
+            // Actually, 'user' from the list has: hasMemberProfile, membershipNumber.
+            // Let's fetch details to be safe and avoid zeroing out other fields.
+            
+            const detailResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!detailResponse.ok) throw new Error('Erro ao obter detalhes do sócio');
+            const data = await detailResponse.json();
+            
+            if (!data.memberProfile) throw new Error('Utilizador não tem perfil de sócio');
+
+            const response = await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    membershipNumber: tempMembershipNumber,
+                    membershipStatus: data.memberProfile.membershipStatus,
+                    memberSince: data.memberProfile.memberSince,
+                    paymentPreference: data.memberProfile.paymentPreference
+                })
+            });
+
+            if (response.ok) {
+                setEditingMemberId(null);
+                fetchUsers();
+            } else {
+                alert('Erro ao atualizar número de sócio');
+            }
+        } catch (error) {
+            console.error('Error updating membership number:', error);
+            alert('Erro ao atualizar número de sócio');
         }
     };
 
@@ -582,6 +634,7 @@ const PeopleManager = () => {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({
+                        membershipNumber: formData.memberProfile.membershipNumber,
                         membershipStatus: parseInt(formData.memberProfile.membershipStatus),
                         memberSince: formData.memberProfile.memberSince || null,
                         paymentPreference: formData.memberProfile.paymentPreference || null
@@ -1161,6 +1214,8 @@ const PeopleManager = () => {
                                     </select>
                                     {validationErrors.membershipStatus && <span className="error-message">{validationErrors.membershipStatus}</span>}
                                 </div>
+                            </div>
+                            <div className="form-row">
                                 <div className="form-group">
                                     <label>Sócio Desde *</label>
                                     <input
@@ -1174,8 +1229,6 @@ const PeopleManager = () => {
                                     />
                                     {validationErrors.memberSince && <span className="error-message">{validationErrors.memberSince}</span>}
                                 </div>
-                            </div>
-                            <div className="form-row">
                                 <div className="form-group">
                                     <label>Preferência de Pagamento</label>
                                     <select
@@ -1606,7 +1659,35 @@ const PeopleManager = () => {
                                         <td data-label="Nome">
                                             <div className="user-name-container" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                                                 <span className="user-name">{user.fullName}</span>
-                                                {user.membershipNumber && <span className="socio-number">{user.membershipNumber}</span>}
+                                                {user.hasMemberProfile && (
+                                                    <div className="socio-number-edit">
+                                                        {editingMemberId === user.id ? (
+                                                            <input
+                                                                autoFocus
+                                                                type="text"
+                                                                className="table-inline-input"
+                                                                value={tempMembershipNumber}
+                                                                onChange={(e) => setTempMembershipNumber(e.target.value)}
+                                                                onBlur={() => handleUpdateMembershipNumber(user.id, user)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') handleUpdateMembershipNumber(user.id, user);
+                                                                    if (e.key === 'Escape') setEditingMemberId(null);
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <span 
+                                                                className="socio-number clickable" 
+                                                                onClick={() => {
+                                                                    setEditingMemberId(user.id);
+                                                                    setTempMembershipNumber(user.membershipNumber || '');
+                                                                }}
+                                                                title="Clique para editar número de sócio"
+                                                            >
+                                                                {user.membershipNumber || 'S/N'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         <td data-label="Email">{(() => {
