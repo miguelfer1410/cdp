@@ -90,12 +90,39 @@ const DashboardAdmin = () => {
 
         // Decode token to check role
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            console.log(payload);
-            const roles = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-            const isAdmin = Array.isArray(roles) ? roles.includes('Admin') : roles === 'Admin';
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            console.log('JWT Payload raw:', jsonPayload);
+            const payload = JSON.parse(jsonPayload);
+
+            // 1. Deep scan for "Admin" role (case-insensitive) in ALL payload values
+            // This handles duplicate keys, arrays, and nested structures regardless of key name
+            const allValues = jsonPayload.split(/[:,\{\}\[\]"']+/).map(s => s.trim());
+            let isAdmin = allValues.some(v => v.toLowerCase() === 'admin');
+
+            // 2. Fallback: check localStorage roles
+            if (!isAdmin) {
+                const storedRolesStr = localStorage.getItem('roles');
+                if (storedRolesStr) {
+                    try {
+                        const storedRoles = JSON.parse(storedRolesStr);
+                        if (Array.isArray(storedRoles)) {
+                            isAdmin = storedRoles.some(r => typeof r === 'string' && r.toLowerCase() === 'admin');
+                        } else if (typeof storedRoles === 'string') {
+                            isAdmin = storedRoles.toLowerCase() === 'admin';
+                        }
+                    } catch (e) { }
+                }
+            }
+
+            console.log('Admin check result:', isAdmin);
 
             if (!isAdmin) {
+                console.error('Admin verification failed. User roles do not include "Admin". Payload:', jsonPayload);
                 alert('Acesso negado. Apenas administradores podem aceder a esta página.');
                 navigate('/');
                 return;

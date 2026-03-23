@@ -3,7 +3,8 @@ import './PaymentManager.css';
 import {
     FaEuroSign, FaCheckCircle, FaExclamationCircle, FaSearch,
     FaChevronLeft, FaChevronRight, FaTimes, FaUndo, FaEllipsisH, FaUser,
-    FaEdit, FaCheck, FaExclamationTriangle, FaUserTimes, FaFileExcel
+    FaEdit, FaCheck, FaExclamationTriangle, FaUserTimes, FaFileExcel,
+    FaCalendarAlt, FaListUl, FaBolt
 } from 'react-icons/fa';
 import PaymentHistorySocio from '../PaymentHistorySocio/PaymentHistorySocio';
 
@@ -28,7 +29,7 @@ const PaymentManager = () => {
     const [totalCount, setTotalCount] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
 
-    // Detailed Profile Modal 
+    // Detailed Profile Modal
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
@@ -36,13 +37,13 @@ const PaymentManager = () => {
     const [isMonthModalOpen, setIsMonthModalOpen] = useState(false);
     const [selectedAthlete, setSelectedAthlete] = useState(null);
     const [modalYear, setModalYear] = useState(new Date().getFullYear());
-    const [selectedPeriods, setSelectedPeriods] = useState([]); // Array of { month, year, amount }
+    const [selectedPeriods, setSelectedPeriods] = useState([]);
 
     // Membership number inline editing
     const [editingMembershipId, setEditingMembershipId] = useState(null);
     const [editingMembershipValue, setEditingMembershipValue] = useState('');
-    const [membershipDuplicates, setMembershipDuplicates] = useState({}); // { userId: { userId, name } }
-    const [selectedInscriptions, setSelectedInscriptions] = useState([]); // Array of athleteTeamIds
+    const [membershipDuplicates, setMembershipDuplicates] = useState({});
+    const [selectedInscriptions, setSelectedInscriptions] = useState([]);
 
     const fetchPaymentStatuses = useCallback(async () => {
         try {
@@ -91,7 +92,6 @@ const PaymentManager = () => {
         fetchFilters();
     }, []);
 
-    // Reset page when filters or pageSize change
     useEffect(() => { setPage(1); }, [searchTerm, filterStatus, filterTeam, filterSport, currentMonth, currentYear, pageSize]);
 
     const startEditMembership = (athlete) => {
@@ -116,12 +116,10 @@ const PaymentManager = () => {
             if (!response.ok) throw new Error('Failed to update membership number');
             const data = await response.json();
 
-            // Update the local athlete list immediately
             setAthletes(prev => prev.map(a =>
                 a.userId === userId ? { ...a, membershipNumber: editingMembershipValue } : a
             ));
 
-            // Store duplicate info (or clear it)
             setMembershipDuplicates(prev => ({
                 ...prev,
                 [userId]: data.duplicate || null
@@ -155,24 +153,36 @@ const PaymentManager = () => {
 
     const handleUpdateStatus = async (userId, newStatus, periods = null) => {
         const athlete = athletes.find(a => a.userId === userId);
+        const isAnnual = athlete?.paymentPreference === 'Annual';
         const isMonthly = athlete?.paymentPreference === 'Monthly';
 
-        if (newStatus === 'Completed' && isMonthly && !periods) {
+        if (newStatus === 'Completed' && (isMonthly || isAnnual) && !periods) {
             setSelectedAthlete(athlete);
             setModalYear(currentYear);
-            setSelectedPeriods([{ month: currentMonth, year: currentYear, amount: athlete.amount || 0 }]);
-            setSelectedInscriptions([]); // Reset selected inscriptions
+
+            if (isAnnual) {
+                // Select all 12 months for annual
+                const allMonths = Array.from({ length: 12 }, (_, i) => ({
+                    month: i + 1,
+                    year: currentYear,
+                    amount: athlete.amount || 0
+                }));
+                setSelectedPeriods(allMonths);
+            } else {
+                setSelectedPeriods([{ month: currentMonth, year: currentYear, amount: athlete.amount || 0 }]);
+            }
+
+            setSelectedInscriptions([]);
             setIsMonthModalOpen(true);
             return;
         }
 
         const actionText = newStatus === 'Completed' ? 'validar' : 'reverter';
-        
         let confirmMsg = `Tem a certeza que deseja ${actionText} este pagamento?`;
+
         if (newStatus === 'Completed') {
             const numPeriods = periods ? periods.length : 0;
             const numInscriptions = selectedInscriptions.length;
-            
             if (numPeriods > 0 && numInscriptions > 0) {
                 confirmMsg = `Tem a certeza que deseja validar ${numPeriods} ${numPeriods === 1 ? 'mês' : 'meses'} e ${numInscriptions} ${numInscriptions === 1 ? 'inscrição' : 'inscrições'} para "${athlete?.name}"?`;
             } else if (numPeriods > 0) {
@@ -229,9 +239,29 @@ const PaymentManager = () => {
     };
 
     const toggleInscription = (id) => {
-        setSelectedInscriptions(prev => 
+        setSelectedInscriptions(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
+    };
+
+    // Quick-select helpers
+    const selectCurrentMonth = () => {
+        setSelectedPeriods([{ month: currentMonth, year: currentYear, amount: selectedAthlete?.amount || 0 }]);
+        setModalYear(currentYear);
+    };
+
+    const selectAllMonths = () => {
+        setSelectedPeriods(
+            Array.from({ length: 12 }, (_, i) => ({
+                month: i + 1,
+                year: modalYear,
+                amount: selectedAthlete?.amount || 0
+            }))
+        );
+    };
+
+    const clearSelection = () => {
+        setSelectedPeriods([]);
     };
 
     const handleExport = async () => {
@@ -249,38 +279,18 @@ const PaymentManager = () => {
             if (!response.ok) throw new Error('Failed to fetch export data');
 
             const data = await response.json();
+            if (!data || data.length === 0) { alert('Não há dados para exportar.'); return; }
 
-            if (!data || data.length === 0) {
-                alert('Não há dados para exportar.');
-                return;
-            }
-
-            // Define headers
             const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            const headers = [
-                'Nº Sócio',
-                'Nome',
-                'Email',
-                'Telefone',
-                'NIF',
-                'Equipa',
-                'Modalidade',
-                'Tipo Quota',
-                'Ano',
-                ...months
-            ];
+            const headers = ['Nº Sócio', 'Nome', 'Email', 'Telefone', 'NIF', 'Equipa', 'Modalidade', 'Tipo Quota', 'Ano', ...months];
 
-            // Format data rows
             const rows = data.map(athlete => {
-                // Strip alias from email
                 const rawEmail = athlete.email || '';
                 const atIdx = rawEmail.lastIndexOf('@');
                 const localPart = atIdx > 0 ? rawEmail.substring(0, atIdx) : rawEmail;
                 const domain = atIdx > 0 ? rawEmail.substring(atIdx) : '';
                 const plusIdx = localPart.indexOf('+');
-                const cleanEmail = plusIdx > -1
-                    ? localPart.substring(0, plusIdx) + domain
-                    : rawEmail;
+                const cleanEmail = plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : rawEmail;
 
                 return [
                     `="${athlete.membershipNumber || ''}"`,
@@ -296,10 +306,7 @@ const PaymentManager = () => {
                 ].join(';');
             });
 
-            // Combine headers and rows
-            const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n'); // Add BOM for Excel support
-
-            // Create blob and download link
+            const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const urlBlob = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -330,16 +337,13 @@ const PaymentManager = () => {
             case 'Pendente': case 'Pending':
                 return <span className="status-badge pending"><FaExclamationCircle /> Pendente</span>;
             case 'Unpaid': case 'Failed':
-                if (isSenior) {
-                    return <span className="status-badge senior"><FaUser /> (senior)</span>;
-                }
+                if (isSenior) return <span className="status-badge senior"><FaUser /> (senior)</span>;
                 return <span className="status-badge unpaid"><FaTimes /> Não Pago</span>;
             default:
                 return <span className="status-badge">{s}</span>;
         }
     };
 
-    // Smart page numbers with ellipses
     const getPageNumbers = () => {
         if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
         const set = new Set([1, totalPages, page, page - 1, page + 1].filter(p => p >= 1 && p <= totalPages));
@@ -355,8 +359,33 @@ const PaymentManager = () => {
     const firstRecord = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
     const lastRecord = Math.min(page * pageSize, totalCount);
 
+    // Modal computed values
+    const monthsTotal = selectedPeriods.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const inscriptionsTotal = selectedAthlete?.pendingInscriptions
+        ?.filter(i => selectedInscriptions.includes(i.athleteTeamId))
+        .reduce((acc, i) => acc + i.amount, 0) || 0;
+    const grandTotal = monthsTotal + inscriptionsTotal;
+    const hasInscriptions = (selectedAthlete?.pendingInscriptions?.length || 0) > 0;
+    const isAthleteAnnual = selectedAthlete?.paymentPreference === 'Annual';
+
+    const confirmButtonLabel = () => {
+        if (isAthleteAnnual && selectedPeriods.length === 12) {
+            const parts = ['Ano'];
+            if (selectedInscriptions.length > 0)
+                parts.push(`${selectedInscriptions.length} ${selectedInscriptions.length === 1 ? 'Inscrição' : 'Inscrições'}`);
+            return `Validar ${parts.join(' + ')}`;
+        }
+        const parts = [];
+        if (selectedPeriods.length > 0)
+            parts.push(`${selectedPeriods.length} ${selectedPeriods.length === 1 ? 'Mês' : 'Meses'}`);
+        if (selectedInscriptions.length > 0)
+            parts.push(`${selectedInscriptions.length} ${selectedInscriptions.length === 1 ? 'Inscrição' : 'Inscrições'}`);
+        return parts.length > 0 ? `Validar ${parts.join(' + ')}` : 'Validar';
+    };
+
     return (
         <div className="payment-manager">
+            {/* ── Header ── */}
             <div className="payment-manager-header">
                 <div className="header-title">
                     <div className="title-icon"><FaEuroSign /></div>
@@ -366,9 +395,12 @@ const PaymentManager = () => {
                     </div>
                 </div>
                 <div className="header-period">
+
+                    {/*
                     <button className="export-btn" onClick={handleExport} disabled={loading} title="Exportar para Excel">
                         <FaFileExcel /> <span>Exportar Excel</span>
                     </button>
+                     */}
                     <div className="period-selector">
                         <select value={currentMonth} onChange={(e) => setCurrentMonth(parseInt(e.target.value))} className="admin-select month-select">
                             {Array.from({ length: 12 }, (_, i) => (
@@ -382,6 +414,7 @@ const PaymentManager = () => {
                 </div>
             </div>
 
+            {/* ── Filters ── */}
             <div className="filters-container">
                 <div className="search-wrapper">
                     <FaSearch className="search-icon" />
@@ -413,9 +446,7 @@ const PaymentManager = () => {
                             <option value="-1">Sem Equipa</option>
                             <option value="-2">Com Equipa</option>
                             {teams.map(team => (
-                                <option key={team.id} value={team.id}>
-                                    {team.name} ({team.sportName})
-                                </option>
+                                <option key={team.id} value={team.id}>{team.name} ({team.sportName})</option>
                             ))}
                         </select>
                     </div>
@@ -429,6 +460,7 @@ const PaymentManager = () => {
                 </div>
             </div>
 
+            {/* ── Table Stats ── */}
             <div className="table-stats">
                 <span className="records-info">
                     {totalCount === 0
@@ -446,6 +478,7 @@ const PaymentManager = () => {
                 </div>
             </div>
 
+            {/* ── Table ── */}
             <div className="admin-table-container">
                 <table className="admin-table">
                     <thead>
@@ -491,8 +524,10 @@ const PaymentManager = () => {
                                             </div>
                                         ) : (
                                             <div className="membership-view-container">
-                                                <span className="membership-number">{athlete.membershipNumber}</span>
-                                                <button className="membership-edit-btn" title="Editar Nº Sócio" onClick={() => startEditMembership(athlete)}><FaEdit /></button>
+                                                <div className="membership-number-wrapper">
+                                                    <span className="membership-number">{athlete.membershipNumber}</span>
+                                                    <button className="membership-edit-btn" title="Editar Nº Sócio" onClick={() => startEditMembership(athlete)}><FaEdit /></button>
+                                                </div>
                                                 {membershipDuplicates[athlete.userId] && (
                                                     <div className="membership-duplicate-warning" title={`Nº duplicado: ${membershipDuplicates[athlete.userId].name}`}>
                                                         <FaExclamationTriangle />
@@ -512,9 +547,11 @@ const PaymentManager = () => {
                                         </div>
                                     </td>
                                     <td data-label="Tipo Quota">{athlete.paymentPreference === 'Annual' ? 'Anual' : 'Mensal'}</td>
-                                    <td data-label="Período">{athlete.currentPeriod}</td>
+                                    <td data-label="Período">{athlete.paymentPreference === 'Annual' ? currentYear : athlete.currentPeriod}</td>
                                     <td data-label="Valor" className="amount-cell">
-                                        {(athlete.amount || 0).toFixed(2)}€
+                                        {athlete.paymentPreference === 'Annual'
+                                            ? `${((athlete.amount || 0) * 12).toFixed(2)}€`
+                                            : `${(athlete.amount || 0).toFixed(2)}€`}
                                     </td>
                                     <td data-label="Estado">{getStatusBadge(athlete.status, athlete)}</td>
                                     <td className="payment-actions-cell">
@@ -522,10 +559,7 @@ const PaymentManager = () => {
                                             <button
                                                 className="payment-btn-action payment-btn-profile"
                                                 title="Ver Ficha / Histórico"
-                                                onClick={() => {
-                                                    setSelectedUserId(athlete.userId);
-                                                    setIsHistoryModalOpen(true);
-                                                }}
+                                                onClick={() => { setSelectedUserId(athlete.userId); setIsHistoryModalOpen(true); }}
                                             >
                                                 <FaUser /> <span>Ficha</span>
                                             </button>
@@ -563,24 +597,15 @@ const PaymentManager = () => {
                 </table>
             </div>
 
+            {/* ── Pagination ── */}
             {totalPages > 1 && (
                 <div className="pagination">
-                    <button
-                        className="pagination-btn pagination-btn--icon"
-                        onClick={() => setPage(1)}
-                        disabled={page === 1}
-                        title="Primeira página"
-                    >
+                    <button className="pagination-btn pagination-btn--icon" onClick={() => setPage(1)} disabled={page === 1} title="Primeira página">
                         <FaChevronLeft /><FaChevronLeft />
                     </button>
-                    <button
-                        className="pagination-btn"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                    >
+                    <button className="pagination-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
                         <FaChevronLeft /> Anterior
                     </button>
-
                     <div className="page-numbers">
                         {getPageNumbers().map((p, idx) =>
                             p === '...'
@@ -588,72 +613,90 @@ const PaymentManager = () => {
                                 : <button key={p} className={`page-number ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
                         )}
                     </div>
-
-                    <button
-                        className="pagination-btn"
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                    >
+                    <button className="pagination-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                         Próximo <FaChevronRight />
                     </button>
-                    <button
-                        className="pagination-btn pagination-btn--icon"
-                        onClick={() => setPage(totalPages)}
-                        disabled={page === totalPages}
-                        title="Última página"
-                    >
+                    <button className="pagination-btn pagination-btn--icon" onClick={() => setPage(totalPages)} disabled={page === totalPages} title="Última página">
                         <FaChevronRight /><FaChevronRight />
                     </button>
                 </div>
             )}
 
+            {/* ── Validate Payments Modal ── */}
             {isMonthModalOpen && (
                 <div className="admin-modal-overlay" onClick={() => setIsMonthModalOpen(false)}>
                     <div className="admin-modal months-modal refined" onClick={e => e.stopPropagation()}>
+
+                        {/* Modal Header */}
                         <div className="modal-header">
-                            <div className="modal-header-title">
-                                <h3>Validar Pagamentos</h3>
-                                <p className="modal-subtitle">{selectedAthlete?.name}</p>
+                            <div className="modal-header-left">
+                                <div className="modal-header-icon">
+                                    <FaCheckCircle />
+                                </div>
+                                <div className="modal-header-title">
+                                    <h3>Validar Pagamentos</h3>
+                                    <p className="modal-subtitle">
+                                        {selectedAthlete?.name}
+                                        {isAthleteAnnual && <span className="annual-indicator" style={{ fontWeight: 'bold' }}> (Quota Anual)</span>}
+                                    </p>
+                                </div>
                             </div>
                             <button className="close-btn" onClick={() => setIsMonthModalOpen(false)}><FaTimes /></button>
                         </div>
+
+                        {/* Modal Body */}
                         <div className="modal-body">
-                            <div className="modal-period-controls">
-                                <div className="modal-year-selector">
-                                    <label>Ano:</label>
+
+                            {/* Year selector + Quick actions */}
+                            <div className="modal-controls-row">
+                                <div className="modal-year-pill">
+                                    <FaCalendarAlt />
                                     <select value={modalYear} onChange={(e) => setModalYear(parseInt(e.target.value))} className="admin-select">
                                         {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
                                     </select>
                                 </div>
-                                <div className="selected-summary">
-                                    <span>Total: <strong>{selectedPeriods.reduce((acc, p) => acc + (p.amount || 0), 0).toFixed(2)}€</strong></span>
+                                <div className="modal-quick-actions">
+                                    <button className="quick-action-btn" onClick={selectCurrentMonth} title="Selecionar mês atual">
+                                        <FaBolt /> Mês atual
+                                    </button>
+                                    <button className="quick-action-btn" onClick={selectAllMonths} title="Selecionar todos os meses">
+                                        <FaListUl /> Todos
+                                    </button>
+                                    <button className="quick-action-btn quick-action-btn--clear" onClick={clearSelection} title="Limpar seleção" disabled={selectedPeriods.length === 0}>
+                                        <FaTimes /> Limpar
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="months-grid-refined">
+                            {/* Months Grid — 3 columns */}
+                            <div className="months-grid-v2">
                                 {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
                                     const period = selectedPeriods.find(p => p.month === m && p.year === modalYear);
                                     const isSelected = !!period;
+                                    const monthLabel = new Date(0, m - 1).toLocaleString('pt-PT', { month: 'short' });
                                     return (
-                                        <div key={m} className={`month-refined-card ${isSelected ? 'selected' : ''}`}>
-                                            <div className="month-card-header" onClick={() => togglePeriod(m, modalYear)}>
-                                                <div className={`custom-checkbox ${isSelected ? 'checked' : ''}`}>
+                                        <div key={m} className={`month-tile ${isSelected ? 'month-tile--selected' : ''}`}>
+                                            <button
+                                                className="month-tile-toggle"
+                                                onClick={() => togglePeriod(m, modalYear)}
+                                                type="button"
+                                            >
+                                                <div className={`month-checkbox ${isSelected ? 'month-checkbox--checked' : ''}`}>
                                                     {isSelected && <FaCheck />}
                                                 </div>
-                                                <span className="month-name">{new Date(0, m - 1).toLocaleString('pt-PT', { month: 'long' })}</span>
-                                            </div>
+                                                <span className="month-tile-label">{monthLabel}</span>
+                                            </button>
                                             {isSelected && (
-                                                <div className="month-card-body">
-                                                    <div className="amount-input-wrapper">
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={period.amount}
-                                                            onChange={(e) => updatePeriodAmount(m, modalYear, e.target.value)}
-                                                            className="amount-input"
-                                                        />
-                                                        <span className="currency-symbol">€</span>
-                                                    </div>
+                                                <div className="month-tile-amount">
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={period.amount}
+                                                        onChange={(e) => updatePeriodAmount(m, modalYear, e.target.value)}
+                                                        className="month-amount-input"
+                                                        onClick={e => e.stopPropagation()}
+                                                    />
+                                                    <span className="month-amount-currency">€</span>
                                                 </div>
                                             )}
                                         </div>
@@ -661,54 +704,86 @@ const PaymentManager = () => {
                                 })}
                             </div>
 
-                            {(selectedAthlete?.pendingInscriptions?.length || 0) > 0 && (
+                            {/* Pending Inscriptions */}
+                            {hasInscriptions && (
                                 <div className="modal-inscriptions-section">
-                                    <div className="section-header">
-                                        <h4>Inscrições Pendentes</h4>
-                                        <p>Selecione as inscrições que deseja validar agora.</p>
+                                    <div className="inscriptions-section-header">
+                                        <span className="inscriptions-section-title">Inscrições Pendentes</span>
+                                        <span className="inscriptions-count-badge">
+                                            {selectedAthlete.pendingInscriptions.length}
+                                        </span>
                                     </div>
-                                    <div className="inscriptions-list">
-                                        {selectedAthlete.pendingInscriptions.map(ins => (
-                                            <div key={ins.athleteTeamId} className={`inscription-item ${selectedInscriptions.includes(ins.athleteTeamId) ? 'selected' : ''}`} onClick={() => toggleInscription(ins.athleteTeamId)}>
-                                                <div className="inscription-info">
-                                                    <div className={`custom-checkbox ${selectedInscriptions.includes(ins.athleteTeamId) ? 'checked' : ''}`}>
-                                                        {selectedInscriptions.includes(ins.athleteTeamId) && <FaCheck />}
+                                    <div className="inscriptions-list-v2">
+                                        {selectedAthlete.pendingInscriptions.map(ins => {
+                                            const isIns = selectedInscriptions.includes(ins.athleteTeamId);
+                                            return (
+                                                <button
+                                                    key={ins.athleteTeamId}
+                                                    type="button"
+                                                    className={`inscription-tile ${isIns ? 'inscription-tile--selected' : ''}`}
+                                                    onClick={() => toggleInscription(ins.athleteTeamId)}
+                                                >
+                                                    <div className={`month-checkbox ${isIns ? 'month-checkbox--checked' : ''}`}>
+                                                        {isIns && <FaCheck />}
                                                     </div>
-                                                    <span className="ins-name">{ins.sportName}</span>
-                                                </div>
-                                                <span className="ins-amount">{ins.amount.toFixed(2)}€</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="inscriptions-total">
-                                        <span>Total Inscrições: <strong>{selectedAthlete.pendingInscriptions.filter(i => selectedInscriptions.includes(i.athleteTeamId)).reduce((acc, i) => acc + i.amount, 0).toFixed(2)}€</strong></span>
+                                                    <span className="inscription-sport">{ins.sportName}</span>
+                                                    <span className="inscription-amount">{ins.amount.toFixed(2)}€</span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}
                         </div>
-                        <div className="modal-footer">
-                            <button className="btn-cancel" onClick={() => setIsMonthModalOpen(false)}>Cancelar</button>
-                            <button
-                                className="btn-confirm"
-                                disabled={selectedPeriods.length === 0 && selectedInscriptions.length === 0}
-                                onClick={() => handleUpdateStatus(selectedAthlete.userId, 'Completed', selectedPeriods.length > 0 ? selectedPeriods : [])}
-                            >
-                                Validar {selectedPeriods.length > 0 ? `${selectedPeriods.length} ${selectedPeriods.length === 1 ? 'Mês' : 'Meses'}` : ''}
-                                {selectedPeriods.length > 0 && selectedInscriptions.length > 0 ? ' + ' : ''}
-                                {selectedInscriptions.length > 0 ? `${selectedInscriptions.length} Inscrição` : ''}
-                            </button>
+
+                        {/* Modal Footer with totals breakdown */}
+                        <div className="modal-footer-v2">
+                            <div className="modal-totals">
+                                {selectedPeriods.length > 0 && (
+                                    <div className="total-row">
+                                        <span className="total-label">
+                                            {isAthleteAnnual && selectedPeriods.length === 12
+                                                ? 'Quota Anual'
+                                                : `${selectedPeriods.length} ${selectedPeriods.length === 1 ? 'mês' : 'meses'}`}
+                                        </span>
+                                        <span className="total-value">{monthsTotal.toFixed(2)}€</span>
+                                    </div>
+                                )}
+                                {inscriptionsTotal > 0 && (
+                                    <div className="total-row">
+                                        <span className="total-label">
+                                            {selectedInscriptions.length} {selectedInscriptions.length === 1 ? 'inscrição' : 'inscrições'}
+                                        </span>
+                                        <span className="total-value">{inscriptionsTotal.toFixed(2)}€</span>
+                                    </div>
+                                )}
+                                {(selectedPeriods.length > 0 || inscriptionsTotal > 0) && (
+                                    <div className="total-row total-row--grand">
+                                        <span className="total-label">Total</span>
+                                        <span className="total-value">{grandTotal.toFixed(2)}€</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer-actions">
+                                <button className="btn-cancel" onClick={() => setIsMonthModalOpen(false)}>Cancelar</button>
+                                <button
+                                    className="btn-confirm"
+                                    disabled={selectedPeriods.length === 0 && selectedInscriptions.length === 0}
+                                    onClick={() => handleUpdateStatus(selectedAthlete.userId, 'Completed', selectedPeriods.length > 0 ? selectedPeriods : [])}
+                                >
+                                    <FaCheckCircle /> {confirmButtonLabel()}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* ── History Modal ── */}
             {isHistoryModalOpen && (
                 <PaymentHistorySocio
                     isOpen={isHistoryModalOpen}
-                    onClose={() => {
-                        setIsHistoryModalOpen(false);
-                        setSelectedUserId(null);
-                    }}
+                    onClose={() => { setIsHistoryModalOpen(false); setSelectedUserId(null); }}
                     userId={selectedUserId}
                     isAdmin={true}
                     onPaymentSuccess={fetchPaymentStatuses}

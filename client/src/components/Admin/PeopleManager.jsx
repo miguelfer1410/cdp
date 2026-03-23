@@ -356,6 +356,7 @@ const PeopleManager = () => {
                 const baseEmail = plusIdx > -1
                     ? localPart.substring(0, plusIdx) + domain
                     : rawEmail;
+                console.log(data);
 
                 setFormData({
                     email: baseEmail,
@@ -747,7 +748,7 @@ const PeopleManager = () => {
 
             // Fetch ALL records (using a very large pageSize to bypass pagination)
             params.append('page', 1);
-            params.append('pageSize', 10000); 
+            params.append('pageSize', 10000);
 
             const response = await fetch(`http://localhost:5285/api/users?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}` }

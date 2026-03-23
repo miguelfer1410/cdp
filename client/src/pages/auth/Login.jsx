@@ -55,10 +55,10 @@ const Login = () => {
       // Backend now returns roles array instead of userType
       const roles = data.roles || ['User'];
       console.log(roles);
-      const primaryRole = roles.includes('Atleta') ? 'Atleta' : 
-                         roles.includes('Treinador') ? 'Treinador' :
-                         roles.includes('Admin') ? 'Admin' :
-                         (roles[0] || 'User');
+      const primaryRole = roles.includes('Atleta') ? 'Atleta' :
+        roles.includes('Treinador') ? 'Treinador' :
+          roles.includes('Admin') ? 'Admin' :
+            (roles[0] || 'User');
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('roles', JSON.stringify(roles));

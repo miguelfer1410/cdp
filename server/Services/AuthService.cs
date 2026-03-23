@@ -323,8 +323,8 @@ public class AuthService : IAuthService
                     Email         = u.Email,
                     DashboardType = u.AthleteProfile != null ? "atleta"
                                   : u.CoachProfile   != null ? "treinador"
-                                  : u.UserRoles.Any(ur => ur.Role.Name == "Admin") ? "admin"
                                   : (u.MemberProfile != null || u.UserRoles.Any(ur => ur.Role.Name == "Socio")) ? "socio"
+                                  : u.UserRoles.Any(ur => ur.Role.Name == "Admin") ? "Admin"
                                   : "user",
                     Roles         = GetUserRoles(u),
                     IsSocio = u.AthleteProfile != null || u.MemberProfile != null
@@ -366,8 +366,8 @@ public class AuthService : IAuthService
                 Email         = other.Email,
                 DashboardType = other.AthleteProfile != null ? "atleta"
                               : other.CoachProfile   != null ? "treinador"
-                              : other.UserRoles.Any(ur => ur.Role.Name == "Admin") ? "admin"
                               : (other.MemberProfile != null || other.UserRoles.Any(ur => ur.Role.Name == "Socio")) ? "socio"
+                              : other.UserRoles.Any(ur => ur.Role.Name == "Admin") ? "Admin"
                               : "user",
                 Roles         = GetUserRoles(other),
                 IsSocio      = other.AthleteProfile != null || other.MemberProfile != null

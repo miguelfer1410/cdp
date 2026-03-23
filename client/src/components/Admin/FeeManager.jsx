@@ -188,14 +188,20 @@ const FeeManager = () => {
                                     <FeeInput label="Irmão / 2ª Mod." field="feeDiscount" sport={sport} onChange={handleSportField} />
                                 </div>
                             </div>
+                            {/*
                             <div className="fee-section">
                                 <div className="fee-section-label">Inscrições</div>
-                                <div className="fee-row fee-row--3cols">
+                                <div className="fee-row fee-row--4cols">
                                     <FeeInput label="Normal" field="inscriptionFeeNormal" sport={sport} onChange={handleSportField} />
-                                    <FeeInput label="Minis Normal" field="inscriptionFeeMinis" sport={sport} onChange={handleSportField} />
-                                    <FeeInput label="Minis Irmãos/2ª Mod." field="inscriptionFeeMinisDiscount" sport={sport} onChange={handleSportField} />
+                                    {sport.name !== 'Ténis de Mesa' && (
+                                        <>
+                                            <FeeInput label="Minis Normal" field="inscriptionFeeMinis" sport={sport} onChange={handleSportField} />
+                                            <FeeInput label="Minis Irmãos/2ª Mod." field="inscriptionFeeMinisDiscount" sport={sport} onChange={handleSportField} />
+                                        </>
+                                    )}
                                 </div>
                             </div>
+                            */}
 
                             <button
                                 className="save-btn save-btn--full"

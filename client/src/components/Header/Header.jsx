@@ -164,7 +164,7 @@ const Header = () => {
     const hasAdmin = allUsersData.some(u => u.roles.some(r => r.toLowerCase() === 'admin'));
     const hasAtleta = allUsersData.some(u => u.roles.some(r => r.toLowerCase() === 'atleta'));
     const hasTreinador = allUsersData.some(u => u.roles.some(r => r.toLowerCase() === 'treinador'));
-    
+
     // Sócio is shown only if there's someone who is "exclusively" a socio (no other major roles)
     const hasExclusiveSocio = allUsersData.some(u => {
       const roles = u.roles.map(r => r.toLowerCase());

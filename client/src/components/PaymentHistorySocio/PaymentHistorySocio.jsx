@@ -64,7 +64,7 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAd
 
             // Refresh local history
             fetchHistory(year);
-            
+
             // Notify parent to refresh list if needed
             if (onPaymentSuccess) onPaymentSuccess();
 
@@ -186,7 +186,9 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAd
                                 <div>
                                     <span className="phs-summary-label">Em atraso</span>
                                     <strong className="phs-summary-value phs-value-red">
-                                        {overdueThisYear.length} {overdueThisYear.length === 1 ? 'mês' : 'meses'}
+                                        {overdueThisYear.length === 12
+                                            ? 'Ano completo'
+                                            : `${overdueThisYear.length} ${overdueThisYear.length === 1 ? 'mês' : 'meses'}`}
                                     </strong>
                                 </div>
                             </div>
@@ -245,8 +247,8 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAd
                                         <div className="phs-item-info">
                                             <span className="phs-item-period">Inscrição: {ins.sportName}</span>
                                             {!ins.paid && isAdmin && (
-                                                <button 
-                                                    className="phs-btn-pay-manual" 
+                                                <button
+                                                    className="phs-btn-pay-manual"
                                                     onClick={() => handlePayInscription(ins.athleteTeamId, ins.sportName)}
                                                     disabled={actionLoading}
                                                 >

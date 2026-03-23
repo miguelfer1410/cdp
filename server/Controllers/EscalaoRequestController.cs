@@ -147,7 +147,7 @@ public class EscalaoRequestsController : ControllerBase
 
     // ── GET: api/escalao-requests  (Admin lista todos) ───────────────────────
     [HttpGet]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> GetAll([FromQuery] string status = "Pending")
     {
         var statusEnum = status switch
@@ -193,7 +193,7 @@ public class EscalaoRequestsController : ControllerBase
 
     // ── PATCH: api/escalao-requests/{id}/review  (Admin aceita/recusa) ───────
     [HttpPatch("{id}/review")]
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Review(int id, [FromBody] ReviewEscalaoRequest request)
     {
         try

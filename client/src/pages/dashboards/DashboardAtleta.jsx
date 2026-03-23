@@ -324,14 +324,43 @@ const DashboardAtleta = () => {
                                 admin: '/dashboard-admin',
                                 user: '/dashboard-socio'
                             };
-                            const handleClick = () => {
+                            const handleClick = async () => {
                                 const type = lu.dashboardType?.toLowerCase() || 'socio';
                                 if (type === 'atleta') {
                                     setSelectedUserId(lu.id);
                                 } else {
-                                    const route = dashboardRoutes[type] || '/dashboard-socio';
-                                    localStorage.setItem('userId', lu.id);
-                                    navigate(route);
+                                    try {
+                                        const token = localStorage.getItem('token');
+                                        const res = await fetch('http://localhost:5285/api/auth/switch-user', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${token}`
+                                            },
+                                            body: JSON.stringify({ targetUserId: lu.id })
+                                        });
+
+                                        if (res.ok) {
+                                            const data = await res.json();
+                                            localStorage.setItem('token', data.token);
+                                            localStorage.setItem('userId', data.id.toString());
+                                            localStorage.setItem('roles', JSON.stringify(data.roles));
+                                            localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
+
+                                            const route = dashboardRoutes[type] || '/dashboard-socio';
+                                            navigate(route);
+                                            window.location.reload();
+                                        } else {
+                                            const route = dashboardRoutes[type] || '/dashboard-socio';
+                                            localStorage.setItem('userId', lu.id);
+                                            navigate(route);
+                                        }
+                                    } catch (err) {
+                                        console.error('Error switching user:', err);
+                                        const route = dashboardRoutes[type] || '/dashboard-socio';
+                                        localStorage.setItem('userId', lu.id);
+                                        navigate(route);
+                                    }
                                 }
                             };
                             return (
@@ -741,14 +770,14 @@ const DashboardAtleta = () => {
                                     const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
                                     const MONTHS_PT_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
                                     let yearPayments = paymentHistory.filter(p => p.periodYear === historyYear);
-                                    
+
                                     // Inject current month if it is pending/unpaid
                                     const isCurrentYear = historyYear === new Date().getFullYear();
                                     const currentMonthNum = new Date().getMonth() + 1;
                                     if (isCurrentYear && paymentStatus !== 'Regularizada' && paymentStatus !== '-') {
                                         const isAnnual = paymentPreference === 'Annual';
                                         const alreadyExists = yearPayments.some(p => p.periodYear === historyYear && (isAnnual ? p.periodMonth == null : p.periodMonth === currentMonthNum));
-                                        
+
                                         if (!alreadyExists) {
                                             yearPayments.push({
                                                 id: 'current-unpaid',

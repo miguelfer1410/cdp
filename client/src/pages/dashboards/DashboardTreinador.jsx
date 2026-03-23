@@ -65,17 +65,60 @@ const DashboardTreinador = () => {
         refreshLinkedUsers();
     }, []);
 
-    const handleLinkedTabClick = (lu) => {
-        const dashboardRoutes = {
-            atleta: '/dashboard-atleta',
-            treinador: '/dashboard-treinador',
-            socio: '/dashboard-socio',
-            admin: '/dashboard-admin',
-            user: '/dashboard-socio'
-        };
-        const type = lu.dashboardType?.toLowerCase() || 'socio';
-        localStorage.setItem('userId', lu.id);
-        navigate(dashboardRoutes[type] || '/dashboard-socio');
+    const handleLinkedTabClick = async (lu) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('http://localhost:5285/api/auth/switch-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ targetUserId: lu.id })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userId', data.id.toString());
+                localStorage.setItem('roles', JSON.stringify(data.roles));
+                localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
+
+                const dashboardRoutes = {
+                    atleta: '/dashboard-atleta',
+                    treinador: '/dashboard-treinador',
+                    socio: '/dashboard-socio',
+                    admin: '/dashboard-admin',
+                    user: '/dashboard-socio'
+                };
+                const type = lu.dashboardType?.toLowerCase() || 'socio';
+                navigate(dashboardRoutes[type] || '/dashboard-socio');
+                window.location.reload();
+            } else {
+                localStorage.setItem('userId', lu.id);
+                const dashboardRoutes = {
+                    atleta: '/dashboard-atleta',
+                    treinador: '/dashboard-treinador',
+                    socio: '/dashboard-socio',
+                    admin: '/dashboard-admin',
+                    user: '/dashboard-socio'
+                };
+                const type = lu.dashboardType?.toLowerCase() || 'socio';
+                navigate(dashboardRoutes[type] || '/dashboard-socio');
+            }
+        } catch (err) {
+            console.error('Error switching user:', err);
+            localStorage.setItem('userId', lu.id);
+            const dashboardRoutes = {
+                atleta: '/dashboard-atleta',
+                treinador: '/dashboard-treinador',
+                socio: '/dashboard-socio',
+                admin: '/dashboard-admin',
+                user: '/dashboard-socio'
+            };
+            const type = lu.dashboardType?.toLowerCase() || 'socio';
+            navigate(dashboardRoutes[type] || '/dashboard-socio');
+        }
     };
 
     const fetchTeamData = async (teamId) => {
