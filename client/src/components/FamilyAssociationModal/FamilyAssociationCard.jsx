@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUserFriends, FaCheckCircle, FaClock, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
 import './FamilyAssociationCard.css';
 
-const API_BASE = 'http://localhost:5285';
+const API_BASE = 'http://localhost5';
 
 const FamilyAssociationCard = ({ userId }) => {
     const [form, setForm] = useState({

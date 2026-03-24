@@ -191,35 +191,32 @@ public class AuthService : IAuthService
             return false;
         }
 
-        user.PasswordHash = _passwordService.HashPassword(newPassword);
+        var newPasswordHash = _passwordService.HashPassword(newPassword);
+        user.PasswordHash = newPasswordHash;
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpires = null;
 
         // Also update password for all aliased accounts (e.g. parent+child@gmail.com)
         // so the parent can log in to all accounts with the same new password
-        var emailLower = user.Email.ToLower();
-        var atIndex = emailLower.LastIndexOf('@');
+        var baseEmail = GetBaseEmail(user.Email);
+        var atIndex = baseEmail.LastIndexOf('@');
         if (atIndex > 0)
         {
-            var localPart = emailLower.Substring(0, atIndex);
-            var domain = emailLower.Substring(atIndex); // includes @
+            var baseLocal = baseEmail.Substring(0, atIndex);
+            var domain = baseEmail.Substring(atIndex); // includes @
 
-            // If this is a primary email (no '+' alias), update its children
-            // If this is already an alias, we might want to update siblings? 
-            // For now, let's assume valid flow is parent (primary) resetting password.
-            if (!localPart.Contains('+'))
+            // Find all related users sharing the same base email
+            // (the primary base email and all +alias variations)
+            var relatedUsers = await _context.Users
+                .Where(u => u.Email.ToLower() == baseEmail || 
+                           (u.Email.ToLower().StartsWith(baseLocal + "+") && u.Email.ToLower().EndsWith(domain)))
+                .ToListAsync();
+
+            foreach (var relatedUser in relatedUsers)
             {
-                var aliasedUsers = await _context.Users
-                    .Where(u => u.Email.ToLower().StartsWith(localPart + "+") && u.Email.ToLower().EndsWith(domain))
-                    .ToListAsync();
-
-                foreach (var aliasUser in aliasedUsers)
-                {
-                    aliasUser.PasswordHash = user.PasswordHash;
-                    // Ideally we should also clear their reset tokens if they had any pending
-                    aliasUser.PasswordResetToken = null;
-                    aliasUser.PasswordResetTokenExpires = null;
-                }
+                relatedUser.PasswordHash = newPasswordHash;
+                relatedUser.PasswordResetToken = null;
+                relatedUser.PasswordResetTokenExpires = null;
             }
         }
         

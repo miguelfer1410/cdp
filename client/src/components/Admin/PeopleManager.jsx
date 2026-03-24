@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaUsers, FaRunning, FaIdCard, FaChalkboardTeacher, FaUserShield, FaSort, FaSortUp, FaSortDown, FaCheck, FaArrowRight, FaArrowLeft, FaUser, FaClipboardList, FaLock, FaEye, FaTimes, FaFileExcel, FaUserFriends } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaUsers, FaRunning, FaIdCard, FaChalkboardTeacher, FaUserShield, FaSort, FaSortUp, FaSortDown, FaCheck, FaArrowRight, FaArrowLeft, FaUser, FaClipboardList, FaLock, FaEye, FaTimes, FaFileExcel, FaUserFriends, FaEnvelope } from 'react-icons/fa';
 import FamilyLinkModal from './FamilyLinkModal';
 import './PeopleManager.css';
 
@@ -464,14 +464,14 @@ const PeopleManager = () => {
             // we should fetch the user details first or rely on the fact that the list might have enough.
             // Actually, 'user' from the list has: hasMemberProfile, membershipNumber.
             // Let's fetch details to be safe and avoid zeroing out other fields.
-            
+
             const detailResponse = await fetch(`http://localhost:5285/api/users/${userId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (!detailResponse.ok) throw new Error('Erro ao obter detalhes do sócio');
             const data = await detailResponse.json();
-            
+
             if (!data.memberProfile) throw new Error('Utilizador não tem perfil de sócio');
 
             const response = await fetch(`http://localhost:5285/api/users/${userId}/member-profile`, {
@@ -494,6 +494,26 @@ const PeopleManager = () => {
         } catch (error) {
             console.error('Error updating membership number:', error);
             alert('Erro ao atualizar número de sócio');
+        }
+    };
+
+    const handleResendActivation = async (userId) => {
+        if (!window.confirm('Tem a certeza que deseja reenviar o email de ativação para este utilizador?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5285/api/users/${userId}/resend-activation`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                alert('Email de ativação reenviado com sucesso!');
+            } else {
+                const data = await response.json().catch(() => ({}));
+                alert(data.message || 'Erro ao reenviar email de ativação');
+            }
+        } catch (error) {
+            console.error('Error resending activation email:', error);
+            alert('Erro ao reenviar email de ativação');
         }
     };
 
@@ -1675,8 +1695,8 @@ const PeopleManager = () => {
                                                                 }}
                                                             />
                                                         ) : (
-                                                            <span 
-                                                                className="socio-number clickable" 
+                                                            <span
+                                                                className="socio-number clickable"
                                                                 onClick={() => {
                                                                     setEditingMemberId(user.id);
                                                                     setTempMembershipNumber(user.membershipNumber || '');
@@ -1712,6 +1732,11 @@ const PeopleManager = () => {
                                         <td data-label="Modalidade">{user.sport || '-'}</td>
                                         <td data-label="Equipa">{user.currentTeam || '-'}</td>
                                         <td className="actions-cell" data-label="Ações">
+                                            {!user.lastLogin && (
+                                                <button className="action-btn mail" style={{ color: '#0ea5e9' }} onClick={() => handleResendActivation(user.id)} title="Reenviar Email de Ativação">
+                                                    <FaEnvelope />
+                                                </button>
+                                            )}
                                             <button className="action-btn family" onClick={() => { setSelectedFamilyUser(user); setShowFamilyModal(true); }} title="Associar Familiar">
                                                 <FaUserFriends />
                                             </button>

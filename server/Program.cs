@@ -23,6 +23,7 @@ builder.Services.AddScoped<IEasypayService, EasypayService>();
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
 builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IMoloniService, MoloniService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

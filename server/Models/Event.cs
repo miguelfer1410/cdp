@@ -29,8 +29,7 @@ public class Event
 
     public int? TeamId { get; set; } // Nullable for club-wide events
 
-    [Required]
-    public int SportId { get; set; }
+    public int? SportId { get; set; }
 
     [MaxLength(200)]
     public string? Location { get; set; }

@@ -857,29 +857,31 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
                             </div>
 
                             <div className="cm-form-row">
-                                <div className="cm-form-field">
-                                    <label className="cm-form-label">Modalidade *</label>
-                                    {restrictedTeamId ? (
-                                        <input
-                                            type="text"
-                                            className="cm-form-input cm-form-input--disabled"
-                                            value={sports.find(s => s.id === restrictedSportId)?.name || restrictedTeam?.sportName || ''}
-                                            disabled
-                                        />
-                                    ) : (
-                                        <select
-                                            className="cm-form-input"
-                                            value={formData.sportId}
-                                            onChange={(e) => setFormData({ ...formData, sportId: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">Selecione</option>
-                                            {sports.map(sport => (
-                                                <option key={sport.id} value={sport.id}>{sport.name}</option>
-                                            ))}
-                                        </select>
-                                    )}
-                                </div>
+                                {!(formData.teamId === null && formData.eventType === 3) && (
+                                    <div className="cm-form-field">
+                                        <label className="cm-form-label">Modalidade *</label>
+                                        {restrictedTeamId ? (
+                                            <input
+                                                type="text"
+                                                className="cm-form-input cm-form-input--disabled"
+                                                value={sports.find(s => s.id === restrictedSportId)?.name || restrictedTeam?.sportName || ''}
+                                                disabled
+                                            />
+                                        ) : (
+                                            <select
+                                                className="cm-form-input"
+                                                value={formData.sportId}
+                                                onChange={(e) => setFormData({ ...formData, sportId: e.target.value })}
+                                                required={!(formData.teamId === null && formData.eventType === 3)}
+                                            >
+                                                <option value="">Selecione</option>
+                                                {sports.map(sport => (
+                                                    <option key={sport.id} value={sport.id}>{sport.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="cm-form-field">
                                     <label className="cm-form-label">Equipa</label>
                                     {restrictedTeamId ? (

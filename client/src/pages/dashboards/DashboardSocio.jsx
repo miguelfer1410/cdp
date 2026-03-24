@@ -673,10 +673,12 @@ const DashboardSocio = () => {
                                 </div>
 
                                 <div className="action-buttons">
+                                    {/* Quick Actions 
                                     <Link to="#" className="action-btn action-btn-primary">
                                         <FaCreditCard />
                                         Pagar Quota
                                     </Link>
+                                    */}
                                     <Link to="#" className="action-btn">
                                         <FaReceipt />
                                         Ver Recibos

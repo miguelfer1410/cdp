@@ -15,7 +15,7 @@ namespace server.DTOs
         public string Subject { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Mensagem é obrigatória")]
-        [MinLength(10, ErrorMessage = "Mensagem deve ter pelo menos 10 caracteres")]
+        [MinLength(10, ErrorMessage = "A mensagem deve ter pelo menos 10 caracteres.")]
         public string Message { get; set; } = string.Empty;
     }
 }

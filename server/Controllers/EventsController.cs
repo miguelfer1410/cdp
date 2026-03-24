@@ -74,7 +74,7 @@ public class EventsController : ControllerBase
             TeamId = e.TeamId,
             TeamName = e.Team?.Name,
             SportId = e.SportId,
-            SportName = e.Sport.Name,
+            SportName = e.Sport?.Name ?? "Outro",
             Location = e.Location,
             Description = e.Description,
             OpponentName = e.OpponentName,
@@ -116,7 +116,7 @@ public class EventsController : ControllerBase
             TeamId = eventItem.TeamId,
             TeamName = eventItem.Team?.Name,
             SportId = eventItem.SportId,
-            SportName = eventItem.Sport.Name,
+            SportName = eventItem.Sport?.Name ?? "N/A",
             Location = eventItem.Location,
             Description = eventItem.Description,
             OpponentName = eventItem.OpponentName,
@@ -157,7 +157,7 @@ public class EventsController : ControllerBase
             TeamId = e.TeamId,
             TeamName = e.Team?.Name,
             SportId = e.SportId,
-            SportName = e.Sport.Name,
+            SportName = e.Sport?.Name ?? "Outro",
             Location = e.Location,
             Description = e.Description,
             OpponentName = e.OpponentName,
@@ -289,8 +289,8 @@ public class EventResponse
     public DateTime EndDateTime { get; set; }
     public int? TeamId { get; set; }
     public string? TeamName { get; set; }
-    public int SportId { get; set; }
-    public string SportName { get; set; } = string.Empty;
+    public int? SportId { get; set; }
+    public string? SportName { get; set; }
     public string? Location { get; set; }
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
@@ -310,7 +310,7 @@ public class EventCreateRequest
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
     public int? TeamId { get; set; }
-    public int SportId { get; set; }
+    public int? SportId { get; set; }
     public string? SportName { get; set; } // For display purposes in response
     public string? Location { get; set; }
     public string? Description { get; set; }
@@ -327,7 +327,7 @@ public class EventUpdateRequest
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
     public int? TeamId { get; set; }
-    public int SportId { get; set; }
+    public int? SportId { get; set; }
     public string? Location { get; set; }
     public string? Description { get; set; }
     public string? OpponentName { get; set; }

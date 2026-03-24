@@ -120,10 +120,14 @@
     flex-wrap: wrap;
 }
 
+.search-group {
+    flex: 3;
+    min-width: 280px;
+}
+
 .search-wrapper {
     position: relative;
-    flex: 2;
-    min-width: 200px;
+    width: 100%;
 }
 
 .search-icon {

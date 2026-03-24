@@ -20,7 +20,7 @@ const TeamDetailsModal = ({ isOpen, onClose, teamData, isEditable = false, onTea
         setAthletesLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost.232:5285/api/users?profileType=athlete&isActive=true&pageSize=1000', {
+            const response = await fetch('http://localhost:5285/api/users?profileType=athlete&isActive=true&pageSize=1000', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -72,7 +72,7 @@ const TeamDetailsModal = ({ isOpen, onClose, teamData, isEditable = false, onTea
         setSubmitting(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost.232:5285/api/teams/${teamData.id}/athletes`, {
+            const response = await fetch(`http://localhost:5285/api/teams/${teamData.id}/athletes`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ athleteProfileIds: selectedAthletes })

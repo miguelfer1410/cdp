@@ -614,7 +614,7 @@ const FinancialAnalytics = () => {
                         <h3>
                             <FaLayerGroup className="chart-h-icon teal" />
                             Receita por Escalão
-                            <span className="chart-badge">{escalaoRows.length} escalão{escalaoRows.length !== 1 ? 'ões' : ''}</span>
+                            <span className="chart-badge">{escalaoRows.length} escal{escalaoRows.length !== 1 ? 'ões' : 'ão'}</span>
                         </h3>
                         <div className="hbar-scroll-container">
                             <div style={{ height: escalaoChartHeight }}>

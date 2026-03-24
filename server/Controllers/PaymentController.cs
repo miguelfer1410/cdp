@@ -260,14 +260,21 @@ public class PaymentController : ControllerBase
 
             if (!string.IsNullOrEmpty(search))
             {
-                var s = search.ToLower();
-                lightQuery = lightQuery.Where(u => 
-                    u.FirstName.ToLower().Contains(s) || 
-                    u.LastName.ToLower().Contains(s) || 
-                    u.Email.ToLower().Contains(s) ||
-                    (u.Nif != null && u.Nif.Contains(s)) ||
-                    (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(s))
-                );
+                var searchTokens = search.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var token in searchTokens)
+                {
+                    lightQuery = lightQuery.Where(u => 
+                        u.FirstName.ToLower().Contains(token) || 
+                        u.LastName.ToLower().Contains(token) || 
+                        u.Email.ToLower().Contains(token) ||
+                        (u.Nif != null && u.Nif.Contains(token)) ||
+                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                        (u.AthleteProfile != null && (
+                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                        ))
+                    );
+                }
             }
 
             if (teamId.HasValue)
@@ -510,7 +517,7 @@ public class PaymentController : ControllerBase
     // POST: api/payment/check/{id}
     [HttpPost("check/{id}")]
     [Authorize]
-    public async Task<ActionResult> CheckPaymentStatus(int id, [FromServices] IEasypayService easypayService)
+    public async Task<ActionResult> CheckPaymentStatus(int id, [FromServices] IEasypayService easypayService, [FromServices] IMoloniService moloniService)
     {
         try
         {
@@ -521,11 +528,12 @@ public class PaymentController : ControllerBase
 
             var statusResult = await easypayService.GetPaymentStatusAsync(payment.TransactionId);
             bool statusChanged = false;
+            bool newlyCompleted = false;
 
             if (statusResult.Status.Equals("success", StringComparison.OrdinalIgnoreCase) ||
                 statusResult.Status.Equals("captured", StringComparison.OrdinalIgnoreCase))
             {
-                if (payment.Status != "Completed") { payment.Status = "Completed"; statusChanged = true; }
+                if (payment.Status != "Completed") { payment.Status = "Completed"; statusChanged = true; newlyCompleted = true; }
             }
             else if (statusResult.Status.Equals("deleted", StringComparison.OrdinalIgnoreCase) ||
                      statusResult.Status.Equals("failed", StringComparison.OrdinalIgnoreCase))
@@ -534,6 +542,15 @@ public class PaymentController : ControllerBase
             }
 
             if (statusChanged) await _context.SaveChangesAsync();
+
+            if (newlyCompleted)
+            {
+                var user = await _context.Users.Include(u => u.MemberProfile).FirstOrDefaultAsync(u => u.MemberProfile != null && u.MemberProfile.Id == payment.MemberProfileId);
+                if (user != null)
+                {
+                    await moloniService.CreateInvoiceReceiptAsync(payment, user);
+                }
+            }
 
             return Ok(new { id = payment.Id, status = payment.Status, easypayStatus = statusResult.Status });
         }
@@ -638,7 +655,7 @@ public class PaymentController : ControllerBase
     // POST: api/payment/admin/manual-payment
     [HttpPost("admin/manual-payment")]
     [Authorize]
-    public async Task<ActionResult> ManualPaymentUpdate([FromBody] ManualPaymentUpdateDto request)
+    public async Task<ActionResult> ManualPaymentUpdate([FromBody] ManualPaymentUpdateDto request, [FromServices] IMoloniService moloniService)
     {
         try
         {
@@ -671,6 +688,8 @@ public class PaymentController : ControllerBase
                 });
             }
 
+            var newlyCompletedPayments = new List<Payment>();
+
             foreach (var p in periodsToProcess)
             {
                 var existingPayment = await _context.Payments
@@ -682,11 +701,13 @@ public class PaymentController : ControllerBase
 
                 if (existingPayment != null)
                 {
+                    bool wasNotCompleted = existingPayment.Status != "Completed";
                     existingPayment.Status = request.Status;
                     if (request.Status == "Completed")
                     {
                         existingPayment.PaymentDate = DateTime.UtcNow;
                         existingPayment.Amount = p.Amount;
+                        if (wasNotCompleted) newlyCompletedPayments.Add(existingPayment);
                     }
                 }
                 else
@@ -706,6 +727,7 @@ public class PaymentController : ControllerBase
                         CreatedAt       = DateTime.UtcNow
                     };
                     _context.Payments.Add(newPayment);
+                    if (request.Status == "Completed") newlyCompletedPayments.Add(newPayment);
                 }
             }
 
@@ -724,6 +746,12 @@ public class PaymentController : ControllerBase
             }
 
             await _context.SaveChangesAsync();
+            
+            foreach (var paymentToInvoice in newlyCompletedPayments)
+            {
+                await moloniService.CreateInvoiceReceiptAsync(paymentToInvoice, user);
+            }
+
             return Ok(new { message = periodsToProcess.Count > 1 ? "Pagamentos processados com sucesso" : "Pagamento processado com sucesso" });
         }
         catch (Exception ex)
@@ -832,14 +860,21 @@ public class PaymentController : ControllerBase
 
             if (!string.IsNullOrEmpty(search))
             {
-                var s = search.ToLower();
-                query = query.Where(u => 
-                    u.FirstName.ToLower().Contains(s) || 
-                    u.LastName.ToLower().Contains(s) || 
-                    u.Email.ToLower().Contains(s) ||
-                    (u.Nif != null && u.Nif.Contains(s)) ||
-                    (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(s))
-                );
+                var searchTokens = search.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var token in searchTokens)
+                {
+                    query = query.Where(u => 
+                        u.FirstName.ToLower().Contains(token) || 
+                        u.LastName.ToLower().Contains(token) || 
+                        u.Email.ToLower().Contains(token) ||
+                        (u.Nif != null && u.Nif.Contains(token)) ||
+                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                        (u.AthleteProfile != null && (
+                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                        ))
+                    );
+                }
             }
 
             if (teamId.HasValue)
@@ -1047,6 +1082,14 @@ bool isEscalao1 = activeTeams.Any(at => {
     return e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1");
 });
 
+// Detect if user is Senior
+bool isSenior = activeTeams.Any(at => {
+    var profileEscalao = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+    var teamName = at.Team?.Name?.ToLower() ?? "";
+    return profileEscalao.Contains("senior") || profileEscalao.Contains("sénior") || profileEscalao.Contains("seniores") ||
+           teamName.Contains("senior") || teamName.Contains("sénior") || teamName.Contains("seniores");
+});
+
 // ⚠️ NOVO: deduplica por modalidade — atleta em múltiplas equipas da mesma
 // modalidade só paga UMA vez. Mantém a equipa com a quota mais alta (para
 // ordenação consistente). As inscrições são tratadas separadamente por equipa.
@@ -1082,8 +1125,8 @@ for (int i = 0; i < teamsSorted.Count; i++)
             string escalaoLabel = string.IsNullOrEmpty(at.AthleteProfile?.Escalao) ? "" : $" — {at.AthleteProfile?.Escalao}";
 
             // If this sport has quota included, it covers the global member fee too
-            // CRITICAL: Escalão 1 pays quota separately even if QuotaIncluded is true!
-            if (sport.QuotaIncluded && !globalFeeAdded && !isExemptFromGlobalFee && !isEscalao1)
+            // CRITICAL: Escalão 1 and Seniors pay quota separately even if QuotaIncluded is true!
+            if (sport.QuotaIncluded && !globalFeeAdded && !isExemptFromGlobalFee && !isEscalao1 && !isSenior)
             {
                 globalFeeAdded = true;
                 breakdown.Add(new BreakdownItem
@@ -1096,7 +1139,7 @@ for (int i = 0; i < teamsSorted.Count; i++)
                     Escalao        = at.AthleteProfile?.Escalao
                 });
             }
-            else if (!sport.QuotaIncluded || isEscalao1)
+            else if (!sport.QuotaIncluded || isEscalao1 || isSenior)
             {
                 // For Escalao 1 or non-quota-included sports, we skip marking globalFeeAdded
                 if (netFee > 0)
@@ -1240,16 +1283,18 @@ for (int i = 0; i < teamsSorted.Count; i++)
         var sport = at.Team?.Sport;
         if (sport == null) return 0;
 
+        var escalao = at.AthleteProfile?.Escalao;
+        var e = escalao?.ToLower() ?? "";
+        var teamName = at.Team?.Name?.ToLower() ?? "";
+
+        // SENIOR CHECK FIRST - Ultimate precedence
+        if (e.Contains("senior") || e.Contains("sénior") || e.Contains("seniores") ||
+            teamName.Contains("senior") || teamName.Contains("sénior") || teamName.Contains("seniores"))
+            return 0;
+
         // When discount applies, always use the single FeeDiscount price regardless of escalão
         if (applyDiscount && sport.FeeDiscount > 0)
             return sport.FeeDiscount;
-
-        var escalao = at.AthleteProfile?.Escalao;
-
-        if (string.IsNullOrEmpty(escalao))
-            return sport.FeeNormalNormal;
-
-        var e = escalao.ToLower();
 
         if (e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1"))
             return sport.FeeEscalao1Normal;

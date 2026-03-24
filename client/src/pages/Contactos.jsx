@@ -50,7 +50,15 @@ const Contactos = () => {
           message: ''
         });
       } else {
-        setMessage({ type: 'error', text: data.message || 'Erro ao enviar mensagem. Tente novamente.' });
+        let errorMsg = 'Erro ao enviar mensagem. Tente novamente.';
+        if (data.errors) {
+          // If it's a validation error, extract the messages
+          const errorList = Object.values(data.errors).flat();
+          errorMsg = errorList.join(' ');
+        } else if (data.message) {
+          errorMsg = data.message;
+        }
+        setMessage({ type: 'error', text: errorMsg });
       }
     } catch (error) {
       console.error('Error:', error);
@@ -201,8 +209,9 @@ const Contactos = () => {
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    placeholder="A sua mensagem..."
+                    placeholder="A sua mensagem (mínimo 10 caracteres)..."
                     required
+                    minLength={10}
                     disabled={loading}
                   ></textarea>
                 </div>

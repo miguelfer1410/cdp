@@ -17,6 +17,7 @@ const PaymentManager = () => {
 
     // Filter & Search State
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterTeam, setFilterTeam] = useState('all');
     const [filterSport, setFilterSport] = useState('all');
@@ -52,7 +53,7 @@ const PaymentManager = () => {
             const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
 
             let url = `${apiUrl}/payment/admin/athletes-status?month=${currentMonth}&year=${currentYear}&page=${page}&pageSize=${pageSize}`;
-            if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
+            if (debouncedSearchTerm) url += `&search=${encodeURIComponent(debouncedSearchTerm)}`;
             if (filterStatus !== 'all') url += `&status=${filterStatus}`;
             if (filterTeam !== 'all') url += `&teamId=${filterTeam}`;
             if (filterSport !== 'all') url += `&sportId=${filterSport}`;
@@ -70,9 +71,16 @@ const PaymentManager = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentMonth, currentYear, page, pageSize, searchTerm, filterStatus, filterTeam, filterSport]);
+    }, [currentMonth, currentYear, page, pageSize, debouncedSearchTerm, filterStatus, filterTeam, filterSport]);
 
     useEffect(() => { fetchPaymentStatuses(); }, [fetchPaymentStatuses]);
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
 
     useEffect(() => {
         const fetchFilters = async () => {
@@ -92,7 +100,10 @@ const PaymentManager = () => {
         fetchFilters();
     }, []);
 
-    useEffect(() => { setPage(1); }, [searchTerm, filterStatus, filterTeam, filterSport, currentMonth, currentYear, pageSize]);
+    // Reset to page 1 whenever any filter changes (including debounced search)
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearchTerm, filterStatus, filterTeam, filterSport, currentMonth, currentYear]);
 
     const startEditMembership = (athlete) => {
         setEditingMembershipId(athlete.userId);
@@ -414,18 +425,21 @@ const PaymentManager = () => {
 
             {/* ── Filters ── */}
             <div className="filters-container">
-                <div className="search-wrapper">
-                    <FaSearch className="search-icon" />
-                    <input
-                        type="text"
-                        placeholder="Pesquisar por nome, email, NIF ou Nº Sócio..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
-                    {searchTerm && (
-                        <button className="clear-search" onClick={() => setSearchTerm('')}><FaTimes /></button>
-                    )}
+                <div className="filter-item search-group">
+                    <label>Pesquisa</label>
+                    <div className="search-wrapper">
+                        <FaSearch className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Pesquisar por nome, email, NIF ou Nº Sócio..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
+                        {searchTerm && (
+                            <button className="clear-search" onClick={() => setSearchTerm('')}><FaTimes /></button>
+                        )}
+                    </div>
                 </div>
                 <div className="filters-grid">
                     <div className="filter-item">

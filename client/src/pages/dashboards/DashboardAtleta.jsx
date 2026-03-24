@@ -729,6 +729,8 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
+                            {/* 
+
                             <PaymentCard
                                 paymentStatus={paymentStatus}
                                 quotaAmount={quotaAmount}
@@ -746,7 +748,7 @@ const DashboardAtleta = () => {
                                 onGenerateReference={handleGenerateReference}
                                 generatingReference={generatingReference}
                             />
-
+*/}
 
                             {/* Payment History Card */}
                             <div className="dashboard-card">

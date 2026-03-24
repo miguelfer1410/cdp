@@ -26,7 +26,7 @@ const Contact = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://localhost.232:5285/api/contact', {
+      const response = await fetch('http://localhost:5285/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,7 +50,15 @@ const Contact = () => {
           mensagem: ''
         });
       } else {
-        setMessage({ type: 'error', text: data.message || 'Erro ao enviar mensagem. Tente novamente.' });
+        let errorMsg = 'Erro ao enviar mensagem. Tente novamente.';
+        if (data.errors) {
+          // If it's a validation error, extract the messages
+          const errorList = Object.values(data.errors).flat();
+          errorMsg = errorList.join(' ');
+        } else if (data.message) {
+          errorMsg = data.message;
+        }
+        setMessage({ type: 'error', text: errorMsg });
       }
     } catch (error) {
       console.error('Error:', error);
@@ -183,10 +191,11 @@ const Contact = () => {
                 <textarea
                   name="mensagem"
                   rows="4"
-                  placeholder="A sua mensagem..."
+                  placeholder="A sua mensagem (mínimo 10 caracteres)..."
                   value={formData.mensagem}
                   onChange={handleChange}
                   required
+                  minLength={10}
                   disabled={loading}
                 ></textarea>
               </div>
