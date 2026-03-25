@@ -12,7 +12,8 @@ import MembershipCard from '../../components/MembershipCard/MembershipCard';
 const DashboardAtleta = () => {
     const navigate = useNavigate();
     const [athleteData, setAthleteData] = useState(null);
-    const [teamData, setTeamData] = useState(null);
+    const [teamsData, setTeamsData] = useState([]);
+    const [selectedTeamId, setSelectedTeamId] = useState(null);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingTab, setLoadingTab] = useState(false);
@@ -199,7 +200,7 @@ const DashboardAtleta = () => {
 
                 // 3b. Fetch Payment History
                 try {
-                    const historyResponse = await fetch(`http://localhost:5285/api/payment/history?userId=${selectedUserId}`, {
+                    const historyResponse = await fetch(`http://localhost:5285/api/payment/history?userId=${selectedUserId}&year=${historyYear}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (historyResponse.ok) {
@@ -216,30 +217,36 @@ const DashboardAtleta = () => {
                     setHistoryInscriptions([]);
                 }
 
-                // 3. Fetch Team + Events
-                console.log(userData);
-                const teamId = userData.athleteProfile?.teams?.[0]?.id;
-                if (teamId) {
-                    const [teamResponse, eventsResponse] = await Promise.all([
-                        fetch(`http://localhost:5285/api/teams/${teamId}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        }),
-                        fetch(`http://localhost:5285/api/events?teamId=${teamId}&startDate=${new Date().toISOString()}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        })
-                    ]);
-                    setTeamData(teamResponse.ok ? await teamResponse.json() : null);
-                    if (eventsResponse.ok) {
-                        const eventsData = await eventsResponse.json();
-                        setEvents(eventsData
-                            .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
-                            .slice(0, 3)
-                        );
-                    } else {
-                        setEvents([]);
+                // 3. Fetch All Teams + Events
+                const teams = userData.athleteProfile?.teams || [];
+                if (teams.length > 0) {
+                    const teamPromises = teams.map(t =>
+                        fetch(`http://localhost:5285/api/teams/${t.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    );
+                    const eventPromises = teams.map(t =>
+                        fetch(`http://localhost:5285/api/events?teamId=${t.id}&startDate=${new Date().toISOString()}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    );
+
+                    const teamResponses = await Promise.all(teamPromises);
+                    const eventResponses = await Promise.all(eventPromises);
+
+                    const fetchedTeamsData = await Promise.all(teamResponses.map(r => r.ok ? r.json() : null));
+                    const allEventsResults = await Promise.all(eventResponses.map(r => r.ok ? r.json() : []));
+
+                    const validTeams = fetchedTeamsData.filter(t => t !== null);
+                    setTeamsData(validTeams);
+
+                    if (validTeams.length > 0 && !selectedTeamId) {
+                        setSelectedTeamId(validTeams[0].id);
                     }
+
+                    const combinedEvents = allEventsResults.flat();
+                    setEvents(combinedEvents
+                        .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
+                        .slice(0, 6)
+                    );
                 } else {
-                    setTeamData(null);
+                    setTeamsData([]);
                     setEvents([]);
                 }
             } catch (err) {
@@ -252,7 +259,7 @@ const DashboardAtleta = () => {
         };
 
         fetchData();
-    }, [selectedUserId]);
+    }, [selectedUserId, historyYear]);
 
     if (loading) return <div className="dashboard-loading">A carregar...</div>;
     if (error) return <div className="dashboard-error">Erro: {error}</div>;
@@ -275,7 +282,7 @@ const DashboardAtleta = () => {
         return age;
     };
 
-    const primaryTeam = athleteData.athleteProfile?.teams?.[0] || {};
+    const primaryTeamData = teamsData.find(t => t.id === selectedTeamId) || teamsData[0] || {};
 
     const handleSaveProfile = (updatedData) => {
         setAthleteData(updatedData);
@@ -390,16 +397,16 @@ const DashboardAtleta = () => {
                             </h1>
                             <div className="profile-meta">
                                 <div className="profile-meta-item">
-                                    <i className={getSportIcon(athleteData.sport)}></i>
-                                    <span>{athleteData.sport || 'Sem Modalidade'}</span>
+                                    <i className={getSportIcon(athleteData.athleteProfile?.teams?.map(t => t.sportName).join(', '))}></i>
+                                    <span>{athleteData.athleteProfile?.teams?.map(t => t.sportName).filter((v, i, a) => a.indexOf(v) === i).join(', ') || 'Sem Modalidade'}</span>
                                 </div>
                                 <div className="profile-meta-item">
                                     <i className="fas fa-users"></i>
-                                    <span>{primaryTeam.name || 'Sem Equipa'}</span>
+                                    <span>{athleteData.athleteProfile?.teams?.map(t => t.name).join(' / ') || 'Sem Equipa'}</span>
                                 </div>
                                 <div className="profile-meta-item">
                                     <i className="fas fa-map-marker-alt"></i>
-                                    <span>{primaryTeam.position || 'Atleta'}</span>
+                                    <span>{athleteData.athleteProfile?.teams?.[0]?.position || 'Atleta'}</span>
                                 </div>
                             </div>
                         </div>
@@ -555,45 +562,64 @@ const DashboardAtleta = () => {
                                     </div>
                                 </div>
                             </div>
-
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-users"></i> A Minha Equipa</h2>
-                                    <button className="view-all-link" onClick={() => setIsTeamModalOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
-                                        Ver Todos <i className="fas fa-arrow-right"></i>
-                                    </button>
+                                    <div className="team-selector-header">
+                                        {teamsData.length > 1 && (
+                                            <select
+                                                value={selectedTeamId}
+                                                onChange={(e) => setSelectedTeamId(parseInt(e.target.value))}
+                                                className="team-mini-selector"
+                                            >
+                                                {teamsData.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
+                                        <button className="view-all-link" onClick={() => setIsTeamModalOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                            Ver Tudo <i className="fas fa-arrow-right"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="team-grid">
-                                    {teamData?.coaches?.slice(0, 2).map((coach) => (
-                                        <div className="team-member" key={`coach-${coach.id}`}>
-                                            <div className="team-member-avatar" style={{ backgroundColor: '#003380', color: 'white' }}>
-                                                {coach.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                    {(() => {
+                                        const currentTeam = teamsData.find(t => t.id === selectedTeamId) || teamsData[0];
+                                        if (!currentTeam) return (
+                                            <div style={{ padding: '20px', textAlign: 'center', gridColumn: '1/-1', color: '#666' }}>
+                                                Ainda não tens equipa atribuída.
                                             </div>
-                                            <div className="team-member-info">
-                                                <h4>{coach.name}</h4>
-                                                <p>Treinador</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
 
-                                    {teamData?.athletes?.slice(0, 4).map((athlete) => (
-                                        <div className="team-member" key={`athlete-${athlete.id}`}>
-                                            <div className="team-member-avatar">
-                                                {athlete.jerseyNumber || athlete.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                                            </div>
-                                            <div className="team-member-info">
-                                                <h4>{athlete.name}</h4>
-                                                <p>{athlete.position || 'Atleta'} {athlete.isCaptain && '• Capitão'}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        return (
+                                            <>
+                                                {currentTeam.coaches?.slice(0, 2).map((coach) => (
+                                                    <div className="team-member" key={`coach-${coach.id}`}>
+                                                        <div className="team-member-avatar" style={{ backgroundColor: '#003380', color: 'white' }}>
+                                                            {coach.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                                        </div>
+                                                        <div className="team-member-info">
+                                                            <h4>{coach.name}</h4>
+                                                            <p>Treinador</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
 
-                                    {!teamData && (
-                                        <div style={{ padding: '20px', textAlign: 'center', gridColumn: '1/-1', color: '#666' }}>
-                                            Ainda não tens equipa atribuída.
-                                        </div>
-                                    )}
+                                                {currentTeam.athletes?.slice(0, 4).map((athlete) => (
+                                                    <div className="team-member" key={`athlete-${athlete.id}`}>
+                                                        <div className="team-member-avatar">
+                                                            {athlete.jerseyNumber || athlete.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                                        </div>
+                                                        <div className="team-member-info">
+                                                            <h4>{athlete.name}</h4>
+                                                            <p>{athlete.position || 'Atleta'} {athlete.isCaptain && '• Capitão'}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -618,7 +644,7 @@ const DashboardAtleta = () => {
                                 <div className="quick-actions">
                                     <a href="#" className="action-btn" onClick={() => setIsCalendarModalOpen(true)}>
                                         <i className="fas fa-calendar-alt" ></i>
-                                        Ver Calendário
+                                        Calendário
                                     </a>
                                     <button className="action-btn" onClick={() => setIsEditModalOpen(true)}>
                                         <i className="fas fa-user-edit"></i>
@@ -729,8 +755,6 @@ const DashboardAtleta = () => {
                                 </div>
                             </div>
 
-                            {/* 
-
                             <PaymentCard
                                 paymentStatus={paymentStatus}
                                 quotaAmount={quotaAmount}
@@ -743,193 +767,12 @@ const DashboardAtleta = () => {
                                 inscriptionInfo={inscriptionInfo}
                                 nextPeriod={nextPeriod}
                                 paymentHistory={paymentHistory}
+                                historyInscriptions={historyInscriptions}
                                 historyYear={historyYear}
                                 onHistoryYearChange={setHistoryYear}
                                 onGenerateReference={handleGenerateReference}
                                 generatingReference={generatingReference}
                             />
-*/}
-
-                            {/* Payment History Card */}
-                            <div className="dashboard-card">
-                                <div className="dashboard-card-header">
-                                    <h2><i className="fas fa-history"></i> Histórico de Pagamentos</h2>
-                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                        <button
-                                            onClick={() => setHistoryYear(y => y - 1)}
-                                            style={{ background: 'none', border: '1px solid #ddd', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', color: '#666', fontSize: '0.8rem' }}
-                                        ><i className="fas fa-chevron-left"></i></button>
-                                        <span style={{ fontWeight: '700', fontSize: '0.95rem', color: '#003380', minWidth: '38px', textAlign: 'center' }}>{historyYear}</span>
-                                        <button
-                                            onClick={() => setHistoryYear(y => Math.min(y + 1, new Date().getFullYear()))}
-                                            disabled={historyYear >= new Date().getFullYear()}
-                                            style={{ background: 'none', border: '1px solid #ddd', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', color: '#666', fontSize: '0.8rem', opacity: historyYear >= new Date().getFullYear() ? 0.4 : 1 }}
-                                        ><i className="fas fa-chevron-right"></i></button>
-                                    </div>
-                                </div>
-
-                                {(() => {
-                                    const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                                    const MONTHS_PT_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                                    let yearPayments = paymentHistory.filter(p => p.periodYear === historyYear);
-
-                                    // Inject current month if it is pending/unpaid
-                                    const isCurrentYear = historyYear === new Date().getFullYear();
-                                    const currentMonthNum = new Date().getMonth() + 1;
-                                    if (isCurrentYear && paymentStatus !== 'Regularizada' && paymentStatus !== '-') {
-                                        const isAnnual = paymentPreference === 'Annual';
-                                        const alreadyExists = yearPayments.some(p => p.periodYear === historyYear && (isAnnual ? p.periodMonth == null : p.periodMonth === currentMonthNum));
-
-                                        if (!alreadyExists) {
-                                            yearPayments.push({
-                                                id: 'current-unpaid',
-                                                amount: quotaAmount,
-                                                status: paymentStatus === 'Pendente' ? 'Pending' : 'Unpaid',
-                                                periodMonth: isAnnual ? null : currentMonthNum,
-                                                periodYear: historyYear
-                                            });
-                                            // Sort descending by month
-                                            yearPayments.sort((a, b) => (b.periodMonth || 0) - (a.periodMonth || 0));
-                                        }
-                                    }
-
-                                    // Overdue entries for this year
-                                    const yearOverdue = (overdueMonths || []).filter(m => m.periodYear === historyYear);
-                                    const yearInscriptions = historyInscriptions.filter(i => {
-                                        if (!i.paid) return true; // pendentes aparecem sempre
-                                        if (i.paymentDate) return new Date(i.paymentDate).getFullYear() === historyYear;
-                                        return false;
-                                    });
-                                    const hasAnything = yearPayments.length > 0 || yearOverdue.length > 0 || yearInscriptions.length > 0;
-
-                                    if (paymentHistory.length === 0 && overdueMonths.length === 0 && historyInscriptions.length === 0) {
-                                        return (
-                                            <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
-                                                <i className="fas fa-receipt" style={{ fontSize: '2rem', marginBottom: '10px', display: 'block', opacity: 0.3 }}></i>
-                                                Sem histórico de pagamentos.
-                                            </div>
-                                        );
-                                    }
-                                    if (!hasAnything) {
-                                        return (
-                                            <div style={{ padding: '24px', textAlign: 'center', color: '#999' }}>
-                                                Sem pagamentos registados para {historyYear}.
-                                            </div>
-                                        );
-                                    }
-                                    return (
-                                        <div style={{ overflowX: 'auto' }}>
-                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.87rem' }}>
-                                                <thead>
-                                                    <tr style={{ backgroundColor: '#f4f7ff', borderBottom: '2px solid #e2e8f4' }}>
-                                                        <th style={{ padding: '10px 14px', textAlign: 'left', color: '#444', fontWeight: '600', whiteSpace: 'nowrap' }}>Período</th>
-                                                        <th style={{ padding: '10px 14px', textAlign: 'right', color: '#444', fontWeight: '600' }}>Valor</th>
-                                                        <th style={{ padding: '10px 14px', textAlign: 'center', color: '#444', fontWeight: '600' }}>Estado</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {/* Overdue rows first */}
-                                                    {yearOverdue.map((m, idx) => (
-                                                        <tr key={`overdue-${m.periodMonth}-${m.periodYear}`}
-                                                            style={{ borderBottom: '1px solid #fff0f0', backgroundColor: '#fff5f5' }}
-                                                        >
-                                                            <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
-                                                                {MONTHS_PT_FULL[m.periodMonth - 1]} {m.periodYear}
-                                                            </td>
-                                                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#c0392b' }}>
-                                                                {m.amount?.toFixed(2)} €
-                                                            </td>
-                                                            <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                                                                <span style={{
-                                                                    background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5',
-                                                                    borderRadius: '20px', padding: '3px 10px', fontSize: '0.78rem',
-                                                                    fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap'
-                                                                }}>
-                                                                    <i className="fas fa-exclamation-circle"></i> Em Atraso
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    {/* Regular paid/pending payments */}
-                                                    {yearPayments.map((payment, idx) => {
-                                                        const isPaid = payment.status === 'Completed';
-                                                        const isPending = payment.status === 'Pending';
-                                                        const badgeCss = isPaid
-                                                            ? { background: '#ecfdf5', color: '#059669', border: '1px solid #6ee7b7' }
-                                                            : isPending
-                                                                ? { background: '#fffbeb', color: '#d97706', border: '1px solid #fcd34d' }
-                                                                : { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' };
-                                                        const badgeLabel = isPaid ? 'Pago' : isPending ? 'Pendente' : 'Não Pago';
-                                                        const badgeIcon = isPaid ? 'fa-check-circle' : isPending ? 'fa-clock' : 'fa-times-circle';
-                                                        return (
-                                                            <tr key={payment.id}
-                                                                style={{ borderBottom: '1px solid #f0f4ff', backgroundColor: idx % 2 === 0 ? '#fff' : '#fafcff', transition: 'background 0.15s' }}
-                                                            >
-                                                                <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
-                                                                    {payment.month
-                                                                        ? payment.month
-                                                                        : payment.periodMonth
-                                                                            ? `${MONTHS_PT_FULL[payment.periodMonth - 1]} ${payment.periodYear}`
-                                                                            : `Anual ${payment.periodYear}`
-                                                                    }
-                                                                </td>
-                                                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#003380' }}>
-                                                                    {payment.amount?.toFixed(2)} €
-                                                                </td>
-                                                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                                                                    <span style={{
-                                                                        ...badgeCss,
-                                                                        borderRadius: '20px',
-                                                                        padding: '3px 10px',
-                                                                        fontSize: '0.78rem',
-                                                                        fontWeight: '600',
-                                                                        display: 'inline-flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '4px',
-                                                                        whiteSpace: 'nowrap'
-                                                                    }}>
-                                                                        <i className={`fas ${badgeIcon}`}></i>
-                                                                        {badgeLabel}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                    {/* Inscriptions */}
-                                                    {yearInscriptions.map((ins, idx) => {
-                                                        const isPaid = ins.paid;
-                                                        const badgeCss = isPaid
-                                                            ? { background: '#ecfdf5', color: '#059669', border: '1px solid #6ee7b7' }
-                                                            : { background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5' };
-                                                        const badgeLabel = isPaid ? 'Pago' : 'Não Pago';
-                                                        const badgeIcon = isPaid ? 'fa-check-circle' : 'fa-times-circle';
-                                                        return (
-                                                            <tr key={`ins-${ins.athleteTeamId}`} style={{ borderBottom: '1px solid #f0f4ff', backgroundColor: '#fff' }}>
-                                                                <td style={{ padding: '10px 14px', color: '#333', fontWeight: '500' }}>
-                                                                    Inscrição: {ins.sportName}
-                                                                </td>
-                                                                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#003380' }}>
-                                                                    {ins.amount?.toFixed(2)} €
-                                                                </td>
-                                                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                                                                    <span style={{
-                                                                        ...badgeCss,
-                                                                        borderRadius: '20px', padding: '3px 10px', fontSize: '0.78rem',
-                                                                        fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap'
-                                                                    }}>
-                                                                        <i className={`fas ${badgeIcon}`}></i>
-                                                                        {badgeLabel}
-                                                                    </span>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -945,13 +788,13 @@ const DashboardAtleta = () => {
             <TeamDetailsModal
                 isOpen={isTeamModalOpen}
                 onClose={() => setIsTeamModalOpen(false)}
-                teamData={teamData}
+                teamData={teamsData.find(t => t.id === selectedTeamId) || teamsData[0]}
             />
 
             <CalendarModal
                 isOpen={isCalendarModalOpen}
                 onClose={() => setIsCalendarModalOpen(false)}
-                teamId={primaryTeam?.id}
+                teamId={selectedTeamId}
             />
 
             <RequestsModal

@@ -347,13 +347,35 @@
     border: 2px solid #e2e8f0;
     border-top-color: #003380;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin-search 1s linear infinite;
 }
 
-@keyframes spin {
-    to {
-        transform: translateY(-50%) rotate(360deg);
-    }
+@keyframes spin-simple {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes spin-search {
+    from { transform: translateY(-50%) rotate(0deg); }
+    to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.fam-link-updating-spinner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #475569;
+}
+
+.spinner-mini-inline {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e2e8f0;
+    border-top-color: #003380;
+    border-radius: 50%;
+    animation: spin-simple 1s linear infinite;
 }
 
 @media (max-width: 600px) {

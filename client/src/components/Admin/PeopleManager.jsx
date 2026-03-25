@@ -71,6 +71,7 @@ const PeopleManager = () => {
     const [linkedMembers, setLinkedMembers] = useState([]);
     const [editingMemberId, setEditingMemberId] = useState(null);
     const [tempMembershipNumber, setTempMembershipNumber] = useState('');
+    const [aliasConfirmModal, setAliasConfirmModal] = useState({ show: false, onConfirm: null });
 
     const relationships = ['Pai', 'Mãe', 'Filho(a)', 'Irmão/Irmã', 'Cônjuge', 'Outro'];
 
@@ -536,42 +537,14 @@ const PeopleManager = () => {
         }
     };
 
-    const handleSubmit = async () => {
-        if (!validateAllSteps()) {
-            alert('Existem erros de validação. Por favor verifique todos os passos.');
-            return;
-        }
-
+    // Core submit logic — called after alias confirmation if needed
+    // createFamilyLinkUserId: if set, creates an explicit family link with this user (used when keeping an implicit alias link)
+    const doSubmit = async (finalEmail, removeFamilyLinkId = null, createFamilyLinkUserId = null) => {
         setSubmitting(true);
         try {
             const token = localStorage.getItem('token');
-
-            // Compute the final email to send:
-            // If editing and the email field was not changed (matches base of original),
-            // keep the original aliased email. If changed, apply the alias to the new base.
-            let finalEmail = formData.email;
-            if (editingUser) {
-                const originalEmail = editingUser.email || '';
-                const atIdx = originalEmail.lastIndexOf('@');
-                const localPart = atIdx > 0 ? originalEmail.substring(0, atIdx) : originalEmail;
-                const domain = atIdx > 0 ? originalEmail.substring(atIdx) : '';
-                const plusIdx = localPart.indexOf('+');
-                const alias = plusIdx > -1 ? localPart.substring(plusIdx) : ''; // e.g. '+joao' or ''
-                const baseOfOriginal = plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : originalEmail;
-
-                if (formData.email.toLowerCase() === baseOfOriginal.toLowerCase()) {
-                    // Email not changed — keep original aliased email
-                    finalEmail = originalEmail;
-                } else if (alias) {
-                    // Email changed — apply alias to new base
-                    const newAtIdx = formData.email.lastIndexOf('@');
-                    const newLocal = newAtIdx > 0 ? formData.email.substring(0, newAtIdx) : formData.email;
-                    const newDomain = newAtIdx > 0 ? formData.email.substring(newAtIdx) : '';
-                    finalEmail = newLocal + alias + newDomain;
-                }
-            }
-
             let userId = editingUser?.id;
+
             const userPayload = {
                 email: finalEmail,
                 firstName: formData.firstName,
@@ -590,7 +563,10 @@ const PeopleManager = () => {
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(userPayload)
                 });
-                if (!response.ok) throw new Error('Erro ao atualizar utilizador');
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Erro ao atualizar utilizador');
+                }
             } else {
                 const response = await fetch('http://localhost:5285/api/users', {
                     method: 'POST',
@@ -732,6 +708,23 @@ const PeopleManager = () => {
                 }
             }
 
+            // If keeping an implicit alias link, create an explicit family link so it survives the email change
+            if (createFamilyLinkUserId !== null) {
+                await fetch(`http://localhost:5285/api/users/${userId}/family-links`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ linkedUserId: createFamilyLinkUserId, relationship: 'Outro' })
+                });
+            }
+
+            // If removing an explicit family link (alias user chose to break association)
+            if (removeFamilyLinkId !== null && removeFamilyLinkId > 0) {
+                await fetch(`http://localhost:5285/api/users/${userId}/family-links/${removeFamilyLinkId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            }
+
             setShowModal(false);
             resetForm();
             fetchUsers();
@@ -741,6 +734,84 @@ const PeopleManager = () => {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleSubmit = async () => {
+        if (!validateAllSteps()) {
+            alert('Existem erros de validação. Por favor verifique todos os passos.');
+            return;
+        }
+
+        // Compute the final email to send
+        let finalEmail = formData.email;
+        let isAliasUser = false;
+        let emailChanged = false;
+        let aliasSuffix = ''; // e.g. '+joao'
+        let baseOfOriginal = '';
+
+        if (editingUser) {
+            const originalEmail = editingUser.email || '';
+            const atIdx = originalEmail.lastIndexOf('@');
+            const localPart = atIdx > 0 ? originalEmail.substring(0, atIdx) : originalEmail;
+            const domain = atIdx > 0 ? originalEmail.substring(atIdx) : '';
+            const plusIdx = localPart.indexOf('+');
+
+            aliasSuffix = plusIdx > -1 ? localPart.substring(plusIdx) : ''; // e.g. '+joao'
+            baseOfOriginal = plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : originalEmail;
+            isAliasUser = plusIdx > -1;
+
+            if (formData.email.toLowerCase() === baseOfOriginal.toLowerCase()) {
+                // Email not changed — keep original aliased email
+                finalEmail = originalEmail;
+                emailChanged = false;
+            } else {
+                emailChanged = true;
+                if (aliasSuffix) {
+                    // Email changed — apply alias suffix to new base
+                    const newAtIdx = formData.email.lastIndexOf('@');
+                    const newLocal = newAtIdx > 0 ? formData.email.substring(0, newAtIdx) : formData.email;
+                    const newDomain = newAtIdx > 0 ? formData.email.substring(newAtIdx) : '';
+                    finalEmail = newLocal + aliasSuffix + newDomain;
+                }
+            }
+        }
+
+        // If this is an alias user AND the email changed AND they have family links, show custom confirmation
+        if (isAliasUser && emailChanged && linkedMembers.length > 0) {
+            // Find the linked member that represents the "original" user (the one without alias)
+            // The original user is the one whose email == baseOfOriginal
+            const originalLinkedMember = linkedMembers.find(lm => {
+                const lmEmail = lm.email || '';
+                const lmAtIdx = lmEmail.lastIndexOf('@');
+                const lmLocal = lmAtIdx > 0 ? lmEmail.substring(0, lmAtIdx) : lmEmail;
+                return lmLocal.indexOf('+') === -1 && lmEmail.toLowerCase() === baseOfOriginal.toLowerCase();
+            });
+
+            const originalName = originalLinkedMember?.fullName || baseOfOriginal;
+            const linkId = originalLinkedMember?.linkId ?? 0;
+            const capturedFinalEmail = finalEmail;
+
+            setAliasConfirmModal({
+                show: true,
+                originalName,
+                onKeep: () => {
+                    setAliasConfirmModal({ show: false, onConfirm: null });
+                    // If link was implicit (linkId=0), create an explicit link to survive the email change
+                    // If link was already explicit (linkId>0), nothing to create — it stays
+                    const createUserId = linkId === 0 ? (originalLinkedMember?.userId ?? null) : null;
+                    doSubmit(capturedFinalEmail, null, createUserId);
+                },
+                onRemove: () => {
+                    setAliasConfirmModal({ show: false, onConfirm: null });
+                    // If link was explicit (linkId>0), delete it
+                    // If link was implicit (linkId=0), nothing to delete — email change breaks the pattern
+                    doSubmit(capturedFinalEmail, linkId > 0 ? linkId : null, null);
+                }
+            });
+            return;
+        }
+
+        doSubmit(finalEmail);
     };
 
     const handleSort = (key) => {
@@ -1732,11 +1803,13 @@ const PeopleManager = () => {
                                         <td data-label="Modalidade">{user.sport || '-'}</td>
                                         <td data-label="Equipa">{user.currentTeam || '-'}</td>
                                         <td className="actions-cell" data-label="Ações">
+                                            {/* 
                                             {!user.lastLogin && (
                                                 <button className="action-btn mail" style={{ color: '#0ea5e9' }} onClick={() => handleResendActivation(user.id)} title="Reenviar Email de Ativação">
                                                     <FaEnvelope />
                                                 </button>
                                             )}
+                                                */}
                                             <button className="action-btn family" onClick={() => { setSelectedFamilyUser(user); setShowFamilyModal(true); }} title="Associar Familiar">
                                                 <FaUserFriends />
                                             </button>
@@ -1889,6 +1962,45 @@ const PeopleManager = () => {
                     </div>
                 </div>
 
+            )}
+
+            {/* Alias Email Change Confirmation Modal */}
+            {aliasConfirmModal.show && (
+                <div className="modal-overlay alias-confirm-overlay">
+                    <div className="alias-confirm-modal">
+                        <div className="alias-confirm-icon">
+                            <FaEnvelope />
+                        </div>
+                        <h3>Alterar Email</h3>
+                        <p>
+                            Tem a certeza que quer alterar o email deste utilizador?<br />
+                            <strong>Quer manter a associação familiar com {aliasConfirmModal.originalName}?</strong>
+                        </p>
+                        <div className="alias-confirm-actions">
+                            <button
+                                className="alias-confirm-btn alias-confirm-keep"
+                                onClick={aliasConfirmModal.onKeep}
+                                disabled={submitting}
+                            >
+                                <FaUserFriends /> Sim, manter associação
+                            </button>
+                            <button
+                                className="alias-confirm-btn alias-confirm-remove"
+                                onClick={aliasConfirmModal.onRemove}
+                                disabled={submitting}
+                            >
+                                <FaTimes /> Não, remover associação
+                            </button>
+                        </div>
+                        <button
+                            className="alias-confirm-cancel"
+                            onClick={() => setAliasConfirmModal({ show: false, onConfirm: null })}
+                            disabled={submitting}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
             )}
 
             {/* Family Association Modal */}

@@ -221,10 +221,13 @@ public class UsersController : ControllerBase
                 Weight = user.AthleteProfile.Weight,
                 MedicalCertificateExpiry = user.AthleteProfile.MedicalCertificateExpiry,
                 Escalao = user.AthleteProfile.Escalao,
-                Teams = user.AthleteProfile.AthleteTeams.Select(at => new TeamInfo
+                Teams = user.AthleteProfile.AthleteTeams
+                    .Where(at => at.LeftAt == null)
+                    .Select(at => new TeamInfo
                 {
                     Id = at.Team.Id,
                     Name = at.Team.Name,
+                    SportName = at.Team.Sport.Name,
                     JerseyNumber = at.JerseyNumber,
                     Position = at.Position,
                     IsCaptain = at.IsCaptain
@@ -410,13 +413,17 @@ public class UsersController : ControllerBase
             return NotFound(new { message = "Utilizador não encontrado" });
         }
 
-        // Check if email is being changed to one that already exists
-        if (user.Email != request.Email && await _context.Users.AnyAsync(u => u.Email == request.Email && u.Id != id))
+        var oldEmail = user.Email;
+        var newEmail = request.Email;
+
+        // Case-insensitive duplicate check (ignore self)
+        if (!string.Equals(oldEmail, newEmail, StringComparison.OrdinalIgnoreCase) &&
+            await _context.Users.AnyAsync(u => u.Email.ToLower() == newEmail.ToLower() && u.Id != id))
         {
             return BadRequest(new { message = "Email já está em uso" });
         }
 
-        user.Email = request.Email;
+        user.Email = newEmail;
         user.FirstName = request.FirstName;
         user.LastName = request.LastName;
         user.Phone = request.Phone;
@@ -428,6 +435,46 @@ public class UsersController : ControllerBase
         user.Gender = request.Gender;
 
         await _context.SaveChangesAsync();
+
+        // Propagate base email change to alias-linked users
+        // e.g. if "mae@gmail.com" → "nova@gmail.com", update "mae+joao@gmail.com" → "nova+joao@gmail.com"
+        if (!string.Equals(oldEmail, newEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            var oldAtIdx = oldEmail.LastIndexOf('@');
+            var newAtIdx = newEmail.LastIndexOf('@');
+            if (oldAtIdx > 0 && newAtIdx > 0)
+            {
+                var oldLocal = oldEmail.Substring(0, oldAtIdx);
+                var oldDomain = oldEmail.Substring(oldAtIdx).ToLower();
+                var newLocal = newEmail.Substring(0, newAtIdx);
+                var newDomain = newEmail.Substring(newAtIdx);
+
+                // Only propagate if this user is the "base" (no + in their old local)
+                var oldPlusIdx = oldLocal.IndexOf('+');
+                if (oldPlusIdx == -1)
+                {
+                    // Find all users with alias emails based on the old base
+                    var oldBasePrefix = (oldLocal + "+").ToLower();
+                    var aliasUsers = await _context.Users
+                        .Where(u => u.Id != id &&
+                               u.Email.ToLower().StartsWith(oldBasePrefix) &&
+                               u.Email.ToLower().EndsWith(oldDomain))
+                        .ToListAsync();
+
+                    foreach (var aliasUser in aliasUsers)
+                    {
+                        var aliasAtIdx = aliasUser.Email.LastIndexOf('@');
+                        if (aliasAtIdx <= 0) continue;
+                        var aliasLocal = aliasUser.Email.Substring(0, aliasAtIdx);
+                        var aliasSuffix = aliasLocal.Substring(oldLocal.Length); // e.g. "+joao"
+                        aliasUser.Email = newLocal + aliasSuffix + newDomain;
+                    }
+
+                    if (aliasUsers.Any())
+                        await _context.SaveChangesAsync();
+                }
+            }
+        }
 
         return NoContent();
     }
@@ -1197,14 +1244,23 @@ public class UsersController : ControllerBase
 
     // ─── Family Links ─────────────────────────────────────────────────────────────
 
-    private string? GetReciprocalRelationship(string? relationship)
+    private async Task<string?> GetReciprocalRelationship(string? relationship, int targetUserId)
     {
         if (string.IsNullOrEmpty(relationship)) return null;
+
+        // Fetch the user to determine gender for Pai/Mãe distinction
+        var user = await _context.Users.FindAsync(targetUserId);
+        var gender = user?.Gender ?? Gender.Mixed;
+
         return relationship switch
         {
             "Pai" => "Filho(a)",
             "Mãe" => "Filho(a)",
-            "Filho(a)" => "Pai/Mãe",
+            "Filho(a)" => gender switch {
+                Gender.Female => "Mãe",
+                Gender.Male => "Pai",
+                _ => "Pai" // Default to Pai if mixed, but we try to avoid this by setting gender
+            },
             "Irmão/Irmã" => "Irmão/Irmã",
             "Cônjuge" => "Cônjuge",
             _ => relationship
@@ -1231,7 +1287,11 @@ public class UsersController : ControllerBase
         foreach (var l in explicitLinks)
         {
             var other = l.UserId == id ? l.LinkedUser : l.User;
-            var relationship = l.UserId == id ? l.Relationship : GetReciprocalRelationship(l.Relationship);
+            // If the user being edited is the person who created the link (UserId), 
+            // then 'other' is the LinkedUserId, and their relationship to 'id' is the reciprocal.
+            var relationship = l.UserId == id 
+                ? await GetReciprocalRelationship(l.Relationship, other.Id) 
+                : l.Relationship;
             
             resultList.Add(new FamilyLinkResponse
             {
@@ -1301,25 +1361,34 @@ public class UsersController : ControllerBase
             .Include(l => l.LinkedUser)
             .ToListAsync();
 
-        var result = links
-            .Select(l =>
-            {
-                var other = l.UserId == id ? l.LinkedUser : l.User;
-                return new FamilyLinkResponse
-                {
-                    LinkId = l.Id,
-                    UserId = other.Id,
-                    FullName = $"{other.FirstName} {other.LastName}".Trim(),
-                    Email = other.Email,
-                    Relationship = l.Relationship,
-                    CreatedAt = l.CreatedAt
-                };
-            })
-            // Deduplicate: guard against legacy bidirectional rows (UserId↔LinkedUserId both stored)
-            .GroupBy(r => r.UserId)
-            .Select(g => g.First());
+        var resultList = new List<FamilyLinkResponse>();
 
-        return Ok(result);
+        foreach (var l in links)
+        {
+            var other = l.UserId == id ? l.LinkedUser : l.User;
+            var relationship = l.UserId == id 
+                ? await GetReciprocalRelationship(l.Relationship, other.Id) 
+                : l.Relationship;
+            
+            resultList.Add(new FamilyLinkResponse
+            {
+                LinkId = l.Id,
+                UserId = other.Id,
+                FullName = $"{other.FirstName} {other.LastName}".Trim(),
+                Email = other.Email,
+                Relationship = relationship,
+                CreatedAt = l.CreatedAt,
+                IsExplicit = true
+            });
+        }
+
+        // Deduplicate: guard against legacy bidirectional rows (UserId↔LinkedUserId both stored)
+        var finalResult = resultList
+            .GroupBy(r => r.UserId)
+            .Select(g => g.First())
+            .ToList();
+
+        return Ok(finalResult);
     }
 
     /// <summary>Create a bidirectional family link between two users (admin only).</summary>
@@ -1330,9 +1399,11 @@ public class UsersController : ControllerBase
         if (id == dto.LinkedUserId)
             return BadRequest(new { message = "Não pode associar um utilizador a si próprio." });
 
-        var userExists = await _context.Users.AnyAsync(u => u.Id == id);
-        var linkedExists = await _context.Users.AnyAsync(u => u.Id == dto.LinkedUserId);
-        if (!userExists || !linkedExists)
+        // Fetch users to potentially update gender
+        var user = await _context.Users.FindAsync(id);
+        var linkedUser = await _context.Users.FindAsync(dto.LinkedUserId);
+        
+        if (user == null || linkedUser == null)
             return NotFound(new { message = "Utilizador não encontrado." });
 
         // Check if link already exists (either direction)
@@ -1343,12 +1414,22 @@ public class UsersController : ControllerBase
         if (exists)
             return Conflict(new { message = "Estes utilizadores já estão associados." });
 
-        // Create one row (AuthService queries both directions)
+        // Update gender if a specific one is implied
+        if (dto.Relationship == "Pai") linkedUser.Gender = Gender.Male;
+        else if (dto.Relationship == "Mãe") linkedUser.Gender = Gender.Female;
+
+        // Determine role for 'user' ( Maria ) when adding 'linkedUser' ( João ) as 'Relationship' ( Filho(a) )
+        var relOfUser = await GetReciprocalRelationship(dto.Relationship, id);
+
+        // Update gender for current user if specific role is implied
+        if (relOfUser == "Pai") user.Gender = Gender.Male;
+        else if (relOfUser == "Mãe") user.Gender = Gender.Female;
+
         var link = new UserFamilyLink
         {
             UserId = id,
             LinkedUserId = dto.LinkedUserId,
-            Relationship = dto.Relationship,
+            Relationship = relOfUser,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -1364,24 +1445,36 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> UpdateFamilyLink(int id, int linkId, [FromBody] FamilyLinkDto dto)
     {
         var link = await _context.UserFamilyLinks
+            .Include(l => l.User)
+            .Include(l => l.LinkedUser)
             .FirstOrDefaultAsync(l => l.Id == linkId && (l.UserId == id || l.LinkedUserId == id));
 
         if (link == null)
             return NotFound(new { message = "Associação não encontrada." });
 
+        // Auto-update gender if a specific gender is implied
+        var otherUser = link.UserId == id ? link.LinkedUser : link.User;
+        var mainUser = link.UserId == id ? link.User : link.LinkedUser;
+
+        if (dto.Relationship == "Pai") otherUser.Gender = Gender.Male;
+        else if (dto.Relationship == "Mãe") otherUser.Gender = Gender.Female;
+
+        string newRel;
         if (link.UserId == id)
         {
-            link.Relationship = dto.Relationship;
+            newRel = await GetReciprocalRelationship(dto.Relationship, id);
+            if (newRel == "Pai") mainUser.Gender = Gender.Male;
+            else if (newRel == "Mãe") mainUser.Gender = Gender.Female;
         }
         else
         {
-            // If the user being edited is the LinkedUserId, we must store the incoming relationship's reciprocal
-            // because Relationship is UserId -> LinkedUserId
-            link.Relationship = GetReciprocalRelationship(dto.Relationship);
+            newRel = dto.Relationship;
         }
 
+        link.Relationship = newRel;
+
         await _context.SaveChangesAsync();
-        return Ok(new { message = "Parentesco atualizado." });
+        return Ok(new { message = "Associação familiar atualizada." });
     }
 
     /// <summary>Remove a family link by link ID (admin only).</summary>
@@ -1500,6 +1593,7 @@ public class TeamInfo
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string SportName { get; set; } = string.Empty;
     public int? JerseyNumber { get; set; }
     public string? Position { get; set; }
     public bool IsCaptain { get; set; }

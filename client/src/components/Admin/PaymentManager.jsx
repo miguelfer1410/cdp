@@ -281,48 +281,17 @@ const PaymentManager = () => {
             const token = localStorage.getItem('token');
             const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
 
+            // Global export for everyone, ignoring current table filters
             let url = `${apiUrl}/payment/admin/export-all-status?year=${currentYear}`;
-            if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
-            if (filterTeam !== 'all') url += `&teamId=${filterTeam}`;
-            if (filterSport !== 'all') url += `&sportId=${filterSport}`;
 
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Failed to fetch export data');
 
-            const data = await response.json();
-            if (!data || data.length === 0) { alert('Não há dados para exportar.'); return; }
-
-            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            const headers = ['Nº Sócio', 'Nome', 'Email', 'Telefone', 'NIF', 'Equipa', 'Modalidade', 'Tipo Quota', 'Ano', ...months];
-
-            const rows = data.map(athlete => {
-                const rawEmail = athlete.email || '';
-                const atIdx = rawEmail.lastIndexOf('@');
-                const localPart = atIdx > 0 ? rawEmail.substring(0, atIdx) : rawEmail;
-                const domain = atIdx > 0 ? rawEmail.substring(atIdx) : '';
-                const plusIdx = localPart.indexOf('+');
-                const cleanEmail = plusIdx > -1 ? localPart.substring(0, plusIdx) + domain : rawEmail;
-
-                return [
-                    `="${athlete.membershipNumber || ''}"`,
-                    `"${athlete.name || ''}"`,
-                    `"${cleanEmail}"`,
-                    `="${athlete.phone || ''}"`,
-                    `="${athlete.nif || ''}"`,
-                    `"${athlete.team || ''}"`,
-                    `"${athlete.sport || ''}"`,
-                    `"${athlete.paymentPreference === 'Annual' ? 'Anual' : 'Mensal'}"`,
-                    `"${athlete.year}"`,
-                    ...athlete.monthlyStatus.map(status => `"${status}"`)
-                ].join(';');
-            });
-
-            const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = await response.blob();
             const urlBlob = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.setAttribute('href', urlBlob);
-            link.setAttribute('download', `gestao_pagamentos_${currentYear}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', `gestao_pagamentos_${currentYear}_${new Date().toISOString().split('T')[0]}.xlsx`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -428,7 +397,6 @@ const PaymentManager = () => {
                 <div className="filter-item search-group">
                     <label>Pesquisa</label>
                     <div className="search-wrapper">
-                        <FaSearch className="search-icon" />
                         <input
                             type="text"
                             placeholder="Pesquisar por nome, email, NIF ou Nº Sócio..."
@@ -554,16 +522,27 @@ const PaymentManager = () => {
                                     </td>
                                     <td data-label="Equipa / Modalidade">
                                         <div className="team-sport-cell">
-                                            <span className="team-name">{athlete.team}</span>
+                                            {athlete.team?.split(', ').map((t, idx) => (
+                                                <span key={idx} className="team-name">{t}</span>
+                                            ))}
                                             <span className="sport-name">{athlete.sport}</span>
                                         </div>
                                     </td>
                                     <td data-label="Tipo Quota">{athlete.paymentPreference === 'Annual' ? 'Anual' : 'Mensal'}</td>
                                     <td data-label="Período">{athlete.paymentPreference === 'Annual' ? currentYear : athlete.currentPeriod}</td>
                                     <td data-label="Valor" className="amount-cell">
-                                        {athlete.paymentPreference === 'Annual'
-                                            ? `${((athlete.amount || 0) * 12).toFixed(2)}€`
-                                            : `${(athlete.amount || 0).toFixed(2)}€`}
+                                        <div className="amount-wrapper">
+                                            <span className="monthly-fee">
+                                                {athlete.paymentPreference === 'Annual'
+                                                    ? `${((athlete.amount || 0) * 12).toFixed(2)}€`
+                                                    : `${(athlete.amount || 0).toFixed(2)}€`}
+                                            </span>
+                                            {athlete.pendingInscriptions?.length > 0 && (
+                                                <div className="pending-inscription-tag" title={`Inscrições pendentes: ${athlete.pendingInscriptions.map(i => i.sportName).join(', ')}`}>
+                                                    +{athlete.pendingInscriptions.reduce((acc, i) => acc + i.amount, 0).toFixed(2)}€ Inscr.
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                     <td data-label="Estado">{getStatusBadge(athlete.status, athlete)}</td>
                                     <td className="payment-actions-cell">

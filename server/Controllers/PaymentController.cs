@@ -9,6 +9,8 @@ using server.Services;
 using server.Models;
 using CdpApi.Models;
 using System.Linq;
+using MiniExcelLibs;
+using System.IO;
 
 namespace CdpApi.Controllers;
 
@@ -147,42 +149,48 @@ public class PaymentController : ControllerBase
             decimal overdueTotal = 0;
 
             decimal unpaidInscriptions = result.InscriptionInfo?.Where(i => !i.Paid).Sum(i => i.FeeDiscount) ?? 0;
-            decimal quotaOnly = result.Total - unpaidInscriptions;
+            decimal quotaOnly = result.MonthlyQuota;
 
             if (preference == "Monthly")
             {
-                // Find when the member first registered
-                var memberSince = user.MemberProfile.MemberSince ?? user.CreatedAt;
-                var startYear   = memberSince.Year;
-                var startMonth  = memberSince.Month;
+                // Find the first ever completed payment for this member
+                var firstPayment = await _context.Payments
+                    .Where(p => p.MemberProfileId == user.MemberProfile.Id && p.Status == "Completed")
+                    .OrderBy(p => p.PeriodYear)
+                    .ThenBy(p => p.PeriodMonth)
+                    .FirstOrDefaultAsync();
 
-                // Iterate from registration month up to (but not including) current month
-                var checkYear  = startYear;
-                var checkMonth = startMonth;
-
-                while (checkYear < currentYear || (checkYear == currentYear && checkMonth < currentMonth))
+                if (firstPayment != null)
                 {
-                    // Was there a Completed payment for this period?
-                    bool paid = await _context.Payments.AnyAsync(p =>
-                        p.MemberProfileId == user.MemberProfile.Id &&
-                        p.Status          == "Completed" &&
-                        p.PeriodYear      == checkYear &&
-                        p.PeriodMonth     == checkMonth);
+                    // Start from the first payment's month/year
+                    var checkYear  = firstPayment.PeriodYear;
+                    var checkMonth = firstPayment.PeriodMonth ?? 1;
 
-                    if (!paid)
+                    // Iterate from that first payment up to (but not including) current month
+                    while (checkYear < currentYear || (checkYear == currentYear && checkMonth < currentMonth))
                     {
-                        overdueMonths.Add(new
-                        {
-                            periodMonth = checkMonth,
-                            periodYear  = checkYear,
-                            amount      = quotaOnly
-                        });
-                        overdueTotal += quotaOnly;
-                    }
+                        // Was there a Completed payment for this period?
+                        bool paid = await _context.Payments.AnyAsync(p =>
+                            p.MemberProfileId == user.MemberProfile.Id &&
+                            p.Status          == "Completed" &&
+                            p.PeriodYear      == checkYear &&
+                            p.PeriodMonth     == checkMonth);
 
-                    // Advance to next month
-                    if (checkMonth == 12) { checkMonth = 1; checkYear++; }
-                    else checkMonth++;
+                        if (!paid)
+                        {
+                            overdueMonths.Add(new
+                            {
+                                periodMonth = checkMonth,
+                                periodYear  = checkYear,
+                                amount      = quotaOnly
+                            });
+                            overdueTotal += quotaOnly;
+                        }
+
+                        // Advance to next month
+                        if (checkMonth == 12) { checkMonth = 1; checkYear++; }
+                        else checkMonth++;
+                    }
                 }
             }
 
@@ -307,8 +315,8 @@ public class PaymentController : ControllerBase
                     PaymentPreference = u.MemberProfile.PaymentPreference ?? "Monthly",
                     MembershipNumber  = u.MemberProfile.MembershipNumber,
                     Name              = u.FirstName + " " + u.LastName,
-                    Team              = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).FirstOrDefault() ?? "Sem Equipa" : "Sem Equipa",
-                    Sport             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).FirstOrDefault() ?? "N/A" : "N/A"
+                    Teams             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).ToList() : new List<string>(),
+                    Sports            = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).Distinct().ToList() : new List<string>()
                 })
                 .ToListAsync();
 
@@ -328,13 +336,24 @@ public class PaymentController : ControllerBase
             {
                 bool isAnnual = m.PaymentPreference == "Annual";
                 var payments  = paymentsByMember.TryGetValue(m.MemberProfileId, out var list) ? list : null;
-                var payment   = isAnnual
-                    ? payments?.FirstOrDefault(p => p.PeriodMonth == null)
-                    : payments?.FirstOrDefault(p => p.PeriodMonth == targetMonth);
+                var paymentsForPeriod = isAnnual
+                    ? payments?.Where(p => p.PeriodMonth == null).ToList()
+                    : payments?.Where(p => p.PeriodMonth == targetMonth).ToList();
+
+                var payment = paymentsForPeriod?.OrderByDescending(p => p.Status == "Completed")
+                                             .ThenByDescending(p => p.Status == "Pending")
+                                             .ThenByDescending(p => p.CreatedAt)
+                                             .FirstOrDefault();
+
                 string derivedStatus = payment?.Status switch { "Completed" => "Regularizada", "Pending" => "Pendente", _ => "Unpaid" } ?? "Unpaid";
+                var teamStr = m.Teams != null && m.Teams.Any() ? string.Join(", ", m.Teams) : "Sem Equipa";
+                var sportStr = m.Sports != null && m.Sports.Any() ? string.Join(", ", m.Sports) : "N/A";
+                
                 return new
                 {
-                    m.Id, m.MemberProfileId, m.PaymentPreference, m.MembershipNumber, m.Name, m.Team, m.Sport,
+                    m.Id, m.MemberProfileId, m.PaymentPreference, m.MembershipNumber, m.Name, 
+                    Team = teamStr, 
+                    Sport = sportStr,
                     Status = derivedStatus,
                     PendingEntity    = payment?.Status == "Pending" ? payment.Entity    : null,
                     PendingReference = payment?.Status == "Pending" ? payment.Reference : null,
@@ -389,7 +408,7 @@ public class PaymentController : ControllerBase
                 if (fullUserMap.TryGetValue(row.Id, out var fullUser))
                 {
                     var calc = await CalculateQuotaWithBreakdown(fullUser);
-                    dto.Amount = calc.Total;
+                    dto.Amount = calc.MonthlyQuota;
                     if (calc.InscriptionInfo != null)
                     {
                         dto.PendingInscriptions = calc.InscriptionInfo
@@ -466,6 +485,16 @@ public class PaymentController : ControllerBase
                 if (user.MemberProfile.PaymentPreference != "Annual")
                     periodMonth = DateTime.UtcNow.Month;
             }
+
+            // Check if this period is already paid
+            bool alreadyPaid = await _context.Payments.AnyAsync(p =>
+                p.MemberProfileId == user.MemberProfile.Id &&
+                p.Status == "Completed" &&
+                p.PeriodYear == periodYear &&
+                p.PeriodMonth == periodMonth);
+
+            if (alreadyPaid)
+                return BadRequest(new { message = "Este período já se encontra regularizado." });
 
             string periodDescription = periodMonth.HasValue
                 ? $"Quota Mensal - {new DateTime(periodYear, periodMonth.Value, 1):MMMM yyyy}"
@@ -684,7 +713,7 @@ public class PaymentController : ControllerBase
                 { 
                     Month = request.PeriodMonth ?? 0, 
                     Year = request.PeriodYear, 
-                    Amount = calc.Total 
+                    Amount = calc.MonthlyQuota 
                 });
             }
 
@@ -847,48 +876,13 @@ public class PaymentController : ControllerBase
     // GET: api/payment/admin/export-all-status
     [HttpGet("admin/export-all-status")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<IEnumerable<AthletePaymentExportDto>>> GetExportAthletePaymentStatuses(
-        [FromQuery] int year,
-        [FromQuery] string? search = null,
-        [FromQuery] int? teamId = null,
-        [FromQuery] int? sportId = null)
+    public async Task<ActionResult> GetExportAthletePaymentStatuses(
+        [FromQuery] int year)
     {
         try
         {
-            // PHASE 1: Lightweight query - same filters as main table
-            var query = _context.Users.Where(u => u.MemberProfile != null && u.IsActive);
-
-            if (!string.IsNullOrEmpty(search))
-            {
-                var searchTokens = search.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var token in searchTokens)
-                {
-                    query = query.Where(u => 
-                        u.FirstName.ToLower().Contains(token) || 
-                        u.LastName.ToLower().Contains(token) || 
-                        u.Email.ToLower().Contains(token) ||
-                        (u.Nif != null && u.Nif.Contains(token)) ||
-                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
-                        (u.AthleteProfile != null && (
-                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
-                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
-                        ))
-                    );
-                }
-            }
-
-            if (teamId.HasValue)
-            {
-                if (teamId.Value == -1)
-                    query = query.Where(u => u.AthleteProfile == null || !u.AthleteProfile.AthleteTeams.Any(at => at.LeftAt == null));
-                else if (teamId.Value == -2)
-                    query = query.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.LeftAt == null));
-                else
-                    query = query.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.TeamId == teamId.Value && at.LeftAt == null));
-            }
-
-            if (sportId.HasValue)
-                query = query.Where(u => u.AthleteProfile != null && u.AthleteProfile.AthleteTeams.Any(at => at.Team.SportId == sportId.Value && at.LeftAt == null));
+            // PHASE 1: Fetch ALL active users
+            var query = _context.Users.Where(u => u.IsActive);
 
             var members = await query
                 .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
@@ -898,17 +892,17 @@ public class PaymentController : ControllerBase
                     u.Email,
                     u.Phone,
                     u.Nif,
-                    MemberProfileId   = u.MemberProfile!.Id,
-                    PaymentPreference = u.MemberProfile.PaymentPreference ?? "Monthly",
-                    MembershipNumber  = u.MemberProfile.MembershipNumber,
+                    MemberProfileId   = u.MemberProfile != null ? (int?)u.MemberProfile.Id : null,
+                    PaymentPreference = u.MemberProfile != null ? u.MemberProfile.PaymentPreference ?? "Monthly" : "N/A",
+                    MembershipNumber  = u.MemberProfile != null ? u.MemberProfile.MembershipNumber : "",
                     Name              = u.FirstName + " " + u.LastName,
-                    Team              = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).FirstOrDefault() ?? "Sem Equipa" : "Sem Equipa",
-                    Sport             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).FirstOrDefault() ?? "N/A" : "N/A"
+                    Teams             = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Name).ToList() : new List<string>(),
+                    Sports            = u.AthleteProfile != null ? u.AthleteProfile.AthleteTeams.Where(at => at.LeftAt == null).Select(at => at.Team.Sport.Name).Distinct().ToList() : new List<string>()
                 })
                 .ToListAsync();
 
-            // Load all payments for all these members (regardless of year)
-            var memberIds = members.Select(m => m.MemberProfileId).ToList();
+            // Load all payments for all these members
+            var memberIds = members.Where(m => m.MemberProfileId.HasValue).Select(m => m.MemberProfileId!.Value).ToList();
             var allPayments = await _context.Payments
                 .Where(p => memberIds.Contains(p.MemberProfileId))
                 .Select(p => new { p.MemberProfileId, p.Status, p.PeriodMonth, p.PeriodYear })
@@ -919,45 +913,65 @@ public class PaymentController : ControllerBase
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             var currentYear = DateTime.UtcNow.Year;
-            var result = new List<AthletePaymentExportDto>();
+            
+            // GLOBAL MIN YEAR: find the oldest payment in the system (for these members)
+            var globalMinYear = allPayments.Any() ? allPayments.Min(p => p.PeriodYear) ?? currentYear : currentYear;
+            
+            var exportData = new List<GlobalPaymentExportDto>();
 
             foreach (var m in members)
             {
-                // Determine the year range for this specific member
-                var memberPayments = allPayments.Where(p => p.MemberProfileId == m.MemberProfileId).ToList();
-                var firstYear = memberPayments.Any() ? memberPayments.Min(p => p.PeriodYear) ?? currentYear : currentYear;
-                
-                // Allow exporting from the earliest record up to the requested/current year
-                for (int y = firstYear; y <= year; y++)
+                // Clean email (remove alias)
+                string cleanEmail = m.Email;
+                int plusIdx = cleanEmail.IndexOf('+');
+                int atIdx = cleanEmail.LastIndexOf('@');
+                if (plusIdx >= 0 && atIdx > plusIdx)
+                {
+                    cleanEmail = cleanEmail.Substring(0, plusIdx) + cleanEmail.Substring(atIdx);
+                }
+
+                // Export from GLOBAL earliest record up to the requested year
+                for (int y = globalMinYear; y <= year; y++)
                 {
                     bool isAnnual = m.PaymentPreference == "Annual";
-                    var yearPayments = paymentsByMemberAndYear.TryGetValue(new { m.MemberProfileId, PeriodYear = (int?)y }, out var list) ? list : new();
+                    var yearPayments = m.MemberProfileId.HasValue 
+                        ? (paymentsByMemberAndYear.TryGetValue(new { MemberProfileId = m.MemberProfileId.Value, PeriodYear = (int?)y }, out var list) ? list : new())
+                        : new();
                     
                     string[] monthlyStatuses = new string[12];
                     for (int i = 1; i <= 12; i++)
                     {
                         if (isAnnual)
                         {
-                            var annualPay = yearPayments.FirstOrDefault(p => p.PeriodMonth == null);
+                            var annualPay = yearPayments.Where(p => p.PeriodMonth == null)
+                                                      .OrderByDescending(p => p.Status == "Completed")
+                                                      .ThenByDescending(p => p.Status == "Pending")
+                                                      .FirstOrDefault();
                             monthlyStatuses[i - 1] = annualPay?.Status switch { "Completed" => "Pago (Anual)", "Pending" => "Pendente", _ => "Não Pago" };
                         }
                         else
                         {
-                            var p = yearPayments.FirstOrDefault(pay => pay.PeriodMonth == i);
+                            var p = yearPayments.Where(pay => pay.PeriodMonth == i)
+                                              .OrderByDescending(p => p.Status == "Completed")
+                                              .ThenByDescending(p => p.Status == "Pending")
+                                              .FirstOrDefault();
                             monthlyStatuses[i - 1] = p?.Status switch { "Completed" => "Pago", "Pending" => "Pendente", _ => "Não Pago" };
                         }
                     }
 
-                    result.Add(new AthletePaymentExportDto
+                    var teamStr = m.Teams != null && m.Teams.Any() ? string.Join(", ", m.Teams) : "Sem Equipa";
+                    var sportStr = m.Sports != null && m.Sports.Any() ? string.Join(", ", m.Sports) : "N/A";
+
+                    exportData.Add(new GlobalPaymentExportDto
                     {
                         UserId = m.Id,
                         Name = m.Name,
-                        Email = m.Email,
+                        Email = cleanEmail,
                         Phone = m.Phone ?? "",
                         Nif = m.Nif ?? "",
                         MembershipNumber = m.MembershipNumber ?? "",
-                        Team = m.Team,
-                        Sport = m.Sport,
+                        Team = teamStr,
+                        Sport = sportStr,
                         PaymentPreference = m.PaymentPreference,
                         MonthlyStatus = monthlyStatuses,
                         Year = y
@@ -965,11 +979,51 @@ public class PaymentController : ControllerBase
                 }
             }
 
-            return Ok(result.OrderBy(r => r.Name).ThenByDescending(r => r.Year).ToList());
+            // Group by year for multiple sheets
+            var sheets = exportData
+                .GroupBy(d => d.Year)
+                .OrderByDescending(g => g.Key)
+                .ToDictionary(
+                    g => g.Key.ToString(),
+                    g => (object)g.Select(d => new {
+                        Socio = d.MembershipNumber,
+                        Nome = d.Name,
+                        Email = d.Email,
+                        Telefone = d.Phone,
+                        NIF = d.Nif,
+                        Equipa = d.Team,
+                        Modalidade = d.Sport,
+                        Quota = d.PaymentPreference == "Annual" ? (d.PaymentPreference == "N/A" ? "N/A" : "Anual") : "Mensal",
+                        Jan = d.MonthlyStatus[0],
+                        Fev = d.MonthlyStatus[1],
+                        Mar = d.MonthlyStatus[2],
+                        Abr = d.MonthlyStatus[3],
+                        Mai = d.MonthlyStatus[4],
+                        Jun = d.MonthlyStatus[5],
+                        Jul = d.MonthlyStatus[6],
+                        Ago = d.MonthlyStatus[7],
+                        Set = d.MonthlyStatus[8],
+                        Out = d.MonthlyStatus[9],
+                        Nov = d.MonthlyStatus[10],
+                        Dez = d.MonthlyStatus[11]
+                    }).ToList()
+                );
+
+            if (!sheets.Any()) return BadRequest(new { message = "Não há dados para exportar." });
+
+            var memoryStream = new MemoryStream();
+            await memoryStream.SaveAsAsync(sheets);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            return File(
+                memoryStream, 
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                $"gestao_pagamentos_{year}_{DateTime.Now:yyyyMMdd}.xlsx"
+            );
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error exporting all athlete statuses");
+            _logger.LogError(ex, "Error exporting all payment statuses");
             return StatusCode(500, new { message = "Erro ao exportar estados de pagamento" });
         }
     }
@@ -1019,33 +1073,20 @@ public class PaymentController : ControllerBase
         foreach (var l in familyLinks)
         {
             var other = l.UserId == user.Id ? l.LinkedUser : l.User;
-            var rel   = l.UserId == user.Id ? GetReciprocalRelationship(l.Relationship) : l.Relationship;
-            if (rel == "Pai" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active) fathers.Add(other);
-            else if (rel == "Mãe" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active) mothers.Add(other);
+            // rel represents the relationship of 'other' to 'user'
+            var relOfOther = l.UserId == user.Id ? GetReciprocalRelationship(l.Relationship, other.Gender) : l.Relationship;
+            
+            if (relOfOther == "Pai" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active) fathers.Add(other);
+            else if (relOfOther == "Mãe" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active) mothers.Add(other);
         }
 
-        if (fathers.Any() && mothers.Any())
-        {
-            // Check that ≥2 siblings share both parents
-            var commonChildren = new HashSet<int>();
-            foreach (var father in fathers)
-            {
-                var fatherLinks = await _context.UserFamilyLinks
-                    .Where(l => (l.UserId == father.Id || l.LinkedUserId == father.Id))
-                    .ToListAsync();
-                foreach (var fl in fatherLinks)
-                {
-                    var childId = fl.UserId == father.Id ? fl.LinkedUserId : fl.UserId;
-                    var childRel = fl.UserId == father.Id ? GetReciprocalRelationship(fl.Relationship) : fl.Relationship;
-                    if (childRel == "Filho(a)") commonChildren.Add(childId);
-                }
-            }
+        // ── 3. Check for both parents as members (for 15% discount and exemption) ─
+        bool bothParentsMembers = fathers.Any() && mothers.Any();
 
-            if (commonChildren.Count >= 2 && commonChildren.Contains(user.Id))
-            {
-                isExemptFromGlobalFee = true;
-                _logger.LogInformation("[QUOTA] User {Id} exempt from global member fee (both parents sócios + ≥2 siblings).", user.Id);
-            }
+        if (bothParentsMembers)
+        {
+            isExemptFromGlobalFee = true;
+            _logger.LogInformation("[QUOTA] User {Id} exempt from global member fee (both parents are active members).", user.Id);
         }
 
         // ── 3. Check for sibling athlete ──────────────────────────────────────
@@ -1053,8 +1094,8 @@ public class PaymentController : ControllerBase
         foreach (var l in familyLinks)
         {
             var other = l.UserId == user.Id ? l.LinkedUser : l.User;
-            var rel   = l.UserId == user.Id ? GetReciprocalRelationship(l.Relationship) : l.Relationship;
-            if (rel == "Irmão/Irmã" && other != null)
+            var relOfOther = l.UserId == user.Id ? GetReciprocalRelationship(l.Relationship) : l.Relationship;
+            if (relOfOther == "Irmão/Irmã" && other != null)
             {
                 // Check if sibling has an active athlete team
                 var siblingAthlete = await _context.AthleteProfiles
@@ -1208,13 +1249,43 @@ for (int i = 0; i < teamsSorted.Count; i++)
             discountsApplied.Add("parent_member_exemption");
         }
 
-        // ── 6. Inscription info (pending inscriptions) ────────────────────────
+        // ── 6. Family Discount (15% if both parents are members) ──────────────
+        if (bothParentsMembers && total > 0)
+        {
+            decimal familyDiscount = total * 0.15m;
+            // Round to 2 decimal places
+            familyDiscount = Math.Round(familyDiscount, 2);
+            
+            breakdown.Add(new BreakdownItem
+            {
+                Label      = "Desconto Familiar (Ambos os pais sócios) - 15%",
+                Amount     = -familyDiscount,
+                IsDiscount = true
+            });
+            total -= familyDiscount;
+            discountsApplied.Add("family_discount");
+        }
+
+        // ── 7. Inscription info (pending inscriptions) ────────────────────────
+        // ── 7. Calculate Inscription Info (Deduplicated by Sport) ───────────
         var inscriptionInfo = activeTeams
-            .Select(at => {
-                var sport = at.Team!.Sport!;
-                var escalao = at.AthleteProfile?.Escalao?.ToLower() ?? "";
-                var teamName = at.Team?.Name?.ToLower() ?? "";
+            .GroupBy(at => at.Team!.SportId)
+            .Select(g => {
+                // Pick the team with the highest base inscription fee
+                var primaryAt = g.OrderByDescending(at => {
+                    var s = at.Team!.Sport!;
+                    var esc = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+                    var tName = at.Team?.Name?.ToLower() ?? "";
+                    bool isM = esc.Contains("mini") || tName.Contains("mini");
+                    bool isV = esc.Contains("veterano") || tName.Contains("veterano");
+                    return isM ? s.InscriptionFeeMinis : (isV ? s.InscriptionFeeVeteranos : s.InscriptionFeeNormal);
+                }).First();
+
+                var sport = primaryAt.Team!.Sport!;
+                var escalao = primaryAt.AthleteProfile?.Escalao?.ToLower() ?? "";
+                var teamName = primaryAt.Team?.Name?.ToLower() ?? "";
                 bool isMini = escalao.Contains("mini") || teamName.Contains("mini");
+                bool isVeterano = escalao.Contains("veterano") || teamName.Contains("veterano");
                 
                 // Deduce if this is a 2nd sport for inscriptions
                 bool isSecondSport = false;
@@ -1224,29 +1295,35 @@ for (int i = 0; i < teamsSorted.Count; i++)
                 
                 bool getsDiscount = hasSiblingAthlete || isSecondSport;
 
-                decimal baseFee = isMini ? sport.InscriptionFeeMinis : sport.InscriptionFeeNormal;
+                decimal baseFee = isMini ? sport.InscriptionFeeMinis : (isVeterano ? sport.InscriptionFeeVeteranos : sport.InscriptionFeeNormal);
                 decimal discountedFee = baseFee;
 
                 if (isMini) {
                     discountedFee = getsDiscount && sport.InscriptionFeeMinisDiscount > 0 ? sport.InscriptionFeeMinisDiscount : sport.InscriptionFeeMinis;
+                } else if (isVeterano) {
+                    discountedFee = baseFee;
                 } else {
-                    discountedFee = getsDiscount && sport.FeeDiscount > 0 ? sport.FeeDiscount : sport.InscriptionFeeNormal;
+                    // Fix: No automatic fallback to Monthly FeeDiscount for normal inscriptions
+                    discountedFee = sport.InscriptionFeeNormal;
                 }
 
                 return new InscriptionInfo
                 {
-                    AthleteTeamId = at.Id,
+                    AthleteTeamId = primaryAt.Id,
                     SportName     = sport.Name,
-                    Escalao       = at.AthleteProfile?.Escalao,
-                    Paid          = at.InscriptionPaid,
-                    PaidDate      = at.InscriptionPaidDate,
+                    Escalao       = primaryAt.AthleteProfile?.Escalao,
+                    Paid          = primaryAt.InscriptionPaid,
+                    PaidDate      = primaryAt.InscriptionPaidDate,
                     FeeNormal     = baseFee,
                     FeeDiscount   = discountedFee
                 };
             })
             .ToList();
 
-        // ── 7. Add unpaid inscriptions to Total and Breakdown ───────────────
+        // ── 8. Calculate MonthlyQuota (Total without inscriptions) ──────────
+        decimal monthlyQuota = total;
+
+        // ── 9. Add unpaid inscriptions to Total and Breakdown ───────────────
         foreach (var info in inscriptionInfo)
         {
             if (!info.Paid)
@@ -1264,6 +1341,7 @@ for (int i = 0; i < teamsSorted.Count; i++)
         return new QuotaCalculationResult
         {
             Total            = Math.Max(total, 0),
+            MonthlyQuota     = Math.Max(monthlyQuota, 0),
             Breakdown        = breakdown,
             DiscountsApplied = discountsApplied,
             InscriptionInfo  = inscriptionInfo
@@ -1306,14 +1384,18 @@ for (int i = 0; i < teamsSorted.Count; i++)
         return sport.FeeNormalNormal;
     }
 
-    private static string? GetReciprocalRelationship(string? relationship)
+    private static string? GetReciprocalRelationship(string? relationship, Gender gender = Gender.Mixed)
     {
         if (string.IsNullOrEmpty(relationship)) return null;
         return relationship switch
         {
             "Pai"       => "Filho(a)",
             "Mãe"       => "Filho(a)",
-            "Filho(a)"  => "Pai/Mãe",
+            "Filho(a)"  => gender switch {
+                Gender.Female => "Mãe",
+                Gender.Male   => "Pai",
+                _             => "Pai" // Default to Pai if mixed
+            },
             "Irmão/Irmã" => "Irmão/Irmã",
             "Cônjuge"   => "Cônjuge",
             _           => relationship
@@ -1333,6 +1415,7 @@ public class MarkInscriptionPaidRequest
 public class QuotaCalculationResult
 {
     public decimal Total { get; set; }
+    public decimal MonthlyQuota { get; set; }
     public List<BreakdownItem> Breakdown { get; set; } = new();
     public List<string> DiscountsApplied { get; set; } = new();
     public List<InscriptionInfo> InscriptionInfo { get; set; } = new();

@@ -44,6 +44,7 @@ namespace CdpApi.Controllers
                     s.InscriptionFeeNormal,
                     s.InscriptionFeeMinis,
                     s.InscriptionFeeMinisDiscount,
+                    s.InscriptionFeeVeteranos,
                     s.QuotaIncluded
                 })
                 .ToListAsync();
@@ -111,6 +112,7 @@ namespace CdpApi.Controllers
             sport.InscriptionFeeNormal = request.InscriptionFeeNormal;
             sport.InscriptionFeeMinis = request.InscriptionFeeMinis;
             sport.InscriptionFeeMinisDiscount = request.InscriptionFeeMinisDiscount;
+            sport.InscriptionFeeVeteranos = request.InscriptionFeeVeteranos;
             sport.QuotaIncluded      = request.QuotaIncluded;
 
             // Keep legacy field in sync
@@ -142,6 +144,7 @@ namespace CdpApi.Controllers
         public decimal InscriptionFeeNormal { get; set; }
         public decimal InscriptionFeeMinis { get; set; }
         public decimal InscriptionFeeMinisDiscount { get; set; }
+        public decimal InscriptionFeeVeteranos { get; set; }
         public bool    QuotaIncluded     { get; set; } = true;
     }
 }

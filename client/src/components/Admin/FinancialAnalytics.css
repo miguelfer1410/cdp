@@ -10,6 +10,35 @@
     border-left: 4px solid var(--accent-color, #43e97b);
 }
 
+/* Specific overrides for Financial Analytics overview cards to handle large numbers */
+.financial-analytics-container .analytics-overview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    grid-template-columns: unset; /* Override the grid if necessary */
+    gap: 1.5rem;
+}
+
+.financial-analytics-container .analytics-stat-card {
+    flex: 1 1 300px;
+    min-width: fit-content;
+    width: auto;
+    overflow: visible; /* Ensure nothing is cut off */
+}
+
+.financial-analytics-container .analytics-stat-number {
+    white-space: nowrap;
+    font-size: clamp(24px, 2.2vw, 34px) !important;
+}
+
+/* Change chart grid from 3 to 2 columns specifically in Financial Analytics */
+.financial-analytics-container .charts-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+}
+
+.financial-analytics-container .chart-item.full-width {
+    grid-column: span 2 !important;
+}
+
 .analytics-stat-icon.revenue {
     background: rgba(67, 233, 123, 0.15);
     color: #43e97b;
@@ -255,6 +284,10 @@
 /* Ícones de cor teal nos títulos */
 .chart-h-icon.teal {
     color: #0d9488;
+}
+
+.chart-h-icon.grey {
+    color: #94a3b8;
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */

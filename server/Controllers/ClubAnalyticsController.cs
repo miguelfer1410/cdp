@@ -163,87 +163,74 @@ public class ClubAnalyticsController : ControllerBase
 
         // ── Revenue by Sport ──────────────────────────────────────────────────
         // Join: Payment → MemberProfile → User → AthleteProfile → AthleteTeams (active) → Team → Sport
-        var revenueBySport = await _context.Payments
-            .Where(p => p.Status == "Completed")
-            .Join(_context.MemberProfiles,
-                p  => p.MemberProfileId,
-                mp => mp.Id,
-                (p, mp) => new { Payment = p, mp.UserId })
-            .Join(_context.Users,
-                x => x.UserId,
-                u => u.Id,
-                (x, u) => new { x.Payment, User = u })
-            .GroupJoin(_context.AthleteProfiles,
-                x  => x.User.Id,
-                ap => ap.UserId,
-                (x, aps) => new { x.Payment, AthleteProfiles = aps })
-            .SelectMany(
-                x => x.AthleteProfiles.DefaultIfEmpty(),
-                (x, ap) => new { x.Payment, AthleteProfile = ap })
-            .GroupJoin(
-                _context.AthleteTeams.Where(at => at.LeftAt == null)
-                    .Include(at => at.Team).ThenInclude(t => t.Sport),
-                x  => x.AthleteProfile != null ? (int?)x.AthleteProfile.Id : null,
-                at => (int?)at.AthleteProfileId,
-                (x, ats) => new { x.Payment, AthleteTeams = ats })
-            .SelectMany(
-                x => x.AthleteTeams.DefaultIfEmpty(),
-                (x, at) => new {
-                    x.Payment,
-                    SportName = at != null && at.Team != null && at.Team.Sport != null
-                        ? at.Team.Sport.Name
-                        : "Sem Modalidade"
-                })
-            .GroupBy(x => x.SportName)
-            .Select(g => new {
-                Sport       = g.Key,
-                TotalAmount = g.Sum(x => x.Payment.Amount),
-                Count       = g.Count()
+        // ── Revenue by Sport (Start from Sports to include all) ─────
+        var revenueBySportList = await _context.Sports
+            .Select(s => new {
+                Sport = s.Name,
+                TotalAmount = _context.Payments
+                    .Where(p => p.Status == "Completed")
+                    .Where(p => _context.AthleteTeams.Any(at => at.Team.SportId == s.Id && at.LeftAt == null && at.AthleteProfile.UserId == p.MemberProfile.UserId))
+                    .Sum(p => (decimal?)p.Amount) ?? 0,
+                Count = _context.Payments
+                    .Where(p => p.Status == "Completed")
+                    .Count(p => _context.AthleteTeams.Any(at => at.Team.SportId == s.Id && at.LeftAt == null && at.AthleteProfile.UserId == p.MemberProfile.UserId))
             })
-            .OrderByDescending(g => g.TotalAmount)
             .ToListAsync();
 
-        // ── Revenue by Escalão (competitive Team Escalão) ─────────────────────
-        // Join: Payment → MemberProfile → User → AthleteProfile → AthleteTeams (active) → Team → Escalao
-        var revenueByEscalao = await _context.Payments
+        var revenueBySport = revenueBySportList
+            .Select(x => (dynamic)new { x.Sport, x.TotalAmount, x.Count })
+            .ToList();
+
+        var unassignedSportRevenue = await _context.Payments
             .Where(p => p.Status == "Completed")
-            .Join(_context.MemberProfiles,
-                p  => p.MemberProfileId,
-                mp => mp.Id,
-                (p, mp) => new { Payment = p, mp.UserId })
-            .Join(_context.Users,
-                x => x.UserId,
-                u => u.Id,
-                (x, u) => new { x.Payment, User = u })
-            .GroupJoin(_context.AthleteProfiles,
-                x  => x.User.Id,
-                ap => ap.UserId,
-                (x, aps) => new { x.Payment, AthleteProfiles = aps })
-            .SelectMany(
-                x => x.AthleteProfiles.DefaultIfEmpty(),
-                (x, ap) => new { x.Payment, AthleteProfile = ap })
-            .GroupJoin(
-                _context.AthleteTeams.Where(at => at.LeftAt == null)
-                    .Include(at => at.Team).ThenInclude(t => t.Escalao),
-                x  => x.AthleteProfile != null ? (int?)x.AthleteProfile.Id : null,
-                at => (int?)at.AthleteProfileId,
-                (x, ats) => new { x.Payment, AthleteTeams = ats })
-            .SelectMany(
-                x => x.AthleteTeams.DefaultIfEmpty(),
-                (x, at) => new {
-                    x.Payment,
-                    EscalaoName = at != null && at.Team != null && at.Team.Escalao != null
-                        ? at.Team.Escalao.Name
-                        : "Sem Escalão"
-                })
-            .GroupBy(x => x.EscalaoName)
-            .Select(g => new {
-                Escalao     = g.Key,
-                TotalAmount = g.Sum(x => x.Payment.Amount),
-                Count       = g.Count()
+            .Where(p => !_context.AthleteTeams.Any(at => at.LeftAt == null && at.AthleteProfile.UserId == p.MemberProfile.UserId))
+            .SumAsync(p => (decimal?)p.Amount) ?? 0;
+            
+        var unassignedSportCount = await _context.Payments
+            .Where(p => p.Status == "Completed")
+            .Where(p => !_context.AthleteTeams.Any(at => at.LeftAt == null && at.AthleteProfile.UserId == p.MemberProfile.UserId))
+            .CountAsync();
+
+        if (unassignedSportRevenue > 0 || unassignedSportCount > 0)
+        {
+            // Note: In the final list we will merge or handle these. 
+            // The frontend handles 'Sem Modalidade' and 'Sem Equipa' separately.
+        }
+
+        // ── Revenue by Team (Sport + Team Name) ─────────────────────
+        // Join: Payment → MemberProfile → User → AthleteProfile → AthleteTeams (active) → Team → Sport
+        // ── Revenue by Team (Start from Teams to include all) ───────
+        var revenueByTeamList = await _context.Teams
+            .Where(t => t.IsActive)
+            .Select(t => new {
+                Label = t.Sport.Name + " - " + t.Name + 
+                        (t.Gender == Gender.Male ? " (Masc.)" : 
+                         t.Gender == Gender.Female ? " (Fem.)" : ""),
+                TotalAmount = _context.Payments
+                    .Where(p => p.Status == "Completed")
+                    .Where(p => _context.AthleteTeams.Any(at => at.TeamId == t.Id && at.LeftAt == null && at.AthleteProfile.UserId == p.MemberProfile.UserId))
+                    .Sum(p => (decimal?)p.Amount) ?? 0,
+                Count = _context.Payments
+                    .Where(p => p.Status == "Completed")
+                    .Count(p => _context.AthleteTeams.Any(at => at.TeamId == t.Id && at.LeftAt == null && at.AthleteProfile.UserId == p.MemberProfile.UserId))
             })
-            .OrderByDescending(g => g.TotalAmount)
             .ToListAsync();
+
+        var revenueByTeam = revenueByTeamList
+            .Select(x => (dynamic)new { Team = x.Label, x.TotalAmount, x.Count })
+            .ToList();
+
+        if (unassignedSportRevenue > 0 || unassignedSportCount > 0)
+        {
+            revenueByTeam.Add(new { Team = "Sem Equipa", TotalAmount = unassignedSportRevenue, Count = unassignedSportCount });
+        }
+        
+        if (unassignedSportRevenue > 0) {
+            revenueBySport.Add(new { Sport = "Sem Modalidade", TotalAmount = unassignedSportRevenue, Count = unassignedSportCount });
+        }
+        
+        revenueBySport = revenueBySport.OrderByDescending(s => (decimal)s.TotalAmount).ToList();
+        revenueByTeam = revenueByTeam.OrderByDescending(x => (decimal)x.TotalAmount).ToList();
 
         return Ok(new
         {
@@ -256,7 +243,7 @@ public class ClubAnalyticsController : ControllerBase
             revenueByMonth,
             paymentStatsByMonth,
             revenueBySport,
-            revenueByEscalao
+            revenueByTeam
         });
     }
 }

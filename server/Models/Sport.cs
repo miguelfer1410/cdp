@@ -48,6 +48,10 @@ public class Sport
     [Range(0, 1000)]
     public decimal InscriptionFeeMinisDiscount { get; set; } = 0;
 
+    /// <summary>Taxa de inscrição Veteranos</summary>
+    [Range(0, 1000)]
+    public decimal InscriptionFeeVeteranos { get; set; } = 0;
+
     // ── Quota inclusion flag ─────────────────────────────────────────────
     /// <summary>
     /// true  → mensalidade JÁ inclui a quota de sócio (Basquetebol, Voleibol, etc.)

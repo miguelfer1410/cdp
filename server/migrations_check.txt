@@ -1,0 +1,76 @@
+Build started...
+Build succeeded.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'TicketPriceNonSocio' on entity type 'Event'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'TicketPriceSocio' on entity type 'Event'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'FeeDiscount' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'FeeEscalao1Normal' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'FeeEscalao2Normal' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'FeeNormalNormal' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'InscriptionFeeMinis' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'InscriptionFeeMinisDiscount' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'InscriptionFeeNormal' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'InscriptionFeeVeteranos' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+warn: Microsoft.EntityFrameworkCore.Model.Validation[30000]
+      No store type was specified for the decimal property 'MonthlyFee' on entity type 'Sport'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (48ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT 1
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (49ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT OBJECT_ID(N'[__EFMigrationsHistory]');
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (37ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [MigrationId], [ProductVersion]
+      FROM [__EFMigrationsHistory]
+      ORDER BY [MigrationId];
+20260128143643_InitialCreate
+20260202093229_AddUserProfileFields
+20260204091421_AddMembershipStatusAndPayments
+20260204112056_AddCMSTables
+20260204144758_AddPasswordResetFields
+20260207200021_AddNewsImageGallery
+20260216100347_AddEventsTable
+20260216102314_AddTrainingSchedules
+20260218094017_AddAttendanceTable
+20260218100143_AddGameCallUpTable
+20260218101723_AddSystemSettingsAndSportFee
+20260218104756_AddPaymentReferenceFields
+20260218110235_AddPeriodsReferences
+20260218151104_MultipleAthleteProfiles
+20260218154603_RevertToSingleAthleteProfile
+20260223101441_AddFamilyAssociationRequest
+20260223103334_AddUserFamilyLink
+20260223150036_AddRelationshipToFamilyLink
+20260224183149_UpdateSportFeeFields
+20260225095929_AddEscalaoRequest
+20260225123243_AddNormalFeesToSport
+20260225153645_SimplifyFeeFields
+20260302105048_AddEscalaoTable
+20260302111255_AddMissingEscalaos
+20260302114941_LinkTeamsToEscalaos
+20260304091423_AddEscalaoAgeAndSports
+20260304093902_UpdateEscalaoSeeding
+20260304101012_AddGenderToUser
+20260309102406_AddCardNumber
+20260309123813_UpdateDatabase
+20260309142821_UpdatePriceJogo
+20260311093657_AcceptRejectFamilyRequest
+20260316143212_ReplaceDaySchedules
+20260316144336_AddDaySchedulesToTrainingSchedule
+20260316153211_AddTicketsTable
+20260317185320_AddCoachTeamManyMany
+20260318093526_AllowDuplicateMembershipNumber
+20260323110700_AddRegulationAcceptanceFields
+20260323112058_AddMinisInscriptionFees
+20260324132126_MakeSportIdNullable
+20260325101749_AddVeteranosInscriptionFee (Pending)

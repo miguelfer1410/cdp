@@ -366,6 +366,33 @@
     transition: border-color 0.2s;
 }
 
+.amount-cell {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.amount-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.monthly-fee {
+    font-size: 1rem;
+}
+
+.pending-inscription-tag {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #ffedd5;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
 .membership-edit-actions {
     display: flex;
     gap: 0.25rem;
@@ -422,16 +449,22 @@
 .team-sport-cell {
     display: flex;
     flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.25rem 0;
 }
 
 .team-name {
     font-weight: 500;
     color: #334155;
+    font-size: 0.875rem;
+    line-height: 1.2;
 }
 
 .sport-name {
-    font-size: 0.8rem;
-    color: #64748b;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.1rem;
+    font-style: italic;
 }
 
 .amount-cell {

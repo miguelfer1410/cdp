@@ -185,6 +185,32 @@
     margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 2px solid var(--bg-light);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.team-selector-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.team-mini-selector {
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    font-size: 0.85rem;
+    color: #003380;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.team-mini-selector:hover {
+    border-color: #003380;
+    background: #f0f7ff;
 }
 
 .dashboard-card-header h2 {

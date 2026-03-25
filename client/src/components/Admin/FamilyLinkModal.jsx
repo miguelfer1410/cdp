@@ -11,6 +11,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [resultRelationships, setResultRelationships] = useState({}); // {userId: relationship}
+    const [updatingLinkId, setUpdatingLinkId] = useState(null);
 
     const relationshipOptions = [
         { value: 'Outro', label: 'Outro' },
@@ -59,7 +60,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
         setSearching(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}`, {
+            const response = await fetch(`${API_URL}/users?search=${encodeURIComponent(term)}&isActive=true`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -111,6 +112,7 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
     };
 
     const handleUpdateRelationship = async (linkId, relationship, targetUserId) => {
+        setUpdatingLinkId(linkId);
         try {
             const token = localStorage.getItem('token');
 
@@ -143,6 +145,8 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
             }
         } catch (err) {
             console.error('Error updating relationship:', err);
+        } finally {
+            setUpdatingLinkId(null);
         }
     };
 
@@ -215,15 +219,22 @@ const FamilyLinkModal = ({ isOpen, onClose, user }) => {
                                                 <div className="fam-link-name-row">
                                                     <span className="fam-link-name">{link.fullName}</span>
                                                 </div>
-                                                <select
-                                                    className="fam-link-rel-select"
-                                                    value={link.relationship || 'Outro'}
-                                                    onChange={(e) => handleUpdateRelationship(link.linkId, e.target.value, link.userId)}
-                                                >
-                                                    {relationshipOptions.map(opt => (
-                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                    ))}
-                                                </select>
+                                                {updatingLinkId === link.linkId ? (
+                                                    <div className="fam-link-updating-spinner">
+                                                        <div className="spinner-mini-inline"></div>
+                                                        <span>A atualizar...</span>
+                                                    </div>
+                                                ) : (
+                                                    <select
+                                                        className="fam-link-rel-select"
+                                                        value={link.relationship || 'Outro'}
+                                                        onChange={(e) => handleUpdateRelationship(link.linkId, e.target.value, link.userId)}
+                                                    >
+                                                        {relationshipOptions.map(opt => (
+                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
                                             </div>
                                         </div>
                                         {link.isExplicit ? (

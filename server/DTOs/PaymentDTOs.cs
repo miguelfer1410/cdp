@@ -60,7 +60,7 @@ public class MarkWithdrawnDto
     public int UserId { get; set; }
 }
 
-public class AthletePaymentExportDto
+public class GlobalPaymentExportDto
 {
     public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;

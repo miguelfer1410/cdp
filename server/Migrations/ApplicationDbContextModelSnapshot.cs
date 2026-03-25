@@ -1107,14 +1107,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 24, 13, 21, 25, 375, DateTimeKind.Utc).AddTicks(8159),
+                            CreatedAt = new DateTime(2026, 3, 25, 10, 17, 48, 249, DateTimeKind.Utc).AddTicks(4743),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 24, 13, 21, 25, 375, DateTimeKind.Utc).AddTicks(8160),
+                            CreatedAt = new DateTime(2026, 3, 25, 10, 17, 48, 249, DateTimeKind.Utc).AddTicks(4745),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1158,6 +1158,9 @@ namespace CdpApi.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("InscriptionFeeNormal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("InscriptionFeeVeteranos")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsActive")
@@ -1450,13 +1453,13 @@ namespace CdpApi.Migrations
                         {
                             Id = 1,
                             AcceptedRegulation = false,
-                            CreatedAt = new DateTime(2026, 3, 24, 13, 21, 25, 516, DateTimeKind.Utc).AddTicks(4894),
+                            CreatedAt = new DateTime(2026, 3, 25, 10, 17, 48, 426, DateTimeKind.Utc).AddTicks(1479),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$8JfeMGNUTCy6uOOu02iNlevdMIzh5pMRrR.YDAXTZ8ZI9BiaaRSXy"
+                            PasswordHash = "$2a$11$/7ACemWl/25NzCdzNalI7.8WQcDYMtfkplOLcAbSrBIcf2Xx2lZRa"
                         });
                 });
 
@@ -1523,7 +1526,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 24, 13, 21, 25, 516, DateTimeKind.Utc).AddTicks(5528),
+                            AssignedAt = new DateTime(2026, 3, 25, 10, 17, 48, 426, DateTimeKind.Utc).AddTicks(2281),
                             RoleId = 2,
                             UserId = 1
                         });

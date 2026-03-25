@@ -185,7 +185,7 @@ public class FamilyAssociationsController : ControllerBase
 
         var normalizedName = request.FamilyMemberName.Trim().ToLower();
 
-        var candidates = _context.Users.AsQueryable();
+        var candidates = _context.Users.Where(u => u.IsActive).AsQueryable();
 
         // Filter by NIF if provided
         if (!string.IsNullOrWhiteSpace(request.FamilyMemberNif))

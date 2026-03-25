@@ -6,8 +6,6 @@ import {
     FaCreditCard,
     FaGift,
     FaPercentage,
-    FaSwimmingPool,
-    FaTicketAlt,
     FaBolt,
     FaReceipt,
     FaBell,
@@ -18,12 +16,11 @@ import {
     FaDownload,
     FaCheck,
     FaClock,
-    FaMapMarkerAlt,
-    FaTrophy,
-    FaCalendarCheck,
     FaArrowRight,
     FaUserFriends,
-    FaExclamationCircle
+    FaExclamationCircle,
+    FaChevronDown,
+    FaChevronUp
 } from 'react-icons/fa';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import BecomeMember from '../../components/BecomeMember/BecomeMember';
@@ -33,7 +30,6 @@ import MembershipCard from '../../components/MembershipCard/MembershipCard';
 import './DashboardSocio.css';
 import PaymentHistorySocio from '../../components/PaymentHistorySocio/PaymentHistorySocio';
 
-
 const DashboardSocio = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -41,6 +37,8 @@ const DashboardSocio = () => {
     const [paymentData, setPaymentData] = useState(null);
     const [paymentHistory, setPaymentHistory] = useState([]);
     const [memberQuota, setMemberQuota] = useState(null);
+    const [quotaBreakdown, setQuotaBreakdown] = useState([]);
+    const [appliedDiscounts, setAppliedDiscounts] = useState([]);
     const [overdueMonths, setOverdueMonths] = useState([]);
     const [totalDue, setTotalDue] = useState(null);
     const [error, setError] = useState(null);
@@ -48,7 +46,7 @@ const DashboardSocio = () => {
     const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
     const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-
+    const [isOverdueDropdownOpen, setIsOverdueDropdownOpen] = useState(false);
 
     // Linked profiles — refreshed from the API on every mount so newly-accepted
     // family association requests become visible without forcing a re-login.
@@ -145,7 +143,6 @@ const DashboardSocio = () => {
         }
     };
 
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -197,8 +194,11 @@ const DashboardSocio = () => {
                     if (quotaResponse.ok) {
                         const quotaData = await quotaResponse.json();
                         setMemberQuota(quotaData.amount);
+                        setQuotaBreakdown(quotaData.breakdown || []);
+                        setAppliedDiscounts(quotaData.discountsApplied || []);
                         setOverdueMonths(quotaData.overdueMonths || []);
                         setTotalDue(quotaData.totalDue ?? null);
+                        setPaymentData(quotaData);
                     } else {
                         // Fallback: fetch fees to determine correct quota (minor vs adult)
                         const feesResponse = await fetch('http://localhost:5285/api/fees', {
@@ -345,7 +345,6 @@ const DashboardSocio = () => {
         memberSince: memberSinceYear.toString(),
         registrationDate: formattedDate,
         yearsAsMember: yearsAsMember,
-        currentDiscount: 15,
         eventsParticipated: 0,
         email: getDisplayEmail(userData.email),
         phone: userData.phone || 'Não definido',
@@ -353,78 +352,17 @@ const DashboardSocio = () => {
         postalCode: userData.postalCode && userData.city ? `${userData.postalCode} ${userData.city}` : 'Não definido',
         nif: userData.nif || 'Não definido',
         monthlyFee: paymentData?.monthlyFee || 0,
-        nextPayment: paymentData?.nextPaymentDue ? formatDate(paymentData.nextPaymentDue) : 'Não disponível',
+        nextPayment: paymentData?.nextPeriodMonth
+            ? (() => { const M = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']; return `${M[paymentData.nextPeriodMonth - 1]} ${paymentData.nextPeriodYear}`; })()
+            : (paymentData?.nextPeriodYear ? `${paymentData.nextPeriodYear}` : 'Não disponível'),
         validity: '31/12/2026',
         status: paymentData?.paymentStatus || (userData.isActive ? 'Ativo' : 'Inativo')
     };
 
-    const benefits = [
-        {
-            icon: <FaPercentage />,
-            title: 'Desconto em Inscrições',
-            description: '15% de desconto em todas as inscrições de modalidades para dependentes'
-        },
-        {
-            icon: <FaSwimmingPool />,
-            title: 'Acesso Gratuito às Piscinas',
-            description: 'Entrada gratuita nas piscinas do clube durante todo o ano'
-        },
-        {
-            icon: <FaTicketAlt />,
-            title: 'Prioridade em Eventos',
-            description: 'Acesso prioritário e descontos em bilhetes para jogos e eventos do clube'
-        }
-    ];
-
-    const events = [
-        {
-            day: '02',
-            month: 'FEV',
-            title: 'Jantar Anual de Sócios',
-            time: '20:00',
-            location: 'Salão Nobre do Clube',
-            badge: 'exclusive'
-        },
-        {
-            day: '15',
-            month: 'FEV',
-            title: 'Dia da Família no Pavilhão',
-            time: '10:00 - 18:00',
-            location: 'Pavilhão Fernando Linhares',
-            badge: 'family'
-        },
-        {
-            day: '20',
-            month: 'FEV',
-            title: 'Assembleia Geral de Sócios',
-            time: '19:00',
-            location: 'Auditório do Clube',
-            badge: 'exclusive'
-        }
-    ];
-
-    const notifications = [
-        {
-            icon: <FaCalendarCheck />,
-            title: 'Inscrições Abertas',
-            message: 'Já estão abertas as inscrições para o Jantar Anual de Sócios.',
-            time: 'Há 2 dias'
-        },
-        {
-            icon: <FaTrophy />,
-            title: 'Jogo Importante',
-            message: 'Não perca o jogo da equipa sénior no próximo sábado.',
-            time: 'Há 3 dias'
-        }
-    ];
-
     const documents = [
         { name: 'Regulamento Interno', size: '2.4 MB', type: 'PDF' },
         { name: 'Cartão de Sócio', size: '156 KB', type: 'PDF' },
-        { name: 'Benefícios 2026', size: '1.1 MB', type: 'PDF' }
     ];
-
-
 
     return (
         <div className="dashboard-wrapper">
@@ -480,10 +418,6 @@ const DashboardSocio = () => {
                             <p>Anos de Sócio</p>
                         </div>
                         <div className="stat-card">
-                            <h3>{memberData.currentDiscount}%</h3>
-                            <p>Desconto Atual</p>
-                        </div>
-                        <div className="stat-card">
                             <h3>{memberData.eventsParticipated}</h3>
                             <p>Eventos Participados</p>
                         </div>
@@ -512,109 +446,88 @@ const DashboardSocio = () => {
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><FaCreditCard /> Estado de Pagamento</h2>
-                                    <button className="view-all-link" onClick={() => setIsHistoryModalOpen(true)}>
+                                    <button className="view-all-link-socio" onClick={() => setIsHistoryModalOpen(true)}>
                                         Ver Histórico <FaArrowRight />
                                     </button>
                                 </div>
 
-                                <div className="payment-summary">
-                                    <div className="payment-summary-item">
-                                        <p>Quota Mensal</p>
-                                        <h3>{memberQuota !== null ? `€${Number(memberQuota).toFixed(2)}` : '—'}</h3>
+                                <div className="payment-summary-new">
+                                    <div className="payment-summary-main">
+                                        <div className="payment-summary-item-new large">
+                                            <p>Total a Pagar</p>
+                                            <h3 className={totalDue > 0 || overdueMonths.length > 0 ? 'text-danger' : 'text-success'}>
+                                                {totalDue !== null ? `€${Number(totalDue).toFixed(2)}` : (overdueMonths.length > 0 ? `€${(overdueMonths.reduce((s, m) => s + m.amount, 0) + (memberQuota || 0)).toFixed(2)}` : '€0.00')}
+                                            </h3>
+                                            <span className="total-due-explanation">
+                                                {overdueMonths.length > 0
+                                                    ? `Quota atual + ${overdueMonths.length} ${overdueMonths.length === 1 ? 'mês em atraso' : 'meses em atraso'}`
+                                                    : 'Quota do mês atual'}
+                                            </span>
+                                        </div>
+                                        <div className="payment-summary-details">
+                                            <div className="payment-summary-item-new">
+                                                <p>Quota Mensal</p>
+                                                <span>{memberQuota !== null ? `€${Number(memberQuota).toFixed(2)}` : '—'}</span>
+                                            </div>
+                                            <div className="payment-summary-item-new">
+                                                <p>Próximo Pagamento</p>
+                                                <span>{memberData.nextPayment}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="payment-summary-item">
-                                        <p>Próximo Pagamento</p>
-                                        <h3>{memberData.nextPayment}</h3>
-                                    </div>
+
+                                    {overdueMonths && overdueMonths.length > 0 && (
+                                        <div className="overdue-dropdown-container">
+                                            <button
+                                                className={`overdue-dropdown-header ${isOverdueDropdownOpen ? 'active' : ''}`}
+                                                onClick={() => setIsOverdueDropdownOpen(!isOverdueDropdownOpen)}
+                                            >
+                                                <div className="header-info">
+                                                    <FaExclamationCircle className="icon-error" />
+                                                    <span>{overdueMonths.length} {overdueMonths.length === 1 ? 'Quota em Atraso' : 'Quotas em Atraso'}</span>
+                                                </div>
+                                                <div className="header-amount">
+                                                    <strong>€{overdueMonths.reduce((s, m) => s + m.amount, 0).toFixed(2)}</strong>
+                                                    {isOverdueDropdownOpen ? <FaChevronUp /> : <FaChevronDown />}
+                                                </div>
+                                            </button>
+
+                                            {isOverdueDropdownOpen && (
+                                                <div className="overdue-dropdown-content">
+                                                    <div className="overdue-list-scrollable">
+                                                        {overdueMonths.map((m, i) => {
+                                                            const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                                                            return (
+                                                                <div key={i} className="overdue-month-item">
+                                                                    <span>{MONTHS[m.periodMonth - 1]} {m.periodYear}</span>
+                                                                    <strong>€{m.amount.toFixed(2)}</strong>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {quotaBreakdown.some(item => item.isDiscount || item.amount < 0) && (
+                                        <div className="discounts-applied-container">
+                                            <div className="discounts-divider"></div>
+                                            <h4 className="discounts-title">Benefícios e Descontos Aplicados</h4>
+                                            <div className="discounts-list">
+                                                {quotaBreakdown.filter(item => item.isDiscount || item.amount < 0).map((discount, idx) => (
+                                                    <div key={idx} className="discount-tag">
+                                                        <div className="discount-label-area">
+                                                            <FaPercentage className="discount-icon-small" />
+                                                            <span>{discount.label}</span>
+                                                        </div>
+                                                        <strong className="discount-value">{discount.amount.toFixed(2)} €</strong>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-
-                                {/* Overdue banner */}
-                                {overdueMonths && overdueMonths.length > 0 && (
-                                    <div style={{
-                                        margin: '12px 16px',
-                                        padding: '14px 16px',
-                                        background: '#fff5f5',
-                                        border: '1px solid #fca5a5',
-                                        borderRadius: '10px',
-                                        color: '#c0392b'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', marginBottom: '8px', fontSize: '0.95rem' }}>
-                                            <FaExclamationCircle /> Quotas em Atraso
-                                        </div>
-                                        <ul style={{ margin: 0, padding: '0 0 0 20px', fontSize: '0.875rem', lineHeight: '1.8' }}>
-                                            {overdueMonths.map((m, i) => {
-                                                const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                                                return (
-                                                    <li key={i} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '260px' }}>
-                                                        <span>{MONTHS[m.periodMonth - 1]} {m.periodYear}</span>
-                                                        <strong>{m.amount.toFixed(2)} €</strong>
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                        <div style={{ marginTop: '10px', fontSize: '0.875rem', fontWeight: '700', borderTop: '1px solid #fca5a5', paddingTop: '8px' }}>
-                                            Total a pagar: <span>{(totalDue ?? overdueMonths.reduce((s, m2) => s + m2.amount, 0) + (memberQuota || 0)).toFixed(2)} €</span>
-                                            <span style={{ fontWeight: '400', fontSize: '0.8rem', color: '#888', marginLeft: '6px' }}>(meses em atraso + mês atual)</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {paymentHistory.length > 0 ? (
-                                    paymentHistory.map((payment) => (
-                                        <div key={payment.id} className="payment-item">
-                                            <div className="payment-details">
-                                                <div className="payment-icon">
-                                                    {payment.status === 'Completed' ? <FaCheck /> : <FaClock />}
-                                                </div>
-                                                <div className="payment-info">
-                                                    <h4>Quota {payment.periodMonth
-                                                        ? (() => { const M = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']; return `${M[payment.periodMonth - 1]} ${payment.periodYear}`; })()
-                                                        : (payment.month || '')}
-                                                    </h4>
-                                                    <p>Pago em {formatDate(payment.paymentDate)}</p>
-                                                </div>
-                                            </div>
-                                            <div className="payment-amount">
-                                                <h4>€{payment.amount.toFixed(2)}</h4>
-                                                <span className={`payment-status status-${payment.status.toLowerCase()}`}>
-                                                    {payment.status === 'Completed' ? 'Pago' : payment.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : overdueMonths.length > 0 ? null : (
-                                    <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                                        <p>Nenhum pagamento registado ainda.</p>
-                                    </div>
-                                )}
-
-                                {/* Overdue entries in history */}
-                                {overdueMonths && overdueMonths.length > 0 && (
-                                    <>
-                                        {overdueMonths.map((m, i) => {
-                                            const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                                            return (
-                                                <div key={`overdue-${i}`} className="payment-item" style={{ background: '#fff5f5', borderLeft: '3px solid #f87171' }}>
-                                                    <div className="payment-details">
-                                                        <div className="payment-icon" style={{ background: '#fef2f2', color: '#dc2626' }}>
-                                                            <FaExclamationCircle />
-                                                        </div>
-                                                        <div className="payment-info">
-                                                            <h4>Quota {MONTHS[m.periodMonth - 1]} {m.periodYear}</h4>
-                                                            <p style={{ color: '#dc2626', fontSize: '0.8rem' }}>Em atraso</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="payment-amount">
-                                                        <h4 style={{ color: '#c0392b' }}>€{m.amount.toFixed(2)}</h4>
-                                                        <span className="payment-status" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '12px', padding: '2px 10px', fontSize: '0.78rem', fontWeight: '600' }}>
-                                                            Em Atraso
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </>
-                                )}
                             </div>
 
                             {/* Benefits */}
@@ -623,17 +536,6 @@ const DashboardSocio = () => {
                                     <h2><FaGift /> Benefícios Ativos</h2>
                                 </div>
 
-                                {benefits.map((benefit, index) => (
-                                    <div key={index} className="benefit-item">
-                                        <div className="benefit-icon">
-                                            {benefit.icon}
-                                        </div>
-                                        <div className="benefit-content">
-                                            <h4>{benefit.title}</h4>
-                                            <p>{benefit.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
                             </div>
 
                             {/* Events */}
@@ -645,22 +547,6 @@ const DashboardSocio = () => {
                                     </Link>
                                 </div>
 
-                                {events.map((event, index) => (
-                                    <div key={index} className="event-item">
-                                        <div className="event-date">
-                                            <span className="day">{event.day}</span>
-                                            <span className="month">{event.month}</span>
-                                        </div>
-                                        <div className="event-details">
-                                            <h3>{event.title}</h3>
-                                            <p><FaClock /> {event.time}</p>
-                                            <p><FaMapMarkerAlt /> {event.location}</p>
-                                            <span className={`event-badge badge-${event.badge}`}>
-                                                {event.badge === 'exclusive' ? 'Exclusivo Sócios' : 'Atividade Familiar'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
                             </div>
                         </div>
 
@@ -703,18 +589,6 @@ const DashboardSocio = () => {
                                     </Link>
                                 </div>
 
-                                {notifications.map((notification, index) => (
-                                    <div key={index} className="notification-item">
-                                        <div className="notification-icon">
-                                            {notification.icon}
-                                        </div>
-                                        <div className="notification-content">
-                                            <h4>{notification.title}</h4>
-                                            <p>{notification.message}</p>
-                                            <div className="notification-time">{notification.time}</div>
-                                        </div>
-                                    </div>
-                                ))}
                             </div>
 
                             {/* Personal Information */}

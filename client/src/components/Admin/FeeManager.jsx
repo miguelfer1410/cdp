@@ -51,6 +51,7 @@ const FeeManager = () => {
                 inscriptionFeeNormal: s.inscriptionFeeNormal ?? 0,
                 inscriptionFeeMinis: s.inscriptionFeeMinis ?? 0,
                 inscriptionFeeMinisDiscount: s.inscriptionFeeMinisDiscount ?? 0,
+                inscriptionFeeVeteranos: s.inscriptionFeeVeteranos ?? 0,
                 quotaIncluded: s.quotaIncluded ?? true
             })));
         } catch (err) {
@@ -99,6 +100,7 @@ const FeeManager = () => {
                     inscriptionFeeNormal: parseFloat(sport.inscriptionFeeNormal) || 0,
                     inscriptionFeeMinis: parseFloat(sport.inscriptionFeeMinis) || 0,
                     inscriptionFeeMinisDiscount: parseFloat(sport.inscriptionFeeMinisDiscount) || 0,
+                    inscriptionFeeVeteranos: parseFloat(sport.inscriptionFeeVeteranos) || 0,
                     quotaIncluded: sport.quotaIncluded,
                 })
             });
@@ -199,6 +201,7 @@ const FeeManager = () => {
                                             <FeeInput label="Minis Irmãos/2ª Mod." field="inscriptionFeeMinisDiscount" sport={sport} onChange={handleSportField} />
                                         </>
                                     )}
+                                    <FeeInput label="Veteranos Normal" field="inscriptionFeeVeteranos" sport={sport} onChange={handleSportField} />
                                 </div>
                             </div>
 

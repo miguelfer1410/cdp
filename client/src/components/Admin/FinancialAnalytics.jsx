@@ -17,7 +17,7 @@ import { Pie, Bar, Line, Doughnut } from 'react-chartjs-2';
 import {
     FaMoneyBillWave, FaRegHourglass, FaChartLine,
     FaCalendarAlt, FaTimesCircle, FaExchangeAlt, FaChartBar,
-    FaFutbol, FaLayerGroup
+    FaFutbol, FaLayerGroup, FaUsers
 } from 'react-icons/fa';
 import './FinancialAnalytics.css';
 
@@ -88,6 +88,7 @@ const FinancialAnalytics = () => {
     // Filters
     const [selectedYear, setSelectedYear] = useState('all');
     const [selectedMonth, setSelectedMonth] = useState('all');
+    const [teamSportFilter, setTeamSportFilter] = useState('Todas');
     const [chartView, setChartView] = useState('bar'); // 'bar' | 'line'
 
     useEffect(() => { fetchFinancialData(); }, []);
@@ -156,6 +157,29 @@ const FinancialAnalytics = () => {
         let acc = 0;
         return filteredStats.map(m => { acc += m.completedAmount; return acc; });
     }, [filteredStats]);
+
+    // ───── Segregation for unassigned data ─────
+    const sportRowsRaw = useMemo(() => data?.revenueBySport ?? [], [data]);
+    const sportRows = useMemo(() => sportRowsRaw.filter(s => s.sport !== 'Sem Modalidade'), [sportRowsRaw]);
+    const unassignedSport = useMemo(() => sportRowsRaw.find(s => s.sport === 'Sem Modalidade'), [sportRowsRaw]);
+
+    const teamRowsRaw = useMemo(() => data?.revenueByTeam ?? [], [data]);
+
+    // Unique sports for the team filter
+    const uniqueSports = useMemo(() => {
+        const sports = [...new Set(teamRowsRaw.map(r => r.team.split(' - ')[0]))];
+        return ['Todas', ...sports.sort()];
+    }, [teamRowsRaw]);
+
+    const teamRows = useMemo(() => {
+        let rows = teamRowsRaw.filter(r => r.team !== 'Sem Equipa');
+        if (teamSportFilter !== 'Todas') {
+            rows = rows.filter(r => r.team.startsWith(`${teamSportFilter} - `));
+        }
+        return rows;
+    }, [teamRowsRaw, teamSportFilter]);
+
+    const unassignedTeam = useMemo(() => teamRowsRaw.find(r => r.team === 'Sem Equipa'), [teamRowsRaw]);
 
     if (loading) return <div className="analytics-loading">Carregando análise financeira...</div>;
     if (error) return <div className="analytics-error">{error}</div>;
@@ -301,8 +325,7 @@ const FinancialAnalytics = () => {
         'rgba(0,212,170,0.82)',
     ];
 
-    // 7. Horizontal Bar – receita por modalidade
-    const sportRows = data.revenueBySport ?? [];
+    // 7. Horizontal Bar – receita por modalidade (FILTRADO)
     const sportBarData = {
         labels: sportRows.map(s => s.sport),
         datasets: [{
@@ -314,14 +337,25 @@ const FinancialAnalytics = () => {
         }],
     };
 
-    // 8. Horizontal Bar – receita por escalão (TODOS, sem agrupar)
-    const escalaoRows = data.revenueByEscalao ?? [];
-    const escalaoBarData = {
-        labels: escalaoRows.map(r => r.escalao),
+    // 8. Horizontal Bar – receita por equipa (FILTRADO)
+    const teamBarData = {
+        labels: teamRows.map(r => r.team),
         datasets: [{
             label: 'Receita (€)',
-            data: escalaoRows.map(r => r.totalAmount),
-            backgroundColor: escalaoRows.map((_, i) => SPORT_PALETTE[i % SPORT_PALETTE.length]),
+            data: teamRows.map(r => r.totalAmount),
+            backgroundColor: teamRows.map((_, i) => SPORT_PALETTE[i % SPORT_PALETTE.length]),
+            borderRadius: 6,
+            borderSkipped: false,
+        }],
+    };
+
+    // 9. Dados para o gráfico de "Receita dos Sócios" (Unassigned)
+    const membersRevenueData = {
+        labels: ['Receita dos Sócios'],
+        datasets: [{
+            label: 'Receita (€)',
+            data: [unassignedSport?.totalAmount ?? 0],
+            backgroundColor: ['rgba(37, 117, 252, 0.8)'], // Blue like athletes
             borderRadius: 6,
             borderSkipped: false,
         }],
@@ -411,7 +445,7 @@ const FinancialAnalytics = () => {
     // Altura dinâmica: 44px por barra + margem
     const BAR_HEIGHT = 44;
     const BAR_MIN = 180;
-    const escalaoChartHeight = Math.max(BAR_MIN, escalaoRows.length * BAR_HEIGHT);
+    const teamChartHeight = Math.max(BAR_MIN, teamRows.length * BAR_HEIGHT);
     const sportChartHeight = Math.max(BAR_MIN, sportRows.length * BAR_HEIGHT);
 
     return (
@@ -590,7 +624,7 @@ const FinancialAnalytics = () => {
                 </div>
             </div>
 
-            {(sportRows.length > 0 || escalaoRows.length > 0) && (
+            {(sportRows.length > 0 || teamRows.length > 0) && (
                 <div className="charts-grid charts-grid--breakdown">
 
                     {/* Receita por Modalidade */}
@@ -609,19 +643,53 @@ const FinancialAnalytics = () => {
                         </div>
                     </div>
 
-                    {/* Receita por Escalão — todos, com scroll se necessário */}
+                    {/* Receita por Equipa — todos, com scroll se necessário */}
+                    <div className="chart-item">
+                        <div className="chart-header-row">
+                            <h3>
+                                <FaLayerGroup className="chart-h-icon teal" />
+                                Receita por Equipa
+                                <span className="chart-badge">{teamRows.length} equip{teamRows.length !== 1 ? 'as' : 'a'}</span>
+                            </h3>
+
+                            {uniqueSports.length > 2 && (
+                                <div className="chart-inline-filter">
+                                    <select
+                                        value={teamSportFilter}
+                                        onChange={(e) => setTeamSportFilter(e.target.value)}
+                                        className="chart-select-filter"
+                                    >
+                                        {uniqueSports.map(s => (
+                                            <option key={s} value={s}>{s === 'Todas' ? 'Todas as Modalidades' : s}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="hbar-scroll-container">
+                            <div style={{ height: teamChartHeight }}>
+                                {teamRows.length > 0
+                                    ? <Bar data={teamBarData} options={hBarOpts(teamRows)} />
+                                    : <div className="no-data-msg">Sem dados de equipas.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Gráfico para "Receita dos Sócios" */}
                     <div className="chart-item">
                         <h3>
-                            <FaLayerGroup className="chart-h-icon teal" />
-                            Receita por Escalão
-                            <span className="chart-badge">{escalaoRows.length} escal{escalaoRows.length !== 1 ? 'ões' : 'ão'}</span>
+                            <FaUsers className="chart-h-icon blue" />
+                            Receita dos Sócios
                         </h3>
-                        <div className="hbar-scroll-container">
-                            <div style={{ height: escalaoChartHeight }}>
-                                {escalaoRows.length > 0
-                                    ? <Bar data={escalaoBarData} options={hBarOpts(escalaoRows)} />
-                                    : <div className="no-data-msg">Sem dados de escalões.</div>
-                                }
+                        <div className="hbar-scroll-container" style={{ maxHeight: '200px' }}>
+                            <div style={{ height: 100 }}>
+                                {unassignedSport ? (
+                                    <Bar data={membersRevenueData} options={hBarOpts([unassignedSport])} />
+                                ) : (
+                                    <div className="no-data-msg">Nenhuma receita de sócios.</div>
+                                )}
                             </div>
                         </div>
                     </div>
