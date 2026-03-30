@@ -75,4 +75,68 @@ public class StripeService : IStripeService
 
         return session.Id;
     }
+
+    /// <summary>
+    /// Creates a Stripe Checkout Session for quota payment.
+    /// Supports card, Multibanco (ATM reference) and MB Way.
+    /// Returns the hosted checkout URL to redirect the user to.
+    /// </summary>
+    public async Task<string> CreateQuotaCheckoutSessionAsync(
+        int memberProfileId,
+        int userId,
+        string customerName,
+        string customerEmail,
+        decimal amount,
+        string description,
+        int? periodMonth,
+        int periodYear,
+        string successUrl,
+        string cancelUrl)
+    {
+        var options = new SessionCreateOptions
+        {
+            PaymentMethodTypes = new List<string> { "card", "multibanco", "mb_way" },
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        UnitAmount = (long)(amount * 100), // Stripe uses cents
+                        Currency = "eur",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = description,
+                            Description = $"Clube Desportivo da Póvoa — {customerName}",
+                        },
+                    },
+                    Quantity = 1,
+                },
+            },
+            Mode = "payment",
+            SuccessUrl = successUrl,
+            CancelUrl = cancelUrl,
+            Metadata = new Dictionary<string, string>
+            {
+                { "Type", "quota" },
+                { "MemberProfileId", memberProfileId.ToString() },
+                { "UserId", userId.ToString() },
+                { "PeriodYear", periodYear.ToString() },
+                { "PeriodMonth", periodMonth.HasValue ? periodMonth.Value.ToString() : "" },
+                { "Description", description },
+                { "CustomerName", customerName },
+            }
+        };
+
+        if (!string.IsNullOrWhiteSpace(customerEmail))
+        {
+            options.CustomerEmail = customerEmail;
+        }
+
+        var service = new SessionService();
+        Session session = await service.CreateAsync(options);
+
+        // Return the hosted checkout URL (not just the session ID)
+        return session.Url;
+    }
 }

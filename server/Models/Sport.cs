@@ -30,6 +30,10 @@ public class Sport
     /// <summary>Mensalidade Escalão 2</summary>
     [Range(0, 1000)]
     public decimal FeeEscalao2Normal { get; set; } = 0;
+    
+    /// <summary>Mensalidade Veteranos</summary>
+    [Range(0, 1000)]
+    public decimal FeeVeteranos { get; set; } = 0;
 
     /// <summary>Preço único para irmão / 2ª modalidade (aplica-se a qualquer escalão)</summary>
     [Range(0, 1000)]

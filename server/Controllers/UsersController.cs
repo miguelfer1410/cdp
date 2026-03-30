@@ -153,6 +153,7 @@ public class UsersController : ControllerBase
             AthleteProfileId = u.AthleteProfile?.Id,
             CoachProfileId = u.CoachProfile?.Id,
             MembershipNumber = u.MemberProfile?.MembershipNumber,
+            CustomQuotaPrice = u.CustomQuotaPrice,
             Sport = u.AthleteProfile != null
                 ? u.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
                 : (u.CoachProfile != null ? u.CoachProfile.Sport?.Name : null)
@@ -262,6 +263,7 @@ public class UsersController : ControllerBase
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
             LastLogin = user.LastLogin,
+            CustomQuotaPrice = user.CustomQuotaPrice,
             Sport = user.AthleteProfile != null
                 ? user.AthleteProfile.AthleteTeams.FirstOrDefault(at => at.LeftAt == null)?.Team.Sport.Name
                 : (user.CoachProfile != null ? user.CoachProfile.Sport?.Name : null)
@@ -433,6 +435,7 @@ public class UsersController : ControllerBase
         user.PostalCode = request.PostalCode;
         user.City = request.City;
         user.Gender = request.Gender;
+        user.CustomQuotaPrice = request.CustomQuotaPrice;
 
         await _context.SaveChangesAsync();
 
@@ -1543,6 +1546,7 @@ public class UserResponse
     public int? AthleteProfileId { get; set; }
     public int? CoachProfileId { get; set; }
     public string? MembershipNumber { get; set; }
+    public decimal? CustomQuotaPrice { get; set; }
     public string? Sport { get; set; }
 }
 
@@ -1626,6 +1630,7 @@ public class UserUpdateRequest
     public string? PostalCode { get; set; }
     public string? City { get; set; }
     public Gender Gender { get; set; }
+    public decimal? CustomQuotaPrice { get; set; }
 }
 
 public class AthleteProfileRequest

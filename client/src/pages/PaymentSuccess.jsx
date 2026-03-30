@@ -21,7 +21,7 @@ const PaymentSuccess = () => {
                 <p>O seu bilhete foi gerado com sucesso e enviado para o seu email.</p>
                 <p className="note">Por favor, verifique a sua caixa de entrada (e a pasta de spam).</p>
                 <div className="actions">
-                    <Link to="/dashboard/atleta" className="btn-primary">Voltar ao Dashboard</Link>
+                    <Link to="/dashboard-atleta" className="btn-primary">Voltar ao Dashboard</Link>
                 </div>
             </div>
         </div>

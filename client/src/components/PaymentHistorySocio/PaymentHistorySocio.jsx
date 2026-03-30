@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     FaChevronLeft, FaChevronRight, FaCheckCircle, FaExclamationCircle,
     FaClock, FaHistory, FaEuroSign, FaListUl, FaInfinity,
-    FaCalendarCheck, FaTimes,
+    FaCalendarCheck, FaTimes, FaTrashAlt
 } from 'react-icons/fa';
 import './PaymentHistorySocio.css';
 
@@ -71,6 +71,32 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAd
         } catch (err) {
             console.error('Error paying inscription:', err);
             alert('Erro ao validar inscrição: ' + err.message);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeletePayment = async (id, label) => {
+        if (!window.confirm(`Tem a certeza que deseja eliminar o registo de "${label}"?`)) return;
+
+        setActionLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
+            const res = await fetch(`${apiUrl}/payment/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error('Erro ao eliminar pagamento');
+
+            // Refresh history
+            fetchHistory(year);
+            if (onPaymentSuccess) onPaymentSuccess();
+
+        } catch (err) {
+            console.error('Error deleting payment:', err);
+            alert('Erro ao eliminar pagamento: ' + err.message);
         } finally {
             setActionLoading(false);
         }
@@ -326,6 +352,15 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAd
                                                 {isVitalicio ? '—' : p.amount > 0 ? `${p.amount.toFixed(2)} €` : '—'}
                                             </span>
                                             <span className="phs-item-badge phs-badge--paid">Pago</span>
+                                            {isAdmin && !actionLoading && (
+                                                <button
+                                                    className="phs-item-delete-btn"
+                                                    onClick={() => handleDeletePayment(p.id, labelForPayment(p))}
+                                                    title="Eliminar este registo"
+                                                >
+                                                    <FaTrashAlt />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );

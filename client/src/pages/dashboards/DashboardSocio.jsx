@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     FaIdCard,
     FaCalendarAlt,
@@ -32,6 +32,7 @@ import PaymentHistorySocio from '../../components/PaymentHistorySocio/PaymentHis
 
 const DashboardSocio = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [paymentData, setPaymentData] = useState(null);
@@ -47,6 +48,8 @@ const DashboardSocio = () => {
     const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [isOverdueDropdownOpen, setIsOverdueDropdownOpen] = useState(false);
+    const [startingPayment, setStartingPayment] = useState(false);
+    const [paymentToast, setPaymentToast] = useState(null); // 'success' | 'cancelled' | null
 
     // Linked profiles — refreshed from the API on every mount so newly-accepted
     // family association requests become visible without forcing a re-login.
@@ -57,6 +60,20 @@ const DashboardSocio = () => {
         } catch { return []; }
     });
     const [currentUserId, setCurrentUserId] = useState(() => parseInt(localStorage.getItem('userId')) || null);
+
+    // Detect ?payment=success / ?payment=cancelled after Stripe redirect
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const paymentParam = params.get('payment');
+        if (paymentParam === 'success' || paymentParam === 'cancelled') {
+            setPaymentToast(paymentParam);
+            // Clean the query param from the URL without reloading
+            window.history.replaceState({}, '', location.pathname);
+            // Auto-dismiss after 6 seconds
+            const timer = setTimeout(() => setPaymentToast(null), 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [location.search]);
 
     // Refresh linked users from server on mount
     useEffect(() => {
@@ -140,6 +157,34 @@ const DashboardSocio = () => {
             console.error('Error switching user:', err);
             localStorage.setItem('userId', lu.id);
             setCurrentUserId(lu.id);
+        }
+    };
+
+    // Start Stripe Checkout for quota payment
+    const handleStartPayment = async () => {
+        setStartingPayment(true);
+        try {
+            const token = localStorage.getItem('token');
+            const url = `http://localhost:5285/api/payment/reference?userId=${currentUserId}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Erro ao iniciar pagamento');
+            }
+            const data = await response.json();
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            } else {
+                throw new Error('URL de pagamento não recebida.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        } finally {
+            setStartingPayment(false);
         }
     };
 
@@ -366,6 +411,30 @@ const DashboardSocio = () => {
 
     return (
         <div className="dashboard-wrapper">
+            {paymentToast && (
+                <div className={`payment-toast ${paymentToast}`}>
+                    <div className="toast-content">
+                        {paymentToast === 'success' ? (
+                            <>
+                                <div className="toast-icon success">✓</div>
+                                <div className="toast-text">
+                                    <strong>Pagamento Iniciado com Sucesso!</strong>
+                                    <p>O seu pagamento está a ser processado. Se usou Multibanco, a atualização pode demorar alguns minutos.</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="toast-icon cancelled">✕</div>
+                                <div className="toast-text">
+                                    <strong>Pagamento Cancelado</strong>
+                                    <p>O processo de pagamento foi interrompido. Pode tentar novamente quando desejar.</p>
+                                </div>
+                            </>
+                        )}
+                        <button className="toast-close" onClick={() => setPaymentToast(null)}>✕</button>
+                    </div>
+                </div>
+            )}
             {/* Linked Profile Tabs - shown when there are multiple linked accounts */}
             {linkedUsers.length > 1 && (
                 <div className="athlete-tabs">
@@ -559,12 +628,28 @@ const DashboardSocio = () => {
                                 </div>
 
                                 <div className="action-buttons">
-                                    {/* Quick Actions 
-                                    <Link to="#" className="action-btn action-btn-primary">
-                                        <FaCreditCard />
-                                        Pagar Quota
-                                    </Link>
-                                    */}
+                                    {(paymentData?.status !== 'Regularizada' && totalDue > 0) && (
+                                        <>
+                                            <div className="stripe-payment-methods" style={{ marginBottom: '4px' }}>
+                                                <span className="stripe-methods-label">Métodos aceites:</span>
+                                                <div className="stripe-methods-icons">
+                                                    <span className="stripe-method-badge">💳 Cartão</span>
+                                                    <span className="stripe-method-badge">🏦 Multibanco</span>
+                                                    <span className="stripe-method-badge">📱 MBWay</span>
+                                                </div>
+                                            </div>
+                                            {/*
+                                            <button
+                                                onClick={handleStartPayment}
+                                                disabled={startingPayment}
+                                                className="action-btn action-btn-primary stripe-pay-btn"
+                                                style={{ width: '100%', justifyContent: 'center' }}
+                                            >
+                                                {startingPayment ? 'A processar...' : `🔒 Pagar Quota (${Number(totalDue || 0).toFixed(2)} €)`}
+                                            </button>
+                                             */}
+                                        </>
+                                    )}
                                     <Link to="#" className="action-btn">
                                         <FaReceipt />
                                         Ver Recibos

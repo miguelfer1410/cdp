@@ -4,16 +4,19 @@ using CdpApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace CdpApi.Migrations
+namespace CdpApi.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260327153012_AddFeeVeteranosToSport")]
+    partial class AddFeeVeteranosToSport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1107,14 +1110,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 8, 29, 26, 973, DateTimeKind.Utc).AddTicks(6781),
+                            CreatedAt = new DateTime(2026, 3, 27, 15, 30, 11, 797, DateTimeKind.Utc).AddTicks(8227),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 30, 8, 29, 26, 973, DateTimeKind.Utc).AddTicks(6785),
+                            CreatedAt = new DateTime(2026, 3, 27, 15, 30, 11, 797, DateTimeKind.Utc).AddTicks(8229),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1392,9 +1395,6 @@ namespace CdpApi.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETUTCDATE()");
 
-                    b.Property<decimal?>("CustomQuotaPrice")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1459,13 +1459,13 @@ namespace CdpApi.Migrations
                         {
                             Id = 1,
                             AcceptedRegulation = false,
-                            CreatedAt = new DateTime(2026, 3, 30, 8, 29, 27, 162, DateTimeKind.Utc).AddTicks(1276),
+                            CreatedAt = new DateTime(2026, 3, 27, 15, 30, 11, 930, DateTimeKind.Utc).AddTicks(2116),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$CQBZISWrPbEnyxLghvRQK.TEMi6x8.LayUWIe9TGhX2vuNDGc0hES"
+                            PasswordHash = "$2a$11$FmRu.jycvN6bmJYC8ge5OuO6i1tZycn4L5zh4dlgPdb0V5.wBCt7C"
                         });
                 });
 
@@ -1532,7 +1532,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 30, 8, 29, 27, 162, DateTimeKind.Utc).AddTicks(2065),
+                            AssignedAt = new DateTime(2026, 3, 27, 15, 30, 11, 930, DateTimeKind.Utc).AddTicks(2596),
                             RoleId = 2,
                             UserId = 1
                         });

@@ -46,6 +46,10 @@ const PaymentManager = () => {
     const [membershipDuplicates, setMembershipDuplicates] = useState({});
     const [selectedInscriptions, setSelectedInscriptions] = useState([]);
 
+    // Quota inline editing
+    const [editingQuotaUserId, setEditingQuotaUserId] = useState(null);
+    const [editingQuotaValue, setEditingQuotaValue] = useState('');
+
     const fetchPaymentStatuses = useCallback(async () => {
         try {
             setLoading(true);
@@ -100,6 +104,63 @@ const PaymentManager = () => {
         fetchFilters();
     }, []);
 
+    // Pre-fill modal with payment history when opened or when modal year changes
+    useEffect(() => {
+        if (!isMonthModalOpen || !selectedAthlete) return;
+
+        const fetchHistoryForModal = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
+                const res = await fetch(`${apiUrl}/payment/history?userId=${selectedAthlete.userId}&year=${modalYear}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                const historyPayments = data.payments || [];
+                const historyInscriptions = data.inscriptions || [];
+                const isAnnual = selectedAthlete.paymentPreference === 'Annual';
+
+                if (isAnnual) {
+                    const annualPay = historyPayments.find(p => p.periodYear === modalYear && (p.periodMonth === null || p.periodMonth === 0));
+                    const annualAmount = annualPay ? annualPay.amount : (selectedAthlete.amount || 0) * 12;
+                    const monthlyBase = annualAmount / 12;
+
+                    setSelectedPeriods(Array.from({ length: 12 }, (_, i) => ({
+                        month: i + 1,
+                        year: modalYear,
+                        amount: monthlyBase
+                    })));
+                } else {
+                    const preFilled = historyPayments
+                        .filter(p => p.periodYear === modalYear && p.periodMonth > 0)
+                        .map(p => ({
+                            month: p.periodMonth,
+                            year: p.periodYear,
+                            amount: p.amount
+                        }));
+
+                    // If no payments for this year yet and it's the current year, pre-fill current month
+                    if (preFilled.length === 0 && modalYear === currentYear) {
+                        preFilled.push({
+                            month: currentMonth,
+                            year: currentYear,
+                            amount: selectedAthlete.amount || 0
+                        });
+                    }
+                    setSelectedPeriods(preFilled);
+                }
+
+                const paidInsIds = historyInscriptions.filter(i => i.paid).map(i => i.athleteTeamId);
+                setSelectedInscriptions(paidInsIds);
+            } catch (error) {
+                console.error('Error fetching history for modal:', error);
+            }
+        };
+
+        fetchHistoryForModal();
+    }, [isMonthModalOpen, selectedAthlete?.userId, modalYear, currentMonth, currentYear]);
+
     // Reset to page 1 whenever any filter changes (including debounced search)
     useEffect(() => {
         setPage(1);
@@ -140,7 +201,40 @@ const PaymentManager = () => {
             alert('Erro ao atualizar número de sócio.');
         } finally {
             setEditingMembershipId(null);
-            setEditingMembershipValue('');
+            setEditingMembershipValue(0);
+        }
+    };
+
+    const startEditQuota = (athlete) => {
+        setEditingQuotaUserId(athlete.userId);
+        setEditingQuotaValue(athlete.customQuotaPrice !== null && athlete.customQuotaPrice !== undefined
+            ? athlete.customQuotaPrice.toString()
+            : athlete.amount?.toString() || '');
+    };
+
+    const cancelEditQuota = () => {
+        setEditingQuotaUserId(null);
+        setEditingQuotaValue('');
+    };
+
+    const confirmEditQuota = async (userId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
+            const response = await fetch(`${apiUrl}/payment/admin/custom-quota-price`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, customQuotaPrice: editingQuotaValue === '' ? null : parseFloat(editingQuotaValue) })
+            });
+            if (!response.ok) throw new Error('Failed to update custom quota price');
+
+            fetchPaymentStatuses();
+        } catch (error) {
+            console.error('Error updating custom quota price:', error);
+            alert('Erro ao atualizar preço de quota.');
+        } finally {
+            setEditingQuotaUserId(null);
+            setEditingQuotaValue('');
         }
     };
 
@@ -170,20 +264,6 @@ const PaymentManager = () => {
         if (newStatus === 'Completed' && (isMonthly || isAnnual) && !periods) {
             setSelectedAthlete(athlete);
             setModalYear(currentYear);
-
-            if (isAnnual) {
-                // Select all 12 months for annual
-                const allMonths = Array.from({ length: 12 }, (_, i) => ({
-                    month: i + 1,
-                    year: currentYear,
-                    amount: athlete.amount || 0
-                }));
-                setSelectedPeriods(allMonths);
-            } else {
-                setSelectedPeriods([{ month: currentMonth, year: currentYear, amount: athlete.amount || 0 }]);
-            }
-
-            setSelectedInscriptions([]);
             setIsMonthModalOpen(true);
             return;
         }
@@ -349,6 +429,7 @@ const PaymentManager = () => {
     const isAthleteAnnual = selectedAthlete?.paymentPreference === 'Annual';
 
     const confirmButtonLabel = () => {
+        if (selectedAthlete?.status === 'Paid' || selectedAthlete?.status === 'Regularizada' || selectedAthlete?.status === 'Completed') return 'Guardar Alterações';
         if (isAthleteAnnual && selectedPeriods.length === 12) {
             const parts = ['Ano'];
             if (selectedInscriptions.length > 0)
@@ -530,13 +611,33 @@ const PaymentManager = () => {
                                     </td>
                                     <td data-label="Tipo Quota">{athlete.paymentPreference === 'Annual' ? 'Anual' : 'Mensal'}</td>
                                     <td data-label="Período">{athlete.paymentPreference === 'Annual' ? currentYear : athlete.currentPeriod}</td>
-                                    <td data-label="Valor" className="amount-cell">
+                                    <td data-label="Valor" className="amount-cell" onClick={() => startEditQuota(athlete)}>
                                         <div className="amount-wrapper">
-                                            <span className="monthly-fee">
-                                                {athlete.paymentPreference === 'Annual'
-                                                    ? `${((athlete.amount || 0) * 12).toFixed(2)}€`
-                                                    : `${(athlete.amount || 0).toFixed(2)}€`}
-                                            </span>
+                                            {editingQuotaUserId === athlete.userId ? (
+                                                <div className="quota-edit-container">
+                                                    <input
+                                                        className="quota-input"
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={editingQuotaValue}
+                                                        onChange={e => setEditingQuotaValue(e.target.value)}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') confirmEditQuota(athlete.userId);
+                                                            if (e.key === 'Escape') cancelEditQuota();
+                                                        }}
+                                                        onBlur={cancelEditQuota}
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <span className={`monthly-fee ${athlete.customQuotaPrice !== null ? 'custom-price' : ''}`}>
+                                                    {((athlete.status === 'Paid' || athlete.status === 'Regularizada' || athlete.status === 'Completed') && athlete.amountPaid !== null && athlete.amountPaid !== undefined)
+                                                        ? `${athlete.amountPaid.toFixed(2)}€`
+                                                        : (athlete.paymentPreference === 'Annual'
+                                                            ? `${((athlete.amount || 0) * 12).toFixed(2)}€`
+                                                            : `${(athlete.amount || 0).toFixed(2)}€`)}
+                                                </span>
+                                            )}
                                             {athlete.pendingInscriptions?.length > 0 && (
                                                 <div className="pending-inscription-tag" title={`Inscrições pendentes: ${athlete.pendingInscriptions.map(i => i.sportName).join(', ')}`}>
                                                     +{athlete.pendingInscriptions.reduce((acc, i) => acc + i.amount, 0).toFixed(2)}€ Inscr.
@@ -559,8 +660,8 @@ const PaymentManager = () => {
                                                     <FaCheckCircle /> <span>Validar</span>
                                                 </button>
                                             ) : (
-                                                <button className="payment-btn-action payment-btn-revert" title="Reverter Pagamento" onClick={() => handleUpdateStatus(athlete.userId, "Unpaid")}>
-                                                    <FaUndo /> <span>Reverter</span>
+                                                <button className="payment-btn-action payment-btn-validate" title="Editar Pagamento" onClick={() => handleUpdateStatus(athlete.userId, "Completed")}>
+                                                    <FaEdit /> <span>Editar</span>
                                                 </button>
                                             )}
                                             <button
@@ -625,7 +726,7 @@ const PaymentManager = () => {
                                     <FaCheckCircle />
                                 </div>
                                 <div className="modal-header-title">
-                                    <h3>Validar Pagamentos</h3>
+                                    <h3>{(selectedAthlete?.status === 'Paid' || selectedAthlete?.status === 'Regularizada' || selectedAthlete?.status === 'Completed') ? 'Editar Pagamentos' : 'Validar Pagamentos'}</h3>
                                     <p className="modal-subtitle">
                                         {selectedAthlete?.name}
                                         {isAthleteAnnual && <span className="annual-indicator" style={{ fontWeight: 'bold' }}> (Quota Anual)</span>}
@@ -780,6 +881,26 @@ const PaymentManager = () => {
                     onPaymentSuccess={fetchPaymentStatuses}
                 />
             )}
+            {/* ── Custom Quota Styles ── */}
+            <style>{`
+                .quota-edit-container { display: flex; align-items: center; justify-content: center; }
+                .quota-input { 
+                    width: 90px !important; 
+                    padding: 0.4rem 0.6rem !important; 
+                    border: 2px solid #3b82f6 !important; 
+                    border-radius: 8px !important; 
+                    font-size: 0.95rem !important; 
+                    font-weight: 700 !important; 
+                    color: #1e293b !important; 
+                    outline: none !important; 
+                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important; 
+                    text-align: center !important; 
+                    background: white !important;
+                }
+                .monthly-fee { cursor: pointer; transition: color 0.2s; }
+                .monthly-fee:hover { color: #3b82f6 !important; }
+                .custom-price { color: #1e293b !important; font-weight: 700 !important; text-decoration: underline dotted #cbd5e1; }
+            `}</style>
         </div>
     );
 };

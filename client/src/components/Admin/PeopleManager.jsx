@@ -43,6 +43,7 @@ const PeopleManager = () => {
         address: '',
         postalCode: '',
         city: '',
+        customQuotaPrice: '',
         hasAthleteProfile: false,
         hasMemberProfile: false,
         hasCoachProfile: false,
@@ -229,6 +230,7 @@ const PeopleManager = () => {
         setFormData({
             email: '', firstName: '', lastName: '', phone: '', birthDate: '', nif: '',
             address: '', postalCode: '', city: '',
+            customQuotaPrice: '',
             hasAthleteProfile: false,
             hasMemberProfile: false,
             hasCoachProfile: false,
@@ -371,6 +373,7 @@ const PeopleManager = () => {
                     address: data.address || '',
                     postalCode: data.postalCode || '',
                     city: data.city || '',
+                    customQuotaPrice: data.customQuotaPrice || '',
                     hasAthleteProfile: data.hasAthleteProfile,
                     hasMemberProfile: data.hasMemberProfile,
                     hasCoachProfile: data.hasCoachProfile,
@@ -554,7 +557,8 @@ const PeopleManager = () => {
                 nif: formData.nif || null,
                 address: formData.address || null,
                 postalCode: formData.postalCode || null,
-                city: formData.city || null
+                city: formData.city || null,
+                customQuotaPrice: formData.customQuotaPrice || null
             };
 
             if (editingUser) {
@@ -1334,6 +1338,19 @@ const PeopleManager = () => {
                                         <option value="Annual">Anual</option>
                                     </select>
                                 </div>
+                                <div className="form-group">
+                                    <label>Preço Customizado de Quota (€)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="Ex: 5.00 (deixe vazio para automático)"
+                                        value={formData.customQuotaPrice || ''}
+                                        onChange={(e) => setFormData({ ...formData, customQuotaPrice: e.target.value })}
+                                    />
+                                    <small style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                                        Se definido, ignora o cálculo automático.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1575,6 +1592,11 @@ const PeopleManager = () => {
                                 <div className="summary-details">
                                     <span>Estado: {getMemberStatusLabel(formData.memberProfile.membershipStatus)}</span>
                                     {formData.memberProfile.memberSince && <span>Desde: {formData.memberProfile.memberSince}</span>}
+                                    {formData.customQuotaPrice && (
+                                        <div style={{ marginTop: '4px', fontWeight: 'bold', color: '#059669' }}>
+                                            <span>Quota Personalizada: {formData.customQuotaPrice}€</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

@@ -456,8 +456,8 @@ const FinancialAnalytics = () => {
                 <div className="analytics-stat-card financial-card">
                     <div className="analytics-stat-icon revenue"><FaMoneyBillWave /></div>
                     <div className="analytics-stat-info">
-                        <h3>Receita Total</h3>
-                        <p className="analytics-stat-number">€{data.totalRevenue.toFixed(2)}</p>
+                        <h3>Receita Total ({new Date().getFullYear()})</h3>
+                        <p className="analytics-stat-number">€{(data.totalRevenueCurrentYear ?? data.totalRevenue).toFixed(2)}</p>
                     </div>
                 </div>
                 <div className="analytics-stat-card financial-card">

@@ -52,6 +52,7 @@ const FeeManager = () => {
                 inscriptionFeeMinis: s.inscriptionFeeMinis ?? 0,
                 inscriptionFeeMinisDiscount: s.inscriptionFeeMinisDiscount ?? 0,
                 inscriptionFeeVeteranos: s.inscriptionFeeVeteranos ?? 0,
+                feeVeteranos: s.feeVeteranos ?? 0,
                 quotaIncluded: s.quotaIncluded ?? true
             })));
         } catch (err) {
@@ -101,6 +102,7 @@ const FeeManager = () => {
                     inscriptionFeeMinis: parseFloat(sport.inscriptionFeeMinis) || 0,
                     inscriptionFeeMinisDiscount: parseFloat(sport.inscriptionFeeMinisDiscount) || 0,
                     inscriptionFeeVeteranos: parseFloat(sport.inscriptionFeeVeteranos) || 0,
+                    feeVeteranos: parseFloat(sport.feeVeteranos) || 0,
                     quotaIncluded: sport.quotaIncluded,
                 })
             });
@@ -183,10 +185,11 @@ const FeeManager = () => {
                         <div className="fee-card-body fee-card-body--col">
                             <div className="fee-section">
                                 <div className="fee-section-label">Mensalidades</div>
-                                <div className="fee-row fee-row--4cols">
+                                <div className="fee-row fee-row--5cols">
                                     <FeeInput label="Sem Escalão" field="feeNormalNormal" sport={sport} onChange={handleSportField} />
                                     <FeeInput label="Escalão 1" field="feeEscalao1Normal" sport={sport} onChange={handleSportField} />
                                     <FeeInput label="Escalão 2" field="feeEscalao2Normal" sport={sport} onChange={handleSportField} />
+                                    <FeeInput label="Veteranos" field="feeVeteranos" sport={sport} onChange={handleSportField} />
                                     <FeeInput label="Irmão / 2ª Mod." field="feeDiscount" sport={sport} onChange={handleSportField} />
                                 </div>
                             </div>

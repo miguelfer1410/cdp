@@ -40,6 +40,7 @@ namespace CdpApi.Controllers
                     s.FeeNormalNormal,
                     s.FeeEscalao1Normal,
                     s.FeeEscalao2Normal,
+                    s.FeeVeteranos,
                     s.FeeDiscount,
                     s.InscriptionFeeNormal,
                     s.InscriptionFeeMinis,
@@ -108,6 +109,7 @@ namespace CdpApi.Controllers
             sport.FeeNormalNormal    = request.FeeNormalNormal;
             sport.FeeEscalao1Normal  = request.FeeEscalao1Normal;
             sport.FeeEscalao2Normal  = request.FeeEscalao2Normal;
+            sport.FeeVeteranos       = request.FeeVeteranos;
             sport.FeeDiscount        = request.FeeDiscount;
             sport.InscriptionFeeNormal = request.InscriptionFeeNormal;
             sport.InscriptionFeeMinis = request.InscriptionFeeMinis;
@@ -140,6 +142,7 @@ namespace CdpApi.Controllers
         public decimal FeeNormalNormal   { get; set; }
         public decimal FeeEscalao1Normal { get; set; }
         public decimal FeeEscalao2Normal { get; set; }
+        public decimal FeeVeteranos       { get; set; }
         public decimal FeeDiscount       { get; set; }
         public decimal InscriptionFeeNormal { get; set; }
         public decimal InscriptionFeeMinis { get; set; }

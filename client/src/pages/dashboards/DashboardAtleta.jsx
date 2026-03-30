@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './DashboardAtleta.css';
 import EditProfileModal from '../../components/EditProfileModal/EditProfileModal';
 import TeamDetailsModal from '../../components/TeamDetailsModal/TeamDetailsModal';
@@ -11,6 +11,7 @@ import MembershipCard from '../../components/MembershipCard/MembershipCard';
 
 const DashboardAtleta = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [athleteData, setAthleteData] = useState(null);
     const [teamsData, setTeamsData] = useState([]);
     const [selectedTeamId, setSelectedTeamId] = useState(null);
@@ -18,6 +19,7 @@ const DashboardAtleta = () => {
     const [loading, setLoading] = useState(true);
     const [loadingTab, setLoadingTab] = useState(false);
     const [error, setError] = useState(null);
+    const [paymentToast, setPaymentToast] = useState(null); // 'success' | 'cancelled' | null
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
     const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
@@ -64,9 +66,24 @@ const DashboardAtleta = () => {
         refreshLinkedUsers();
     }, []);
 
+    // Detect ?payment=success / ?payment=cancelled after Stripe redirect
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const paymentParam = params.get('payment');
+        if (paymentParam === 'success' || paymentParam === 'cancelled') {
+            setPaymentToast(paymentParam);
+            // Clean the query param from the URL without reloading
+            window.history.replaceState({}, '', location.pathname);
+            // Auto-dismiss after 6 seconds
+            const timer = setTimeout(() => setPaymentToast(null), 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [location.search]);
+
     const [paymentReference, setPaymentReference] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState('unpaid');
     const [generatingReference, setGeneratingReference] = useState(false);
+    const [startingPayment, setStartingPayment] = useState(false);
     const [quotaAmount, setQuotaAmount] = useState(null);
     const [totalDue, setTotalDue] = useState(null);
     const [overdueMonths, setOverdueMonths] = useState([]);
@@ -77,8 +94,9 @@ const DashboardAtleta = () => {
     const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
     const [isExemptFromGlobalFee, setIsExemptFromGlobalFee] = useState(false);
 
-    const handleGenerateReference = async (periodMonth = null, periodYear = null) => {
-        setGeneratingReference(true);
+    // Start Stripe Checkout for quota payment
+    const handleStartPayment = async (periodMonth = null, periodYear = null) => {
+        setStartingPayment(true);
         try {
             const token = localStorage.getItem('token');
             let url = `http://localhost:5285/api/payment/reference?userId=${selectedUserId}`;
@@ -90,16 +108,19 @@ const DashboardAtleta = () => {
             });
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.message || 'Erro ao gerar referência');
+                throw new Error(err.message || 'Erro ao iniciar pagamento');
             }
             const data = await response.json();
-            setPaymentReference(data);
-            setPaymentStatus('Pendente');
+            if (data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            } else {
+                throw new Error('URL de pagamento não recebida.');
+            }
         } catch (err) {
             console.error(err);
             alert(err.message);
         } finally {
-            setGeneratingReference(false);
+            setStartingPayment(false);
         }
     };
 
@@ -319,6 +340,30 @@ const DashboardAtleta = () => {
 
     return (
         <div className="dashboard-wrapper">
+            {paymentToast && (
+                <div className={`payment-toast ${paymentToast}`}>
+                    <div className="toast-content">
+                        {paymentToast === 'success' ? (
+                            <>
+                                <div className="toast-icon success">✓</div>
+                                <div className="toast-text">
+                                    <strong>Pagamento Iniciado com Sucesso!</strong>
+                                    <p>O seu pagamento está a ser processado. Se usou Multibanco, a atualização pode demorar alguns minutos.</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="toast-icon cancelled">✕</div>
+                                <div className="toast-text">
+                                    <strong>Pagamento Cancelado</strong>
+                                    <p>O processo de pagamento foi interrompido. Pode tentar novamente quando desejar.</p>
+                                </div>
+                            </>
+                        )}
+                        <button className="toast-close" onClick={() => setPaymentToast(null)}>✕</button>
+                    </div>
+                </div>
+            )}
             {/* Athlete Tabs - shown when there are multiple linked users (siblings) */}
             {linkedUsers.length > 1 && (
                 <div className="athlete-tabs">
@@ -770,8 +815,10 @@ const DashboardAtleta = () => {
                                 historyInscriptions={historyInscriptions}
                                 historyYear={historyYear}
                                 onHistoryYearChange={setHistoryYear}
-                                onGenerateReference={handleGenerateReference}
-                                generatingReference={generatingReference}
+                                onGenerateReference={handleStartPayment}
+                                generatingReference={startingPayment}
+                                onStartPayment={handleStartPayment}
+                                startingPayment={startingPayment}
                             />
                         </div>
                     </div>

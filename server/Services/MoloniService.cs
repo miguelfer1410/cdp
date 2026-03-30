@@ -163,10 +163,22 @@ namespace CdpApi.Services
             );
         }
 
+        private string SanitizeEmail(string email)
+        {
+            if (string.IsNullOrEmpty(email) || !email.Contains('+')) return email;
+            
+            var parts = email.Split('@');
+            if (parts.Length != 2) return email;
+
+            var principalPart = parts[0].Split('+')[0];
+            return $"{principalPart}@{parts[1]}";
+        }
+
         private async Task<int?> GetOrCreateCustomerAsync(User user, string companyId)
         {
             // Try to find customer by VAT
             var vat = string.IsNullOrEmpty(user.Nif) ? "999999990" : user.Nif;
+            var sanitizedEmail = SanitizeEmail(user.Email);
 
             var getByVatBody = new Dictionary<string, string>
             {
@@ -200,7 +212,7 @@ namespace CdpApi.Services
                 { "zip_code", user.PostalCode ?? "4490-000" },
                 { "city", user.City ?? "Póvoa de Varzim" },
                 { "country_id", "1" }, // Portugal
-                { "email", user.Email },
+                { "email", sanitizedEmail },
                 { "maturity_date_id", "0" },
                 { "payment_method_id", "0" },
                 { "salesman_id", "0" },
@@ -306,7 +318,7 @@ namespace CdpApi.Services
                 insertBody.Add(new KeyValuePair<string, string>("products[0][name]", description));
                 insertBody.Add(new KeyValuePair<string, string>("products[0][qty]", "1"));
                 insertBody.Add(new KeyValuePair<string, string>("products[0][price]", payment.Amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)));
-                insertBody.Add(new KeyValuePair<string, string>("products[0][exemption_reason]", "M00")); 
+                insertBody.Add(new KeyValuePair<string, string>("products[0][exemption_reason]", "M07")); // M07 = Isenção Artigo 9.º do CIVA (Desporto/Clubes) 
                 insertBody.Add(new KeyValuePair<string, string>("products[0][taxes][0][tax_id]", taxId));
 
                 insertBody.Add(new KeyValuePair<string, string>("payments[0][payment_method_id]", "0"));

@@ -13,7 +13,7 @@ const PaymentCancel = () => {
                 <p>O processo de compra de bilhete foi interrompido.</p>
                 <p>Não foi efetuada qualquer cobrança.</p>
                 <div className="actions">
-                    <Link to="/dashboard/atleta" className="btn-primary">Tentar Novamente</Link>
+                    <Link to="/dashboard-atleta" className="btn-primary">Tentar Novamente</Link>
                 </div>
             </div>
         </div>

@@ -11,6 +11,8 @@ public class AthletePaymentStatusDto
     public string CurrentPeriod { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty; // "Paid", "Pending", "Unpaid", "Late"
     public decimal Amount { get; set; }
+    public decimal? AmountPaid { get; set; }
+    public decimal? CustomQuotaPrice { get; set; }
     public PaymentDetailsDto? PaymentDetails { get; set; }
     public List<InscriptionInfoDto> PendingInscriptions { get; set; } = new();
 }
@@ -73,4 +75,9 @@ public class GlobalPaymentExportDto
     public string PaymentPreference { get; set; } = string.Empty;
     public string[] MonthlyStatus { get; set; } = new string[12];
     public int Year { get; set; }
+}
+public class UpdateCustomQuotaPriceDto
+{
+    public int UserId { get; set; }
+    public decimal? CustomQuotaPrice { get; set; }
 }

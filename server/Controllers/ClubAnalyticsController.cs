@@ -119,7 +119,11 @@ public class ClubAnalyticsController : ControllerBase
     {
         var allPayments = await _context.Payments.ToListAsync();
 
+        var currentYear = DateTime.UtcNow.Year;
         var totalRevenue      = allPayments.Where(p => p.Status == "Completed").Sum(p => p.Amount);
+        var totalRevenueCurrentYear = allPayments
+            .Where(p => p.Status == "Completed" && p.PaymentDate.Year == currentYear)
+            .Sum(p => p.Amount);
         var pendingRevenue    = allPayments.Where(p => p.Status == "Pending").Sum(p => p.Amount);
         var failedRevenue     = allPayments.Where(p => p.Status == "Failed").Sum(p => p.Amount);
         var totalTransactions = allPayments.Count;
@@ -235,6 +239,7 @@ public class ClubAnalyticsController : ControllerBase
         return Ok(new
         {
             totalRevenue,
+            totalRevenueCurrentYear,
             pendingRevenue,
             failedRevenue,
             totalTransactions,

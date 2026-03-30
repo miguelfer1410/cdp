@@ -47,20 +47,25 @@ public class PaymentController : ControllerBase
         var requestedUser = await _context.Users.FindAsync(requestedUserId.Value);
         if (loggedInUser == null || requestedUser == null) return null;
 
-        var GetBase = (string email) =>
-        {
-            var atIndex = email.ToLower().LastIndexOf('@');
-            if (atIndex < 0) return email.ToLower();
-            var local = email.Substring(0, atIndex).ToLower();
-            var domain = email.Substring(atIndex).ToLower();
-            var plusIndex = local.IndexOf('+');
-            return (plusIndex >= 0 ? local.Substring(0, plusIndex) : local) + domain;
-        };
-
-        if (GetBase(loggedInUser.Email) != GetBase(requestedUser.Email))
+        if (GetBaseEmail(loggedInUser.Email) != GetBaseEmail(requestedUser.Email))
             return null;
 
         return requestedUserId.Value;
+    }
+
+    // ────────────────────────────────────────────────────────────────────────────
+    // HELPER: strip +alias from email — e.g. user+child@domain.pt → user@domain.pt
+    // Used to ensure we never send an alias address to Stripe or external services.
+    // ────────────────────────────────────────────────────────────────────────────
+    private static string GetBaseEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return email;
+        var atIndex = email.LastIndexOf('@');
+        if (atIndex < 0) return email.ToLower();
+        var local  = email.Substring(0, atIndex).ToLower();
+        var domain = email.Substring(atIndex).ToLower();
+        var plusIndex = local.IndexOf('+');
+        return (plusIndex >= 0 ? local.Substring(0, plusIndex) : local) + domain;
     }
 
     // ────────────────────────────────────────────────────────────────────────────
@@ -324,7 +329,7 @@ public class PaymentController : ControllerBase
             var allProfileIds = lightMembers.Select(m => m.MemberProfileId).ToList();
             var allPayments = await _context.Payments
                 .Where(p => allProfileIds.Contains(p.MemberProfileId) && p.PeriodYear == targetYear && (p.PeriodMonth == targetMonth || p.PeriodMonth == null))
-                .Select(p => new { p.MemberProfileId, p.Status, p.PeriodMonth, p.CreatedAt, p.Entity, p.Reference })
+                .Select(p => new { p.MemberProfileId, p.Status, p.PeriodMonth, p.CreatedAt, p.Entity, p.Reference, p.Amount })
                 .ToListAsync();
 
             var paymentsByMember = allPayments
@@ -357,6 +362,7 @@ public class PaymentController : ControllerBase
                     Status = derivedStatus,
                     PendingEntity    = payment?.Status == "Pending" ? payment.Entity    : null,
                     PendingReference = payment?.Status == "Pending" ? payment.Reference : null,
+                    AmountPaid       = payment?.Status == "Completed" ? (decimal?)payment.Amount : null,
                     Period = isAnnual ? $"{targetYear}" : $"{targetMonth}/{targetYear}"
                 };
             }).ToList();
@@ -399,7 +405,9 @@ public class PaymentController : ControllerBase
                     UserId = row.Id, Name = row.Name, Team = row.Team, Sport = row.Sport,
                     PaymentPreference = row.PaymentPreference, MembershipNumber = row.MembershipNumber,
                     CurrentPeriod = row.Period,
-                    Status = row.Status, Amount = 0, PaymentDetails = paymentDetails,
+                    Status = row.Status, Amount = 0, AmountPaid = row.AmountPaid, 
+                    CustomQuotaPrice = null,
+                    PaymentDetails = paymentDetails,
                     PendingInscriptions = new List<InscriptionInfoDto>()
                 };
 
@@ -407,6 +415,7 @@ public class PaymentController : ControllerBase
                 // but keep the data for the modal to use.
                 if (fullUserMap.TryGetValue(row.Id, out var fullUser))
                 {
+                    dto.CustomQuotaPrice = fullUser.CustomQuotaPrice;
                     var calc = await CalculateQuotaWithBreakdown(fullUser);
                     dto.Amount = calc.MonthlyQuota;
                     if (calc.InscriptionInfo != null)
@@ -441,10 +450,11 @@ public class PaymentController : ControllerBase
 
 
     // POST: api/payment/reference
+    // Creates a Stripe Checkout Session for quota payment (card, Multibanco, MB Way)
     [HttpPost("reference")]
     [Authorize]
     public async Task<ActionResult> GenerateReference(
-        [FromServices] IEasypayService easypayService,
+        [FromServices] IStripeService stripeService,
         [FromServices] IEmailService emailService,
         [FromQuery] int? userId)
     {
@@ -496,28 +506,66 @@ public class PaymentController : ControllerBase
             if (alreadyPaid)
                 return BadRequest(new { message = "Este período já se encontra regularizado." });
 
+            // Cancel any existing pending payment for this period before creating a new one
+            var existingPending = await _context.Payments
+                .Where(p => p.MemberProfileId == user.MemberProfile.Id &&
+                            p.Status == "Pending" &&
+                            p.PeriodYear == periodYear &&
+                            p.PeriodMonth == periodMonth)
+                .ToListAsync();
+            foreach (var ep in existingPending)
+                ep.Status = "Cancelled";
+
             string periodDescription = periodMonth.HasValue
                 ? $"Quota Mensal - {new DateTime(periodYear, periodMonth.Value, 1):MMMM yyyy}"
                 : $"Quota Anual - {periodYear}";
 
-            string paymentKey = $"Quota_{targetUserId}_{periodYear}_{(periodMonth.HasValue ? periodMonth.ToString() : "Annual")}_{DateTime.UtcNow.Ticks}";
+            string customerName = $"{user.FirstName} {user.LastName}";
 
-            var mbResult = await easypayService.GenerateMbReferenceAsync(
-                totalAmount,
-                paymentKey,
-                $"{user.FirstName} {user.LastName}",
-                user.Email,
-                user.Phone);
+            // Determine the correct dashboard route based on the user's role
+            var userRoles = User.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+                .Select(c => c.Value.ToLower())
+                .ToList();
+
+            string dashboardPath = userRoles.Contains("atleta")    ? "/dashboard-atleta"
+                                 : userRoles.Contains("treinador") ? "/dashboard-treinador"
+                                 :                                    "/dashboard-socio";
+
+            // Build redirect URLs — success goes back to the dashboard with a flag,
+            // cancel also returns to the dashboard so the user can try again.
+            string origin     = $"{Request.Scheme}://{Request.Host.Value.Replace("5285", "3000")}";
+            string successUrl = $"{origin}{dashboardPath}?payment=success";
+            string cancelUrl  = $"{origin}{dashboardPath}?payment=cancelled";
+
+            // Create Stripe Checkout Session (card + Multibanco + MB Way)
+            // GetBaseEmail strips any +alias so Stripe always receives the real address
+            string checkoutUrl = await stripeService.CreateQuotaCheckoutSessionAsync(
+                memberProfileId: user.MemberProfile.Id,
+                userId:          targetUserId.Value,
+                customerName:    customerName,
+                customerEmail:   GetBaseEmail(user.Email),
+                amount:          totalAmount,
+                description:     periodDescription,
+                periodMonth:     periodMonth,
+                periodYear:      periodYear,
+                successUrl:      successUrl,
+                cancelUrl:       cancelUrl
+            );
+
+            // Record a Pending payment in the DB (will be Completed by webhook)
+            // TransactionId will hold the Stripe Session ID — extracted from the URL
+            string sessionId = new Uri(checkoutUrl).AbsolutePath.Split('/').Last();
 
             var payment = new Payment
             {
                 MemberProfileId = user.MemberProfile.Id,
                 Amount          = totalAmount,
                 Status          = "Pending",
-                PaymentMethod   = "MB",
-                Entity          = mbResult.Entity,
-                Reference       = mbResult.Reference,
-                TransactionId   = mbResult.Id,
+                PaymentMethod   = "Stripe",
+                Entity          = null,
+                Reference       = null,
+                TransactionId   = null, // Will be filled when webhook arrives
                 Description     = periodDescription,
                 PeriodMonth     = periodMonth,
                 PeriodYear      = periodYear,
@@ -529,59 +577,30 @@ public class PaymentController : ControllerBase
 
             return Ok(new
             {
-                entity      = mbResult.Entity,
-                reference   = mbResult.Reference,
+                checkoutUrl = checkoutUrl,
                 amount      = totalAmount,
-                description = periodDescription,
-                id          = payment.Id
+                description = periodDescription
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating payment reference");
-            return StatusCode(500, new { message = "Erro ao gerar referência de pagamento." });
+            _logger.LogError(ex, "Error creating Stripe quota checkout session");
+            return StatusCode(500, new { message = "Erro ao criar sessão de pagamento." });
         }
     }
 
     // POST: api/payment/check/{id}
+    // Status check is now handled via Stripe webhooks; this endpoint is kept for compatibility
     [HttpPost("check/{id}")]
     [Authorize]
-    public async Task<ActionResult> CheckPaymentStatus(int id, [FromServices] IEasypayService easypayService, [FromServices] IMoloniService moloniService)
+    public async Task<ActionResult> CheckPaymentStatus(int id)
     {
         try
         {
             var payment = await _context.Payments.FindAsync(id);
             if (payment == null) return NotFound(new { message = "Pagamento não encontrado." });
-            if (string.IsNullOrEmpty(payment.TransactionId))
-                return BadRequest(new { message = "Este pagamento não tem ID de transação Easypay." });
 
-            var statusResult = await easypayService.GetPaymentStatusAsync(payment.TransactionId);
-            bool statusChanged = false;
-            bool newlyCompleted = false;
-
-            if (statusResult.Status.Equals("success", StringComparison.OrdinalIgnoreCase) ||
-                statusResult.Status.Equals("captured", StringComparison.OrdinalIgnoreCase))
-            {
-                if (payment.Status != "Completed") { payment.Status = "Completed"; statusChanged = true; newlyCompleted = true; }
-            }
-            else if (statusResult.Status.Equals("deleted", StringComparison.OrdinalIgnoreCase) ||
-                     statusResult.Status.Equals("failed", StringComparison.OrdinalIgnoreCase))
-            {
-                if (payment.Status != "Failed") { payment.Status = "Failed"; statusChanged = true; }
-            }
-
-            if (statusChanged) await _context.SaveChangesAsync();
-
-            if (newlyCompleted)
-            {
-                var user = await _context.Users.Include(u => u.MemberProfile).FirstOrDefaultAsync(u => u.MemberProfile != null && u.MemberProfile.Id == payment.MemberProfileId);
-                if (user != null)
-                {
-                    await moloniService.CreateInvoiceReceiptAsync(payment, user);
-                }
-            }
-
-            return Ok(new { id = payment.Id, status = payment.Status, easypayStatus = statusResult.Status });
+            return Ok(new { id = payment.Id, status = payment.Status });
         }
         catch (Exception ex)
         {
@@ -775,11 +794,12 @@ public class PaymentController : ControllerBase
             }
 
             await _context.SaveChangesAsync();
-            
+            /*
             foreach (var paymentToInvoice in newlyCompletedPayments)
             {
                 await moloniService.CreateInvoiceReceiptAsync(paymentToInvoice, user);
-            }
+            }*/
+  
 
             return Ok(new { message = periodsToProcess.Count > 1 ? "Pagamentos processados com sucesso" : "Pagamento processado com sucesso" });
         }
@@ -787,6 +807,29 @@ public class PaymentController : ControllerBase
         {
             _logger.LogError(ex, "Error processing manual payment");
             return StatusCode(500, new { message = "Erro ao registar pagamento manual." });
+        }
+    }
+
+    // DELETE: api/payment/{id}
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> DeletePayment(int id)
+    {
+        try
+        {
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment == null)
+                return NotFound(new { message = "Pagamento não encontrado." });
+
+            _context.Payments.Remove(payment);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Pagamento removido com sucesso." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting payment");
+            return StatusCode(500, new { message = "Erro ao eliminar o pagamento." });
         }
     }
 
@@ -828,6 +871,28 @@ public class PaymentController : ControllerBase
         {
             _logger.LogError(ex, "Error updating membership number");
             return StatusCode(500, new { message = "Erro ao atualizar número de sócio." });
+        }
+    }
+
+    // PUT: api/payment/admin/custom-quota-price
+    [HttpPut("admin/custom-quota-price")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> UpdateCustomQuotaPrice([FromBody] UpdateCustomQuotaPriceDto request)
+    {
+        try
+        {
+            var user = await _context.Users.FindAsync(request.UserId);
+            if (user == null) return NotFound(new { message = "Utilizador não encontrado." });
+
+            user.CustomQuotaPrice = request.CustomQuotaPrice;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, customQuotaPrice = user.CustomQuotaPrice });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating custom quota price");
+            return StatusCode(500, new { message = "Erro ao atualizar preço de quota." });
         }
     }
 
@@ -1146,8 +1211,21 @@ var teamsSorted = activeTeamsBySport
 
 bool globalFeeAdded = false;
 
-for (int i = 0; i < teamsSorted.Count; i++)
-{
+        if (user.CustomQuotaPrice.HasValue)
+        {
+            decimal customPrice = user.CustomQuotaPrice.Value;
+            breakdown.Add(new BreakdownItem
+            {
+                Label      = "Quota Customizada",
+                Amount     = customPrice,
+                IsDiscount = false
+            });
+            total = customPrice;
+        }
+        else
+        {
+            for (int i = 0; i < teamsSorted.Count; i++)
+            {
             var at    = teamsSorted[i];
             var sport = at.Team!.Sport!;
             bool isSecondSport = i > 0;
@@ -1265,6 +1343,7 @@ for (int i = 0; i < teamsSorted.Count; i++)
             total -= familyDiscount;
             discountsApplied.Add("family_discount");
         }
+        }
 
         // ── 7. Inscription info (pending inscriptions) ────────────────────────
         // ── 7. Calculate Inscription Info (Deduplicated by Sport) ───────────
@@ -1373,6 +1452,10 @@ for (int i = 0; i < teamsSorted.Count; i++)
         // When discount applies, always use the single FeeDiscount price regardless of escalão
         if (applyDiscount && sport.FeeDiscount > 0)
             return sport.FeeDiscount;
+
+        // VETERANO CHECK
+        if (e.Contains("veterano") || teamName.Contains("veterano"))
+            return sport.FeeVeteranos;
 
         if (e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1"))
             return sport.FeeEscalao1Normal;

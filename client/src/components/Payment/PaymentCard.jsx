@@ -10,7 +10,8 @@ import {
     FaCheckCircle, FaExclamationTriangle, FaClock, FaEuroSign,
     FaBarcode, FaSyncAlt, FaChevronDown, FaChevronUp,
     FaUserFriends, FaLayerGroup, FaUsers, FaInfoCircle,
-    FaReceipt, FaCalendarAlt, FaExclamationCircle, FaCheck, FaPercentage
+    FaReceipt, FaCalendarAlt, FaExclamationCircle, FaCheck, FaPercentage,
+    FaCreditCard, FaMobileAlt, FaUniversity, FaExternalLinkAlt
 } from 'react-icons/fa';
 import './PaymentCard.css';
 
@@ -107,6 +108,8 @@ const PaymentCard = ({
     onHistoryYearChange,
     onGenerateReference,
     generatingReference,
+    onStartPayment,
+    startingPayment,
 }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [isOverdueDropdownOpen, setIsOverdueDropdownOpen] = useState(false);
@@ -162,7 +165,7 @@ const PaymentCard = ({
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <span>{quotaAmount !== null ? `€${Number(quotaAmount).toFixed(2)}` : '—'}</span>
                                     {breakdown.filter(item => !item.isDiscount && item.amount > 0).length > 0 && (
-                                        <button 
+                                        <button
                                             onClick={() => setShowBreakdown(!showBreakdown)}
                                             style={{ background: 'none', border: 'none', padding: 0, color: '#3b82f6', cursor: 'pointer', fontSize: '0.8rem' }}
                                             title="Ver detalhes"
@@ -241,47 +244,49 @@ const PaymentCard = ({
 
                 {/* 4. Payment Actions / Status Specifics */}
                 <div className="payment-status-actions">
-                    {paymentStatus === 'Pendente' && paymentReference && (
+                    {/* ── Pending Stripe payment (awaiting user/webhook) ── */}
+                    {paymentStatus === 'Pendente' && (
                         <div className="payment-status-box-new pending">
                             <div className="status-header">
                                 <FaClock className="status-icon" />
                                 <div>
-                                    <h4>Referência Multibanco Gerada</h4>
-                                    <p>Efetue o pagamento com os dados abaixo.</p>
-                                </div>
-                            </div>
-                            <div className="payment-mb-grid-new">
-                                <div className="mb-field">
-                                    <span className="mb-label">Entidade</span>
-                                    <span className="mb-value">{paymentReference.entity}</span>
-                                </div>
-                                <div className="mb-field">
-                                    <span className="mb-label">Referência</span>
-                                    <span className="mb-value">{paymentReference.reference}</span>
-                                </div>
-                                <div className="mb-field">
-                                    <span className="mb-label">Valor</span>
-                                    <span className="mb-value">{paymentReference.amount?.toFixed(2) || effectiveAmount.toFixed(2)} €</span>
+                                    <h4>Pagamento Pendente</h4>
+                                    <p>O seu pagamento está a ser processado. Se escolheu Multibanco, pague a referência no ATM ou homebanking.</p>
                                 </div>
                             </div>
                             <button className="payment-btn-new secondary" onClick={() => window.location.reload()}>
-                                <FaSyncAlt /> Verificar Pagamento
+                                <FaSyncAlt /> Verificar Estado
                             </button>
                         </div>
                     )}
 
-                    {effectiveAmount > 0 && paymentStatus !== 'Pendente' && (
+                    {/* ── Pay button when amount is due and no pending payment ── */}
+                    {effectiveAmount > 0 && paymentStatus !== 'Pendente' && paymentStatus !== 'Regularizada' && onStartPayment && (
                         <div className="payment-action-block">
+                            <div className="stripe-payment-methods">
+                                <span className="stripe-methods-label">Métodos de pagamento aceites:</span>
+                                <div className="stripe-methods-icons">
+                                    <span className="stripe-method-badge"><FaCreditCard /> Cartão</span>
+                                    <span className="stripe-method-badge"><FaUniversity /> Multibanco</span>
+                                    <span className="stripe-method-badge"><FaMobileAlt /> MBWay</span>
+                                </div>
+                            </div>
+                            {/*
                             <button
-                                className="payment-btn-new primary"
-                                onClick={() => onGenerateReference()}
-                                disabled={generatingReference}
+                                className="payment-btn-new primary stripe-pay-btn"
+                                onClick={onStartPayment}
+                                disabled={startingPayment}
                             >
-                                {generatingReference ? <><FaSyncAlt className="icon-spin" /> A gerar…</> : <><FaBarcode /> Gerar Referência MB</>}
+                                {startingPayment
+                                    ? <><FaSyncAlt className="icon-spin" /> A processar…</>
+                                    : <><FaExternalLinkAlt /> Pagar Quota ({effectiveAmount.toFixed(2)} €)</>}
                             </button>
+                            */}
+                            <p className="stripe-secure-note">🔒 Pagamento seguro via Stripe</p>
                         </div>
                     )}
 
+                    {/* ── All paid ── */}
                     {effectiveAmount === 0 && paymentStatus === 'Regularizada' && (
                         <div className="payment-status-box-new success">
                             <FaCheckCircle className="status-icon" />
@@ -296,22 +301,6 @@ const PaymentCard = ({
                 {/* 5. Inscription Alert & Advance Payment */}
                 <div className="payment-extra-info">
                     <InscriptionAlert inscriptionInfo={inscriptionInfo} />
-
-                    {paymentStatus === 'Regularizada' && nextPeriod && effectiveAmount === 0 && (
-                        <div className="payment-advance-new">
-                            <FaInfoCircle className="info-icon" />
-                            <div className="advance-content">
-                                <span>Adiantar próximo período ({MONTHS_PT_SHORT[nextPeriod.month - 1]} {nextPeriod.year})?</span>
-                                <button
-                                    className="advance-btn"
-                                    onClick={() => onGenerateReference(nextPeriod.month, nextPeriod.year)}
-                                    disabled={generatingReference}
-                                >
-                                    Prever Quota
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* 6. Payment History */}
@@ -319,8 +308,8 @@ const PaymentCard = ({
                     <div className="discounts-divider" style={{ margin: '15px 0' }}></div>
                     <div className="history-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                         <h4 className="discounts-title" style={{ margin: 0 }}><FaReceipt /> Histórico de Pagamentos</h4>
-                        <select 
-                            value={historyYear} 
+                        <select
+                            value={historyYear}
                             onChange={(e) => onHistoryYearChange(parseInt(e.target.value))}
                             className="history-year-select"
                             style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem' }}
@@ -341,8 +330,8 @@ const PaymentCard = ({
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <FaCheckCircle style={{ color: '#10b981', fontSize: '0.8rem' }} />
                                             <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                                                {p.type === 'quota' && p.periodMonth 
-                                                    ? `Quota ${MONTHS_PT[p.periodMonth - 1]} ${p.periodYear}` 
+                                                {p.type === 'quota' && p.periodMonth
+                                                    ? `Quota ${MONTHS_PT[p.periodMonth - 1]} ${p.periodYear}`
                                                     : p.description}
                                             </span>
                                             {p.type === 'inscription' && <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '10px' }}>Inscrição</span>}
