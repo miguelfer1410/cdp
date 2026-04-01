@@ -28,6 +28,7 @@ const DashboardAtleta = () => {
     const [quotaBreakdown, setQuotaBreakdown] = useState([]);
     const [discountsApplied, setDiscountsApplied] = useState([]);
     const [inscriptionInfo, setInscriptionInfo] = useState([]);
+    const [parentsPaymentWarning, setParentsPaymentWarning] = useState(false);
 
     // Linked users — refreshed from the API on every mount so newly-accepted
     // family association requests become visible without forcing a re-login.
@@ -204,6 +205,7 @@ const DashboardAtleta = () => {
                         setInscriptionInfo(quotaData.inscriptionInfo || []);
                         setOverdueMonths(quotaData.overdueMonths || []);
                         setTotalDue(quotaData.totalDue ?? null);
+                        setParentsPaymentWarning(quotaData.parentsPaymentWarning || false);
                         if (quotaData.nextPeriodYear) {
                             setNextPeriod({ month: quotaData.nextPeriodMonth, year: quotaData.nextPeriodYear });
                         }
@@ -214,6 +216,7 @@ const DashboardAtleta = () => {
                         setQuotaBreakdown([]);
                         setDiscountsApplied([]);
                         setInscriptionInfo([]);
+                        setParentsPaymentWarning(false);
                     }
                 } catch (qErr) {
                     console.error('Error fetching quota:', qErr);
@@ -670,6 +673,28 @@ const DashboardAtleta = () => {
                         </div>
 
                         <div>
+                            <PaymentCard
+                                paymentStatus={paymentStatus}
+                                quotaAmount={quotaAmount}
+                                totalDue={totalDue}
+                                overdueMonths={overdueMonths}
+                                paymentPreference={paymentPreference}
+                                paymentReference={paymentReference}
+                                breakdown={quotaBreakdown}
+                                discountsApplied={discountsApplied}
+                                inscriptionInfo={inscriptionInfo}
+                                nextPeriod={nextPeriod}
+                                paymentHistory={paymentHistory}
+                                historyInscriptions={historyInscriptions}
+                                historyYear={historyYear}
+                                onHistoryYearChange={setHistoryYear}
+                                onGenerateReference={handleStartPayment}
+                                generatingReference={startingPayment}
+                                onStartPayment={handleStartPayment}
+                                startingPayment={startingPayment}
+                                parentsPaymentWarning={parentsPaymentWarning}
+                            />
+
                             <div className="dashboard-card">
                                 <div className="dashboard-card-header">
                                     <h2><i className="fas fa-bell"></i> Notificações</h2>
@@ -799,27 +824,6 @@ const DashboardAtleta = () => {
                                     </div>
                                 </div>
                             </div>
-
-                            <PaymentCard
-                                paymentStatus={paymentStatus}
-                                quotaAmount={quotaAmount}
-                                totalDue={totalDue}
-                                overdueMonths={overdueMonths}
-                                paymentPreference={paymentPreference}
-                                paymentReference={paymentReference}
-                                breakdown={quotaBreakdown}
-                                discountsApplied={discountsApplied}
-                                inscriptionInfo={inscriptionInfo}
-                                nextPeriod={nextPeriod}
-                                paymentHistory={paymentHistory}
-                                historyInscriptions={historyInscriptions}
-                                historyYear={historyYear}
-                                onHistoryYearChange={setHistoryYear}
-                                onGenerateReference={handleStartPayment}
-                                generatingReference={startingPayment}
-                                onStartPayment={handleStartPayment}
-                                startingPayment={startingPayment}
-                            />
                         </div>
                     </div>
                 </div>

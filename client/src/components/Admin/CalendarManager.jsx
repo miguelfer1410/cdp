@@ -42,6 +42,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
         description: '',
         opponentName: '',
         isHomeGame: true,
+        hasTicketing: true,
         ticketPriceSocio: isCoachDashboard ? '3' : '',
         ticketPriceNonSocio: isCoachDashboard ? '7' : ''
     });
@@ -414,6 +415,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
                     description: event.description,
                     opponentName: event.opponentName,
                     isHomeGame: event.isHomeGame,
+                    hasTicketing: event.hasTicketing,
                     ticketPriceSocio: event.ticketPriceSocio,
                     ticketPriceNonSocio: event.ticketPriceNonSocio
                 }
@@ -448,6 +450,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
                 description: event.description || '',
                 opponentName: event.opponentName || '',
                 isHomeGame: event.isHomeGame ?? true,
+                hasTicketing: event.hasTicketing ?? true,
                 ticketPriceSocio: event.ticketPriceSocio ?? '',
                 ticketPriceNonSocio: event.ticketPriceNonSocio ?? ''
             });
@@ -464,8 +467,9 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
             teamId: formData.teamId || null,
             sportId: parseInt(formData.sportId),
             eventType: parseInt(formData.eventType),
-            ticketPriceSocio: formData.ticketPriceSocio === '' ? null : parseFloat(formData.ticketPriceSocio),
-            ticketPriceNonSocio: formData.ticketPriceNonSocio === '' ? null : parseFloat(formData.ticketPriceNonSocio)
+            hasTicketing: formData.hasTicketing,
+            ticketPriceSocio: !formData.hasTicketing || formData.ticketPriceSocio === '' ? null : parseFloat(formData.ticketPriceSocio),
+            ticketPriceNonSocio: !formData.hasTicketing || formData.ticketPriceNonSocio === '' ? null : parseFloat(formData.ticketPriceNonSocio)
         };
 
         try {
@@ -533,6 +537,7 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
             description: '',
             opponentName: '',
             isHomeGame: true,
+            hasTicketing: true,
             ticketPriceSocio: isCoachDashboard ? '3' : '',
             ticketPriceNonSocio: isCoachDashboard ? '7' : ''
         });
@@ -944,33 +949,50 @@ const CalendarManager = ({ restrictedTeamId = null, onBack = null, isCoachDashbo
                                     </div>
 
                                     <div className="cm-form-row">
-                                        <div className="cm-form-field">
-                                            <label className="cm-form-label">Preço Bilhete (Sócio)</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                className="cm-form-input"
-                                                value={formData.ticketPriceSocio}
-                                                onChange={(e) => setFormData({ ...formData, ticketPriceSocio: e.target.value })}
-                                                placeholder="€ 0.00"
-                                                disabled={isCoachDashboard}
-                                            />
-                                        </div>
-                                        <div className="cm-form-field">
-                                            <label className="cm-form-label">Preço Bilhete (Não Sócio)</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                className="cm-form-input"
-                                                value={formData.ticketPriceNonSocio}
-                                                onChange={(e) => setFormData({ ...formData, ticketPriceNonSocio: e.target.value })}
-                                                placeholder="€ 0.00"
-                                                disabled={isCoachDashboard}
-                                            />
+                                        <div className="cm-form-field cm-form-field--toggle">
+                                            <label className="cm-toggle-label">
+                                                <input
+                                                    type="checkbox"
+                                                    className="cm-toggle-input"
+                                                    checked={formData.hasTicketing}
+                                                    onChange={(e) => setFormData({ ...formData, hasTicketing: e.target.checked })}
+                                                />
+                                                <span className="cm-toggle-track"><span className="cm-toggle-thumb" /></span>
+                                                <span className="cm-toggle-text">Bilheteira Disponível</span>
+                                            </label>
                                         </div>
                                     </div>
+
+                                    {formData.hasTicketing && (
+                                        <div className="cm-form-row">
+                                            <div className="cm-form-field">
+                                                <label className="cm-form-label">Preço Bilhete (Sócio)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    className="cm-form-input"
+                                                    value={formData.ticketPriceSocio}
+                                                    onChange={(e) => setFormData({ ...formData, ticketPriceSocio: e.target.value })}
+                                                    placeholder="€ 0.00"
+                                                    disabled={isCoachDashboard}
+                                                />
+                                            </div>
+                                            <div className="cm-form-field">
+                                                <label className="cm-form-label">Preço Bilhete (Não Sócio)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    className="cm-form-input"
+                                                    value={formData.ticketPriceNonSocio}
+                                                    onChange={(e) => setFormData({ ...formData, ticketPriceNonSocio: e.target.value })}
+                                                    placeholder="€ 0.00"
+                                                    disabled={isCoachDashboard}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </>
                             )}
 

@@ -12,7 +12,7 @@ const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
 const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR = 1984;
 
-const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAdmin = false, onPaymentSuccess = null }) => {
+const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAdmin = false, onPaymentSuccess = null, paymentStatus = 'Unpaid', quotaAmount = 0 }) => {
     const [year, setYear] = useState(CURRENT_YEAR);
     const [payments, setPayments] = useState([]);
     const [inscriptions, setInscriptions] = useState([]);
@@ -294,27 +294,64 @@ const PaymentHistorySocio = ({ isOpen, onClose, userId, overdueMonths = [], isAd
                                 </div>
                             ))}
 
-                            {/* Overdue next */}
-                            {overdueThisYear.map((m, i) => (
-                                <div key={`overdue-${i}`} className="phs-item phs-item--overdue">
-                                    <div className="phs-item-left">
-                                        <span className="phs-item-dot phs-dot--red">
-                                            <FaExclamationCircle />
-                                        </span>
-                                        <div className="phs-item-info">
-                                            <span className="phs-item-period">
-                                                {MONTHS_PT[m.periodMonth - 1]} {m.periodYear}
+                            {/* Current Month Status (if current year and not already in payments) */}
+                            {(() => {
+                                const currentYear = new Date().getFullYear();
+                                const currentMonth = new Date().getMonth() + 1;
+                                if (year !== currentYear) return null;
+
+                                const isPaid = payments.some(p => p.periodYear === currentYear && p.periodMonth === currentMonth);
+                                if (isPaid) return null;
+
+                                const isPendente = paymentStatus === 'Pendente';
+
+                                return (
+                                    <div className={`phs-item ${isPendente ? 'phs-item--pending' : 'phs-item--overdue'}`}>
+                                        <div className="phs-item-left">
+                                            <span className={`phs-item-dot ${isPendente ? 'phs-dot--orange' : 'phs-dot--red'}`}>
+                                                {isPendente ? <FaClock /> : <FaExclamationCircle />}
                                             </span>
-                                            <span className="phs-item-badge phs-badge--overdue">Em atraso</span>
+                                            <div className="phs-item-info">
+                                                <span className="phs-item-period">
+                                                    {MONTHS_PT[currentMonth - 1]} {currentYear}
+                                                </span>
+                                                <span className={`phs-item-badge ${isPendente ? 'phs-badge--pending' : 'phs-badge--overdue'}`}>
+                                                    {isPendente ? 'Pendente' : 'Não Pago'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="phs-item-right">
+                                            <span className={`phs-item-amount ${isPendente ? 'phs-amount--orange' : 'phs-amount--red'}`}>
+                                                {quotaAmount?.toFixed(2)} €
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="phs-item-right">
-                                        <span className="phs-item-amount phs-amount--red">
-                                            {m.amount?.toFixed(2)} €
-                                        </span>
+                                );
+                            })()}
+
+                            {/* Overdue next (excluding current month if we already showed it) */}
+                            {overdueThisYear
+                                .filter(m => !(m.periodYear === new Date().getFullYear() && m.periodMonth === (new Date().getMonth() + 1)))
+                                .map((m, i) => (
+                                    <div key={`overdue-${i}`} className="phs-item phs-item--overdue">
+                                        <div className="phs-item-left">
+                                            <span className="phs-item-dot phs-dot--red">
+                                                <FaExclamationCircle />
+                                            </span>
+                                            <div className="phs-item-info">
+                                                <span className="phs-item-period">
+                                                    {MONTHS_PT[m.periodMonth - 1]} {m.periodYear}
+                                                </span>
+                                                <span className="phs-item-badge phs-badge--overdue">Em atraso</span>
+                                            </div>
+                                        </div>
+                                        <div className="phs-item-right">
+                                            <span className="phs-item-amount phs-amount--red">
+                                                {m.amount?.toFixed(2)} €
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
 
                             {/* Paid entries */}
                             {payments.map((p) => {

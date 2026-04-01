@@ -79,6 +79,7 @@ public class EventsController : ControllerBase
             Description = e.Description,
             OpponentName = e.OpponentName,
             IsHomeGame = e.IsHomeGame,
+            HasTicketing = e.HasTicketing,
             TicketPriceSocio = e.TicketPriceSocio,
             TicketPriceNonSocio = e.TicketPriceNonSocio,
             CreatedBy = e.CreatedBy,
@@ -121,6 +122,7 @@ public class EventsController : ControllerBase
             Description = eventItem.Description,
             OpponentName = eventItem.OpponentName,
             IsHomeGame = eventItem.IsHomeGame,
+            HasTicketing = eventItem.HasTicketing,
             TicketPriceSocio = eventItem.TicketPriceSocio,
             TicketPriceNonSocio = eventItem.TicketPriceNonSocio,
             CreatedBy = eventItem.CreatedBy,
@@ -162,6 +164,7 @@ public class EventsController : ControllerBase
             Description = e.Description,
             OpponentName = e.OpponentName,
             IsHomeGame = e.IsHomeGame,
+            HasTicketing = e.HasTicketing,
             TicketPriceSocio = e.TicketPriceSocio,
             TicketPriceNonSocio = e.TicketPriceNonSocio,
             CreatedBy = e.CreatedBy,
@@ -197,6 +200,7 @@ public class EventsController : ControllerBase
             Description = request.Description,
             OpponentName = request.OpponentName,
             IsHomeGame = request.IsHomeGame,
+            HasTicketing = request.HasTicketing,
             TicketPriceSocio = request.TicketPriceSocio,
             TicketPriceNonSocio = request.TicketPriceNonSocio,
             CreatedBy = userId,
@@ -221,6 +225,7 @@ public class EventsController : ControllerBase
             Description = newEvent.Description,
             OpponentName = newEvent.OpponentName,
             IsHomeGame = newEvent.IsHomeGame,
+            HasTicketing = newEvent.HasTicketing,
             TicketPriceSocio = newEvent.TicketPriceSocio,
             TicketPriceNonSocio = newEvent.TicketPriceNonSocio,
             CreatedBy = newEvent.CreatedBy,
@@ -251,6 +256,7 @@ public class EventsController : ControllerBase
         eventItem.Description = request.Description;
         eventItem.OpponentName = request.OpponentName;
         eventItem.IsHomeGame = request.IsHomeGame;
+        eventItem.HasTicketing = request.HasTicketing;
         eventItem.TicketPriceSocio = request.TicketPriceSocio;
         eventItem.TicketPriceNonSocio = request.TicketPriceNonSocio;
         eventItem.UpdatedAt = DateTime.UtcNow;
@@ -295,6 +301,7 @@ public class EventResponse
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
     public bool? IsHomeGame { get; set; }
+    public bool HasTicketing { get; set; }
     public decimal? TicketPriceSocio { get; set; }
     public decimal? TicketPriceNonSocio { get; set; }
     public int CreatedBy { get; set; }
@@ -316,6 +323,7 @@ public class EventCreateRequest
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
     public bool? IsHomeGame { get; set; }
+    public bool HasTicketing { get; set; } = true;
     public decimal? TicketPriceSocio { get; set; }
     public decimal? TicketPriceNonSocio { get; set; }
 }
@@ -332,6 +340,7 @@ public class EventUpdateRequest
     public string? Description { get; set; }
     public string? OpponentName { get; set; }
     public bool? IsHomeGame { get; set; }
+    public bool HasTicketing { get; set; }
     public decimal? TicketPriceSocio { get; set; }
     public decimal? TicketPriceNonSocio { get; set; }
 }

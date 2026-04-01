@@ -638,7 +638,7 @@ const DashboardSocio = () => {
                                                     <span className="stripe-method-badge">📱 MBWay</span>
                                                 </div>
                                             </div>
-                                            {/*
+
                                             <button
                                                 onClick={handleStartPayment}
                                                 disabled={startingPayment}
@@ -647,7 +647,7 @@ const DashboardSocio = () => {
                                             >
                                                 {startingPayment ? 'A processar...' : `🔒 Pagar Quota (${Number(totalDue || 0).toFixed(2)} €)`}
                                             </button>
-                                             */}
+
                                         </>
                                     )}
                                     <Link to="#" className="action-btn">
@@ -807,6 +807,8 @@ const DashboardSocio = () => {
                 onClose={() => setIsHistoryModalOpen(false)}
                 userId={currentUserId}
                 overdueMonths={overdueMonths}
+                paymentStatus={paymentData?.paymentStatus}
+                quotaAmount={memberQuota}
             />
         </div>
     );

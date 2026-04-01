@@ -1028,3 +1028,38 @@
         width: 100%;
     }
 }
+/* Free Entry Style */
+.match-free-entry {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(22, 101, 52, 0.05);
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.match-free-entry:hover {
+    background: #dcfce7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(22, 101, 52, 0.1);
+}
+
+.match-free-entry svg {
+    font-size: 1.2rem;
+}
+
+.match-free-entry span {
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 0.9rem;
+    font-weight: 800;
+}

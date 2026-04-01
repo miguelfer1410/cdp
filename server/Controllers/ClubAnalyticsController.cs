@@ -118,40 +118,48 @@ public class ClubAnalyticsController : ControllerBase
     public async Task<IActionResult> GetFinancialAnalytics()
     {
         var allPayments = await _context.Payments.ToListAsync();
+        // Remove invalid dates (e.g. uninitialized DateTime.MinValue)
+        allPayments = allPayments.Where(p => p.PaymentDate.Year > 1900).ToList();
 
         var currentYear = DateTime.UtcNow.Year;
         var totalRevenue      = allPayments.Where(p => p.Status == "Completed").Sum(p => p.Amount);
         var totalRevenueCurrentYear = allPayments
-            .Where(p => p.Status == "Completed" && p.PaymentDate.Year == currentYear)
+            .Where(p => p.Status == "Completed" && (p.PeriodYear ?? p.PaymentDate.Year) == currentYear)
             .Sum(p => p.Amount);
         var pendingRevenue    = allPayments.Where(p => p.Status == "Pending").Sum(p => p.Amount);
         var failedRevenue     = allPayments.Where(p => p.Status == "Failed").Sum(p => p.Amount);
         var totalTransactions = allPayments.Count;
-
+ 
         var paymentsByStatus = allPayments
             .GroupBy(p => p.Status)
             .Select(g => new { Status = g.Key, Count = g.Count(), TotalAmount = g.Sum(p => p.Amount) })
             .ToList();
-
+ 
         var revenueByMethod = allPayments
             .Where(p => p.Status == "Completed")
             .GroupBy(p => p.PaymentMethod)
             .Select(g => new { Method = g.Key, TotalAmount = g.Sum(p => p.Amount), Count = g.Count() })
             .ToList();
-
+ 
         var revenueByMonth = allPayments
             .Where(p => p.Status == "Completed")
-            .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
+            .GroupBy(p => new { 
+                Year  = p.PeriodYear  ?? p.PaymentDate.Year, 
+                Month = p.PeriodMonth ?? p.PaymentDate.Month 
+            })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => new {
                 Month       = $"{g.Key.Year}-{g.Key.Month:D2}",
                 TotalAmount = g.Sum(p => p.Amount)
             })
             .ToList();
-
+ 
         // Full per-month breakdown (all statuses)
         var paymentStatsByMonth = allPayments
-            .GroupBy(p => new { p.PaymentDate.Year, p.PaymentDate.Month })
+            .GroupBy(p => new { 
+                Year  = p.PeriodYear  ?? p.PaymentDate.Year, 
+                Month = p.PeriodMonth ?? p.PaymentDate.Month 
+            })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => new {
                 Month           = $"{g.Key.Year}-{g.Key.Month:D2}",

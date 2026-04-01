@@ -44,6 +44,7 @@ public class Event
     public bool? IsHomeGame { get; set; } // For games only
 
     // Tickets
+    public bool HasTicketing { get; set; } = true;
     public decimal? TicketPriceSocio { get; set; }
     public decimal? TicketPriceNonSocio { get; set; }
 

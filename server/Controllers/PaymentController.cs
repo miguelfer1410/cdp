@@ -92,13 +92,13 @@ public class PaymentController : ControllerBase
             if (user == null || user.MemberProfile == null)
                 return BadRequest(new { message = "User not found" });
 
-            // ── Calculate with full breakdown ─────────────────────────────────
-            var result = await CalculateQuotaWithBreakdown(user);
-
             // ── Determine period ──────────────────────────────────────────────
             string preference = user.MemberProfile.PaymentPreference ?? "Monthly";
             int currentYear  = DateTime.UtcNow.Year;
             int currentMonth = DateTime.UtcNow.Month;
+
+            // ── Calculate with full breakdown ─────────────────────────────────
+            var result = await CalculateQuotaWithBreakdown(user, currentMonth, currentYear);
             int? nextPeriodMonth = null;
             int  nextPeriodYear  = currentYear;
 
@@ -217,7 +217,8 @@ public class PaymentController : ControllerBase
                 existingPayment   = paymentDetails,
                 overdueMonths     = overdueMonths,
                 overdueTotal      = overdueTotal,
-                totalDue          = totalDue
+                totalDue          = totalDue,
+                parentsPaymentWarning = result.ParentsPaymentWarning
             });
         }
         catch (Exception ex)
@@ -276,17 +277,55 @@ public class PaymentController : ControllerBase
                 var searchTokens = search.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 foreach (var token in searchTokens)
                 {
-                    lightQuery = lightQuery.Where(u => 
-                        u.FirstName.ToLower().Contains(token) || 
-                        u.LastName.ToLower().Contains(token) || 
-                        u.Email.ToLower().Contains(token) ||
-                        (u.Nif != null && u.Nif.Contains(token)) ||
-                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
-                        (u.AthleteProfile != null && (
-                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
-                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
-                        ))
-                    );
+                    var atIdx = token.IndexOf('@');
+                    bool isBaseEmail = atIdx > 0 && token.Contains('.') && !token.Contains('+');
+                    bool isAliasToken = token.Contains('+');
+
+                    if (isBaseEmail)
+                    {
+                        var localPart = token.Substring(0, atIdx);
+                        var domainPart = token.Substring(atIdx);
+                        var aliasPrefix = localPart + "+";
+
+                        lightQuery = lightQuery.Where(u =>
+                            u.FirstName.ToLower().Contains(token) ||
+                            u.LastName.ToLower().Contains(token) ||
+                            u.Email.ToLower() == token ||
+                            (u.Email.ToLower().StartsWith(aliasPrefix) && u.Email.ToLower().EndsWith(domainPart)) ||
+                            (u.Nif != null && u.Nif.Contains(token)) ||
+                            (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                            (u.AthleteProfile != null && (
+                                (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                                (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                            )));
+                    }
+                    else if (isAliasToken)
+                    {
+                        // If searching with alias, ignore email match as requested
+                        lightQuery = lightQuery.Where(u =>
+                            u.FirstName.ToLower().Contains(token) ||
+                            u.LastName.ToLower().Contains(token) ||
+                            (u.Nif != null && u.Nif.Contains(token)) ||
+                            (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                            (u.AthleteProfile != null && (
+                                (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                                (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                            )));
+                    }
+                    else
+                    {
+                        // Standard search
+                        lightQuery = lightQuery.Where(u =>
+                            u.FirstName.ToLower().Contains(token) ||
+                            u.LastName.ToLower().Contains(token) ||
+                            u.Email.ToLower().Contains(token) ||
+                            (u.Nif != null && u.Nif.Contains(token)) ||
+                            (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                            (u.AthleteProfile != null && (
+                                (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                                (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                            )));
+                    }
                 }
             }
 
@@ -351,7 +390,7 @@ public class PaymentController : ControllerBase
                                              .FirstOrDefault();
 
                 string derivedStatus = payment?.Status switch { "Completed" => "Regularizada", "Pending" => "Pendente", _ => "Unpaid" } ?? "Unpaid";
-                var teamStr = m.Teams != null && m.Teams.Any() ? string.Join(", ", m.Teams) : "Sem Equipa";
+                var teamStr = m.Teams != null && m.Teams.Any() ? string.Join(", ", m.Teams) : "Sócio";
                 var sportStr = m.Sports != null && m.Sports.Any() ? string.Join(", ", m.Sports) : "N/A";
                 
                 return new
@@ -416,7 +455,7 @@ public class PaymentController : ControllerBase
                 if (fullUserMap.TryGetValue(row.Id, out var fullUser))
                 {
                     dto.CustomQuotaPrice = fullUser.CustomQuotaPrice;
-                    var calc = await CalculateQuotaWithBreakdown(fullUser);
+                    var calc = await CalculateQuotaWithBreakdown(fullUser, targetMonth, targetYear);
                     dto.Amount = calc.MonthlyQuota;
                     if (calc.InscriptionInfo != null)
                     {
@@ -475,12 +514,6 @@ public class PaymentController : ControllerBase
             if (user == null || user.MemberProfile == null)
                 return BadRequest(new { message = "User or Member Profile not found." });
 
-            var calc = await CalculateQuotaWithBreakdown(user);
-            decimal totalAmount = calc.Total;
-
-            if (totalAmount <= 0)
-                return BadRequest(new { message = "Valor a pagar é zero." });
-
             int? periodMonth = null;
             int  periodYear  = DateTime.UtcNow.Year;
 
@@ -495,6 +528,12 @@ public class PaymentController : ControllerBase
                 if (user.MemberProfile.PaymentPreference != "Annual")
                     periodMonth = DateTime.UtcNow.Month;
             }
+
+            var calc = await CalculateQuotaWithBreakdown(user, periodMonth, periodYear);
+            decimal totalAmount = calc.Total;
+
+            if (totalAmount <= 0)
+                return BadRequest(new { message = "Valor a pagar é zero." });
 
             // Check if this period is already paid
             bool alreadyPaid = await _context.Payments.AnyAsync(p =>
@@ -534,7 +573,7 @@ public class PaymentController : ControllerBase
 
             // Build redirect URLs — success goes back to the dashboard with a flag,
             // cancel also returns to the dashboard so the user can try again.
-            string origin     = $"{Request.Scheme}://{Request.Host.Value.Replace("5285", "3000")}";
+            string origin     = $"{Request.Scheme}://{Request.Host.Value.Replace("5285", "3001")}";
             string successUrl = $"{origin}{dashboardPath}?payment=success";
             string cancelUrl  = $"{origin}{dashboardPath}?payment=cancelled";
 
@@ -1093,6 +1132,36 @@ public class PaymentController : ControllerBase
         }
     }
 
+    // GET: api/payment/admin/user-year-quotas
+    [HttpGet("admin/user-year-quotas")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> GetUserYearQuotas([FromQuery] int userId, [FromQuery] int year)
+    {
+        try
+        {
+            var user = await _context.Users
+                .Include(u => u.AthleteProfile).ThenInclude(ap => ap.AthleteTeams).ThenInclude(at => at.Team).ThenInclude(t => t.Sport)
+                .Include(u => u.MemberProfile)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) return NotFound(new { message = "Utilizador não encontrado." });
+
+            var quotas = new decimal[12];
+            for (int m = 1; m <= 12; m++)
+            {
+                var calc = await CalculateQuotaWithBreakdown(user, m, year);
+                quotas[m - 1] = calc.MonthlyQuota;
+            }
+
+            return Ok(new { userId, year, quotas });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching user year quotas");
+            return StatusCode(500, new { message = "Erro ao calcular quotas do ano." });
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════════════════
     // CORE CALCULATION ENGINE
     // ════════════════════════════════════════════════════════════════════════════
@@ -1108,24 +1177,40 @@ public class PaymentController : ControllerBase
     ///     zero global member fee
     /// Returns a QuotaCalculationResult with the total and an itemised breakdown.
     /// </summary>
-    private async Task<QuotaCalculationResult> CalculateQuotaWithBreakdown(User user)
+    private async Task<QuotaCalculationResult> CalculateQuotaWithBreakdown(User user, int? targetMonth = null, int? targetYear = null)
     {
         var breakdown        = new List<BreakdownItem>();
         var discountsApplied = new List<string>();
         decimal total        = 0;
 
+        // Use provided target dates or default to UtcNow
+        int year  = targetYear  ?? DateTime.UtcNow.Year;
+        int month = targetMonth ?? DateTime.UtcNow.Month;
+
         // ── 1. Age ────────────────────────────────────────────────────────────
         bool isMinor = false;
         if (user.BirthDate.HasValue)
         {
-            var today = DateTime.UtcNow.Date;
-            var age   = today.Year - user.BirthDate.Value.Year;
-            if (user.BirthDate.Value.Date > today.AddYears(-age)) age--;
+            // Age is calculated relative to the target period's reference date (end of that month)
+            var referenceDate = new DateTime(year, month, 1).AddMonths(1).AddDays(-1);
+            var age   = referenceDate.Year - user.BirthDate.Value.Year;
+            if (user.BirthDate.Value.Date > referenceDate.AddYears(-age)) age--;
             isMinor = age < 18;
         }
 
-        // ── 2. Parent-member exemption ────────────────────────────────────────
+        // Fallback for isMinor if BirthDate is missing but Escalão indicates youth
+        if (!isMinor)
+        {
+            isMinor = user.AthleteProfile?.AthleteTeams
+                ?.Any(at => {
+                    var e = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+                    return e.Contains("mini") || e.Contains("sub-") || (e.Contains("sub") && !e.Contains("vete") && !e.Contains("senior"));
+                }) ?? false;
+        }
+
+        // ── 2. Parent-member exemption & Payment warning ──────────────────────
         bool isExemptFromGlobalFee = false;
+        bool parentsPaymentWarning = false;
         var familyLinks = await _context.UserFamilyLinks
             .Where(l => l.UserId == user.Id || l.LinkedUserId == user.Id)
             .Include(l => l.User).ThenInclude(u => u.MemberProfile)
@@ -1138,20 +1223,53 @@ public class PaymentController : ControllerBase
         foreach (var l in familyLinks)
         {
             var other = l.UserId == user.Id ? l.LinkedUser : l.User;
-            // rel represents the relationship of 'other' to 'user'
             var relOfOther = l.UserId == user.Id ? GetReciprocalRelationship(l.Relationship, other.Gender) : l.Relationship;
             
             if (relOfOther == "Pai" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active) fathers.Add(other);
             else if (relOfOther == "Mãe" && other.MemberProfile?.MembershipStatus == MembershipStatus.Active) mothers.Add(other);
         }
 
-        // ── 3. Check for both parents as members (for 15% discount and exemption) ─
         bool bothParentsMembers = fathers.Any() && mothers.Any();
+        bool bothParentsPaid = false;
 
         if (bothParentsMembers)
         {
-            isExemptFromGlobalFee = true;
-            _logger.LogInformation("[QUOTA] User {Id} exempt from global member fee (both parents are active members).", user.Id);
+            // Check if BOTH are paid for the target period
+            bool fathersPaid = true;
+            foreach(var f in fathers) {
+                bool paid = await _context.Payments.AnyAsync(p => 
+                    p.MemberProfileId == f.MemberProfile!.Id && 
+                    p.Status == "Completed" && 
+                    p.PeriodYear == year && 
+                    (p.PeriodMonth == month || p.PeriodMonth == null)
+                );
+                if (!paid) { fathersPaid = false; break; }
+            }
+
+            bool mothersPaid = true;
+            foreach(var m in mothers) {
+                bool paid = await _context.Payments.AnyAsync(p => 
+                    p.MemberProfileId == m.MemberProfile!.Id && 
+                    p.Status == "Completed" && 
+                    p.PeriodYear == year && 
+                    (p.PeriodMonth == month || p.PeriodMonth == null)
+                );
+                if (!paid) { mothersPaid = false; break; }
+            }
+
+            bothParentsPaid = fathersPaid && mothersPaid;
+
+            if (bothParentsPaid)
+            {
+                isExemptFromGlobalFee = true;
+                _logger.LogInformation("[QUOTA] User {Id} exempt from global member fee (both parents are active members AND PAID).", user.Id);
+            }
+            else if (isMinor)
+            {
+                // Only show warning for minors if the discount/exemption depends on it
+                parentsPaymentWarning = true;
+                _logger.LogInformation("[QUOTA] User {Id} NOT exempt - parents not paid.", user.Id);
+            }
         }
 
         // ── 3. Check for sibling athlete ──────────────────────────────────────
@@ -1177,39 +1295,40 @@ public class PaymentController : ControllerBase
 
         // ── 4. Active sport teams ─────────────────────────────────────────────
         var activeTeams = user.AthleteProfile?.AthleteTeams
-    ?.Where(at => at.LeftAt == null && at.Team?.Sport != null)
-    .ToList() ?? new List<AthleteTeam>();
+        ?.Where(at => at.LeftAt == null && at.Team?.Sport != null)
+        .ToList() ?? new List<AthleteTeam>();
 
-bool anyQuotaIncluded = activeTeams.Any(at => at.Team!.Sport!.QuotaIncluded);
+        bool anyQuotaIncluded = activeTeams.Any(at => at.Team!.Sport!.QuotaIncluded);
 
-// Detect if user is in Escalão 1
-bool isEscalao1 = activeTeams.Any(at => {
-    var e = at.AthleteProfile?.Escalao?.ToLower() ?? "";
-    return e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1");
-});
+        // Detect if user is in Escalão 1
+        bool isEscalao1 = activeTeams.Any(at => {
+            var e = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+            return e.Contains("1") || e.Contains("escalão 1") || e.Contains("escalao 1");
+        });
 
-// Detect if user is Senior
-bool isSenior = activeTeams.Any(at => {
-    var profileEscalao = at.AthleteProfile?.Escalao?.ToLower() ?? "";
-    var teamName = at.Team?.Name?.ToLower() ?? "";
-    return profileEscalao.Contains("senior") || profileEscalao.Contains("sénior") || profileEscalao.Contains("seniores") ||
-           teamName.Contains("senior") || teamName.Contains("sénior") || teamName.Contains("seniores");
-});
+        // Detect if user is Senior
+        bool isSenior = activeTeams.Any(at => {
+            var profileEscalao = at.AthleteProfile?.Escalao?.ToLower() ?? "";
+            var teamName = at.Team?.Name?.ToLower() ?? "";
+            return profileEscalao.Contains("senior") || profileEscalao.Contains("sénior") || profileEscalao.Contains("seniores") ||
+                teamName.Contains("senior") || teamName.Contains("sénior") || teamName.Contains("seniores");
+        });
 
-// ⚠️ NOVO: deduplica por modalidade — atleta em múltiplas equipas da mesma
-// modalidade só paga UMA vez. Mantém a equipa com a quota mais alta (para
-// ordenação consistente). As inscrições são tratadas separadamente por equipa.
-var activeTeamsBySport = activeTeams
-    .GroupBy(at => at.Team!.Sport!.Id)
-    .Select(g => g.OrderByDescending(at => GetEscalaoFee(at, false)).First())
-    .ToList();
+        // ⚠️ NOVO: deduplica por modalidade — atleta em múltiplas equipas da mesma
+        // modalidade só paga UMA vez. Mantém a equipa com a quota mais alta (para
+        // ordenação consistente). As inscrições são tratadas separadamente por equipa.
+        var activeTeamsBySport = activeTeams
+            .GroupBy(at => at.Team!.Sport!.Id)
+            .Select(g => g.OrderByDescending(at => GetEscalaoFee(at, false)).First())
+            .ToList();
 
-// Sort: most-expensive first (discount applied to cheaper ones)
-var teamsSorted = activeTeamsBySport
-    .OrderByDescending(at => GetEscalaoFee(at, false))
-    .ToList();
+        // Sort: most-expensive first (discount applied to cheaper ones)
+        var teamsSorted = activeTeamsBySport
+            .OrderByDescending(at => GetEscalaoFee(at, false))
+            .ToList();
 
-bool globalFeeAdded = false;
+        bool globalFeeAdded = false;
+        bool minorReductionApplied = false;
 
         if (user.CustomQuotaPrice.HasValue)
         {
@@ -1248,9 +1367,19 @@ bool globalFeeAdded = false;
             if (sport.QuotaIncluded && !globalFeeAdded && !isExemptFromGlobalFee && !isEscalao1 && !isSenior)
             {
                 globalFeeAdded = true;
+                
+                // If minor and quota is included, we subtract the difference between Adult quota (3.0) and Minor quota (1.5)
+                // giving a 1.50€ total reduction on the modality fee to reflect the lower minor quota.
+                // ⚠️ CRITICAL: Only "tirar o 1,50" if both parents are members AND paid.
+                if (isMinor && !minorReductionApplied && bothParentsPaid)
+                {
+                    netFee -= 1.50m;
+                    minorReductionApplied = true;
+                }
+
                 breakdown.Add(new BreakdownItem
                 {
-                    Label          = $"{sport.Name}{escalaoLabel} (quota incluída)",
+                    Label          = (isMinor && minorReductionApplied) ? $"{sport.Name}{escalaoLabel} (quota de menor incluída)" : $"{sport.Name}{escalaoLabel} (quota incluída)",
                     Amount         = netFee,
                     IsDiscount     = false,
                     QuotaIncluded  = true,
@@ -1284,14 +1413,23 @@ bool globalFeeAdded = false;
             {
                 // Additional sport where quota is included but we already added global fee (or is 2nd sport)
                 if (netFee > 0)
+                {
+                    // Even if quota was already handled, if this sport includes it and we haven't applied the minor reduction yet
+                    if (sport.QuotaIncluded && isMinor && !isEscalao1 && !isSenior && !minorReductionApplied && bothParentsPaid)
+                    {
+                        netFee -= 1.50m;
+                        minorReductionApplied = true;
+                    }
+
                     breakdown.Add(new BreakdownItem
                     {
-                        Label      = $"{sport.Name}{escalaoLabel}",
+                        Label      = (sport.QuotaIncluded && isMinor && minorReductionApplied) ? $"{sport.Name}{escalaoLabel} (quota de menor incluída)" : $"{sport.Name}{escalaoLabel}",
                         Amount     = netFee,
                         IsDiscount = false,
                         SportName  = sport.Name,
                         Escalao    = at.AthleteProfile?.Escalao
                     });
+                }
             }
 
             total += netFee;
@@ -1300,21 +1438,16 @@ bool globalFeeAdded = false;
         // ── 5. Global member fee (when not covered by any sport) ──────────────
         if (!globalFeeAdded && !isExemptFromGlobalFee)
         {
-            string feeKey = isMinor ? "MinorMemberFee" : "MemberFee";
-            var memberFeeSetting = await _context.SystemSettings.FindAsync(feeKey);
-            if (isMinor && memberFeeSetting == null)
-                memberFeeSetting = await _context.SystemSettings.FindAsync("MemberFee");
-
-            if (memberFeeSetting != null && decimal.TryParse(memberFeeSetting.Value, out var parsedFee) && parsedFee > 0)
+            // Update to specific quota values: Adult = 3.00€, Minor = 1.50€
+            // ⚠️ CRITICAL: Only use Minor price (1,50) if both parents are members AND paid.
+            decimal quotaAmount = (isMinor && bothParentsPaid) ? 1.50m : 3.00m;
+            breakdown.Add(new BreakdownItem
             {
-                breakdown.Add(new BreakdownItem
-                {
-                    Label      = "Quota de Sócio",
-                    Amount     = parsedFee,
-                    IsDiscount = false
-                });
-                total += parsedFee;
-            }
+                Label      = "Quota de Sócio",
+                Amount     = quotaAmount,
+                IsDiscount = false
+            });
+            total += quotaAmount;
         }
         else if (isExemptFromGlobalFee)
         {
@@ -1328,6 +1461,8 @@ bool globalFeeAdded = false;
         }
 
         // ── 6. Family Discount (15% if both parents are members) ──────────────
+        /* 
+        // Desativado a pedido: 15% de desconto para filhos de ambos os pais sócios
         if (bothParentsMembers && total > 0)
         {
             decimal familyDiscount = total * 0.15m;
@@ -1343,6 +1478,7 @@ bool globalFeeAdded = false;
             total -= familyDiscount;
             discountsApplied.Add("family_discount");
         }
+        */
         }
 
         // ── 7. Inscription info (pending inscriptions) ────────────────────────
@@ -1391,8 +1527,8 @@ bool globalFeeAdded = false;
                     AthleteTeamId = primaryAt.Id,
                     SportName     = sport.Name,
                     Escalao       = primaryAt.AthleteProfile?.Escalao,
-                    Paid          = primaryAt.InscriptionPaid,
-                    PaidDate      = primaryAt.InscriptionPaidDate,
+                    Paid          = user.AthleteProfile?.AthleteTeams?.Any(at => at.Team?.SportId == sport.Id && at.InscriptionPaid) ?? false,
+                    PaidDate      = user.AthleteProfile?.AthleteTeams?.Where(at => at.Team?.SportId == sport.Id && at.InscriptionPaid).OrderByDescending(at => at.InscriptionPaidDate).Select(at => at.InscriptionPaidDate).FirstOrDefault(),
                     FeeNormal     = baseFee,
                     FeeDiscount   = discountedFee
                 };
@@ -1423,7 +1559,8 @@ bool globalFeeAdded = false;
             MonthlyQuota     = Math.Max(monthlyQuota, 0),
             Breakdown        = breakdown,
             DiscountsApplied = discountsApplied,
-            InscriptionInfo  = inscriptionInfo
+            InscriptionInfo  = inscriptionInfo,
+            ParentsPaymentWarning = parentsPaymentWarning
         };
     }
 
@@ -1502,6 +1639,7 @@ public class QuotaCalculationResult
     public List<BreakdownItem> Breakdown { get; set; } = new();
     public List<string> DiscountsApplied { get; set; } = new();
     public List<InscriptionInfo> InscriptionInfo { get; set; } = new();
+    public bool ParentsPaymentWarning { get; set; }
 }
 
 public class BreakdownItem

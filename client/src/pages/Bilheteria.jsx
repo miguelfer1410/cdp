@@ -570,16 +570,25 @@ const Bilheteria = () => {
                                     </div>
 
                                     <div className="match-footer">
-                                        <div className="match-price">
-                                            <span className="price-label">{isLoggedIn ? 'Preço' : 'A partir de'}</span>
-                                            <span className="price-value">{getDisplayPrice(match)}</span>
-                                        </div>
-                                        <button
-                                            className={`btn-buy ${match.status === 'sold-out' ? 'disabled' : ''}`}
-                                            onClick={() => handleBuyClick(match)}
-                                        >
-                                            {match.status === 'sold-out' ? 'Esgotado' : 'Comprar Bilhete'}
-                                        </button>
+                                        {match.hasTicketing ? (
+                                            <>
+                                                <div className="match-price">
+                                                    <span className="price-label">{isLoggedIn ? 'Preço' : 'A partir de'}</span>
+                                                    <span className="price-value">{getDisplayPrice(match)}</span>
+                                                </div>
+                                                <button
+                                                    className={`btn-buy ${match.status === 'sold-out' ? 'disabled' : ''}`}
+                                                    onClick={() => handleBuyClick(match)}
+                                                >
+                                                    {match.status === 'sold-out' ? 'Esgotado' : 'Comprar Bilhete'}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="match-free-entry">
+                                                <FaInfoCircle />
+                                                <span>Entrada Livre</span>
+                                            </div>
+                                        )}
                                     </div>
                                     {match.status === 'selling-fast' && (
                                         <div className="badge selling-fast">

@@ -86,7 +86,7 @@ const FinancialAnalytics = () => {
     const [error, setError] = useState(null);
 
     // Filters
-    const [selectedYear, setSelectedYear] = useState('all');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
     const [selectedMonth, setSelectedMonth] = useState('all');
     const [teamSportFilter, setTeamSportFilter] = useState('Todas');
     const [chartView, setChartView] = useState('bar'); // 'bar' | 'line'
@@ -111,7 +111,10 @@ const FinancialAnalytics = () => {
     // ── derived lists ─────────────────────────────────────────────────────────
     const availableYears = useMemo(() => {
         if (!data) return [];
-        return [...new Set(data.paymentStatsByMonth.map(m => parseMYM(m.month).year))].sort();
+        return [...new Set(data.paymentStatsByMonth
+            .map(m => parseMYM(m.month).year)
+            .filter(y => y !== undefined && parseInt(y, 10) > 1900)
+        )].sort((a, b) => b - a);
     }, [data]);
 
     const availableMonths = useMemo(() => {

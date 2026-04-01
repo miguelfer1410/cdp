@@ -99,17 +99,55 @@ public class UsersController : ControllerBase
             var searchTokens = search.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             foreach (var token in searchTokens)
             {
-                query = query.Where(u =>
-                    u.FirstName.ToLower().Contains(token) ||
-                    u.LastName.ToLower().Contains(token) ||
-                    u.Email.ToLower().Contains(token) ||
-                    (u.Nif != null && u.Nif.Contains(token)) ||
-                    (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
-                    (u.AthleteProfile != null && (
-                        (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
-                        (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
-                    )));
+                var atIdx = token.IndexOf('@');
+                bool isBaseEmail = atIdx > 0 && token.Contains('.') && !token.Contains('+');
+                bool isAliasToken = token.Contains('+');
 
+                if (isBaseEmail)
+                {
+                    var localPart = token.Substring(0, atIdx);
+                    var domainPart = token.Substring(atIdx);
+                    var aliasPrefix = localPart + "+";
+
+                    query = query.Where(u =>
+                        u.FirstName.ToLower().Contains(token) ||
+                        u.LastName.ToLower().Contains(token) ||
+                        u.Email.ToLower() == token ||
+                        (u.Email.ToLower().StartsWith(aliasPrefix) && u.Email.ToLower().EndsWith(domainPart)) ||
+                        (u.Nif != null && u.Nif.Contains(token)) ||
+                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                        (u.AthleteProfile != null && (
+                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                        )));
+                }
+                else if (isAliasToken)
+                {
+                    // If searching with alias, ignore email match as requested
+                    query = query.Where(u =>
+                        u.FirstName.ToLower().Contains(token) ||
+                        u.LastName.ToLower().Contains(token) ||
+                        (u.Nif != null && u.Nif.Contains(token)) ||
+                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                        (u.AthleteProfile != null && (
+                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                        )));
+                }
+                else
+                {
+                    // Standard search
+                    query = query.Where(u =>
+                        u.FirstName.ToLower().Contains(token) ||
+                        u.LastName.ToLower().Contains(token) ||
+                        u.Email.ToLower().Contains(token) ||
+                        (u.Nif != null && u.Nif.Contains(token)) ||
+                        (u.MemberProfile != null && u.MemberProfile.MembershipNumber.ToLower().Contains(token)) ||
+                        (u.AthleteProfile != null && (
+                            (u.AthleteProfile.FirstName != null && u.AthleteProfile.FirstName.ToLower().Contains(token)) ||
+                            (u.AthleteProfile.LastName != null && u.AthleteProfile.LastName.ToLower().Contains(token))
+                        )));
+                }
             }
         }
 

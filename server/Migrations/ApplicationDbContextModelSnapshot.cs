@@ -671,6 +671,9 @@ namespace CdpApi.Migrations
                     b.Property<int>("EventType")
                         .HasColumnType("int");
 
+                    b.Property<bool>("HasTicketing")
+                        .HasColumnType("bit");
+
                     b.Property<bool?>("IsHomeGame")
                         .HasColumnType("bit");
 
@@ -1107,14 +1110,14 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 30, 8, 29, 26, 973, DateTimeKind.Utc).AddTicks(6781),
+                            CreatedAt = new DateTime(2026, 3, 31, 9, 13, 47, 806, DateTimeKind.Utc).AddTicks(6781),
                             Description = "Acesso padrão de utilizador",
                             Name = "User"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2026, 3, 30, 8, 29, 26, 973, DateTimeKind.Utc).AddTicks(6785),
+                            CreatedAt = new DateTime(2026, 3, 31, 9, 13, 47, 806, DateTimeKind.Utc).AddTicks(6785),
                             Description = "Administrador com acesso total",
                             Name = "Admin"
                         });
@@ -1459,13 +1462,13 @@ namespace CdpApi.Migrations
                         {
                             Id = 1,
                             AcceptedRegulation = false,
-                            CreatedAt = new DateTime(2026, 3, 30, 8, 29, 27, 162, DateTimeKind.Utc).AddTicks(1276),
+                            CreatedAt = new DateTime(2026, 3, 31, 9, 13, 48, 8, DateTimeKind.Utc).AddTicks(6467),
                             Email = "admin@cdp.com",
                             FirstName = "Admin",
                             Gender = 3,
                             IsActive = true,
                             LastName = "User",
-                            PasswordHash = "$2a$11$CQBZISWrPbEnyxLghvRQK.TEMi6x8.LayUWIe9TGhX2vuNDGc0hES"
+                            PasswordHash = "$2a$11$61ntHS.X6dJVGnzYFz2jU.JZxAyv/WbNfhs9tzHOZ/EdBk1LvZ3.2"
                         });
                 });
 
@@ -1532,7 +1535,7 @@ namespace CdpApi.Migrations
                         new
                         {
                             Id = 1,
-                            AssignedAt = new DateTime(2026, 3, 30, 8, 29, 27, 162, DateTimeKind.Utc).AddTicks(2065),
+                            AssignedAt = new DateTime(2026, 3, 31, 9, 13, 48, 8, DateTimeKind.Utc).AddTicks(7711),
                             RoleId = 2,
                             UserId = 1
                         });

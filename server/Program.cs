@@ -6,6 +6,7 @@ using CdpApi.Data;
 using CdpApi.Services;
 using server.Services;
 using server.Models;
+using CdpApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IEasypayService, EasypayService>();
+
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("StripeSettings"));
+builder.Services.Configure<MoloniSettings>(builder.Configuration.GetSection("MoloniSettings"));
+
 builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IMoloniService, MoloniService>();

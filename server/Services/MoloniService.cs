@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using CdpApi.Models;
 using CdpApi.Data;
 
@@ -16,7 +17,7 @@ namespace CdpApi.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<MoloniService> _logger;
-        private readonly IConfiguration _configuration;
+        private readonly MoloniSettings _settings;
         private readonly ApplicationDbContext _context;
         
         private string? _accessToken;
@@ -26,11 +27,11 @@ namespace CdpApi.Services
         private const string BaseUrl = "https://api.moloni.pt/v1";
         private const string TokenSettingKey = "MoloniTokens";
 
-        public MoloniService(HttpClient httpClient, ILogger<MoloniService> logger, IConfiguration configuration, ApplicationDbContext context)
+        public MoloniService(HttpClient httpClient, ILogger<MoloniService> logger, IOptions<MoloniSettings> settings, ApplicationDbContext context)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _configuration = configuration;
+            _settings = settings.Value;
             _context = context;
         }
 
@@ -104,8 +105,8 @@ namespace CdpApi.Services
                 return;
             }
 
-            var developerId = _configuration["MoloniSettings:DeveloperId"];
-            var clientSecret = _configuration["MoloniSettings:ClientSecret"];
+            var developerId = _settings.DeveloperId;
+            var clientSecret = _settings.ClientSecret;
 
             if (string.IsNullOrEmpty(developerId) || string.IsNullOrEmpty(clientSecret))
             {
@@ -135,8 +136,8 @@ namespace CdpApi.Services
             }
 
             // 3. Fallback to password login
-            var username = _configuration["MoloniSettings:Username"];
-            var password = _configuration["MoloniSettings:Password"];
+            var username = _settings.Username;
+            var password = _settings.Password;
 
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -179,6 +180,12 @@ namespace CdpApi.Services
             // Try to find customer by VAT
             var vat = string.IsNullOrEmpty(user.Nif) ? "999999990" : user.Nif;
             var sanitizedEmail = SanitizeEmail(user.Email);
+            
+            var customerNumber = user.MemberProfile?.MembershipNumber?.TrimStart('0');
+            if (string.IsNullOrEmpty(customerNumber))
+            {
+                customerNumber = user.Id.ToString();
+            }
 
             var getByVatBody = new Dictionary<string, string>
             {
@@ -205,7 +212,7 @@ namespace CdpApi.Services
             {
                 { "company_id", companyId },
                 { "vat", vat },
-                { "number", user.Id.ToString() },
+                { "number", customerNumber },
                 { "name", $"{user.FirstName} {user.LastName}" },
                 { "language_id", "1" },
                 { "address", user.Address ?? "Desconhecida" },
@@ -244,7 +251,7 @@ namespace CdpApi.Services
             // Fallback: If VAT or Number already exists (error code 8 or 4 in Moloni v1)
             if (errStr.Contains("\"8 vat\"") || errStr.Contains("\"4 vat\"") || errStr.Contains("\"4 number\"") || errStr.Contains("8 vat") || errStr.Contains("4 vat") || errStr.Contains("4 number"))
             {
-                _logger.LogInformation($"Customer with VAT {vat} or Number {user.Id} already exists. Attempting to recover ID...");
+                _logger.LogInformation($"Customer with VAT {vat} or Number {customerNumber} already exists. Attempting to recover ID...");
                 
                 var searchBody = new Dictionary<string, string>
                 {
@@ -281,7 +288,7 @@ namespace CdpApi.Services
                     return;
                 }
 
-                var companyId = _configuration["MoloniSettings:CompanyId"];
+                var companyId = _settings.CompanyId;
                 if (string.IsNullOrEmpty(companyId))
                 {
                     _logger.LogWarning("Moloni CompanyId is not configured.");
@@ -299,10 +306,10 @@ namespace CdpApi.Services
                 var documentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
                 string description = string.IsNullOrEmpty(payment.Description) ? "Quota Mensal" : payment.Description;
 
-                var productId = _configuration["MoloniSettings:ProductId"] ?? "1"; 
-                var taxId = _configuration["MoloniSettings:TaxId"] ?? "1"; 
+                var productId = _settings.ProductId ?? "1"; 
+                var taxId = _settings.TaxId ?? "1"; 
 
-                var documentSetId = _configuration["MoloniSettings:DocumentSetId"] ?? string.Empty;
+                var documentSetId = _settings.DocumentSetId ?? string.Empty;
 
                 var insertBody = new List<KeyValuePair<string, string>>
                 {

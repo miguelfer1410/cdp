@@ -110,33 +110,59 @@ const PaymentCard = ({
     generatingReference,
     onStartPayment,
     startingPayment,
+    parentsPaymentWarning,
 }) => {
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [isOverdueDropdownOpen, setIsOverdueDropdownOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const MONTHS_PT_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
+    const hasUnpaidInscriptions = inscriptionInfo?.some(i => !i.paid && i.feeDiscount > 0) ?? false;
+    const effectiveAmount = totalDue != null ? totalDue : (quotaAmount + (overdueMonths?.reduce((s, m) => s + m.amount, 0) || 0));
+
+    // ── Generate history with current month status ────────────────────────────
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+
+    // Check if current month is in history
+    const hasCurrentMonthInHistory = paymentHistory?.some(p => p.periodYear === currentYear && p.periodMonth === currentMonth);
+
     // Combine and sort history
-    const mergedHistory = [
-        ...(paymentHistory || []).map(p => ({ ...p, type: 'quota' })),
+    let mergedHistory = [
+        ...(paymentHistory || []).map(p => ({ ...p, type: 'quota', displayStatus: 'Completed' })),
         ...(historyInscriptions || [])
             .filter(i => i.paid)
             .map(i => ({
                 ...i,
                 type: 'inscription',
+                displayStatus: 'Completed',
                 description: `Taxa Incr. ${i.sportName}`,
                 paymentDate: i.paymentDate
             }))
-    ].sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+    ];
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('pt-PT');
-    };
+    // Add current month if missing and we are looking at current year
+    if (!hasCurrentMonthInHistory && historyYear === currentYear) {
+        // Map backend paymentStatus to display status
+        // paymentStatus can be 'Regularizada', 'Pendente', 'Unpaid', '-'
+        const virtualStatus = paymentStatus === 'Pendente' ? 'Pending' : (paymentStatus === 'Regularizada' ? 'Completed' : 'Unpaid');
+        
+        if (virtualStatus !== 'Completed') {
+            mergedHistory.push({
+                type: 'quota',
+                periodMonth: currentMonth,
+                periodYear: currentYear,
+                displayStatus: virtualStatus,
+                amount: quotaAmount || 0,
+                paymentDate: new Date().toISOString(), // Use now for sorting (it's the top item)
+                description: `Quota ${MONTHS_PT[currentMonth - 1]} ${currentYear}`
+            });
+        }
+    }
 
-    const hasUnpaidInscriptions = inscriptionInfo?.some(i => !i.paid && i.feeDiscount > 0) ?? false;
-    const effectiveAmount = totalDue != null ? totalDue : (quotaAmount + (overdueMonths?.reduce((s, m) => s + m.amount, 0) || 0));
+    mergedHistory.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
 
     return (
         <div className="dashboard-card">
@@ -145,6 +171,26 @@ const PaymentCard = ({
             </div>
 
             <div className="payment-card-body-new">
+                {parentsPaymentWarning && (
+                    <div className="payment-parents-warning-alert" style={{ 
+                        backgroundColor: '#fffbeb', 
+                        border: '1px solid #fef3c7', 
+                        borderRadius: '8px', 
+                        padding: '12px', 
+                        marginBottom: '15px',
+                        display: 'flex',
+                        gap: '12px',
+                        alignItems: 'flex-start'
+                    }}>
+                        <FaExclamationCircle style={{ color: '#d97706', fontSize: '1.2rem', marginTop: '2px' }} />
+                        <div>
+                            <strong style={{ color: '#92400e', display: 'block', fontSize: '0.9rem' }}>Aviso de Quota</strong>
+                            <p style={{ color: '#b45309', fontSize: '0.85rem', margin: '4px 0 0 0', lineHeight: '1.4' }}>
+                                O desconto de quota de menor não foi aplicado porque as quotas dos pais não estão regularizadas para o mês atual.
+                            </p>
+                        </div>
+                    </div>
+                )}
                 {/* 1. Summary Section */}
                 <div className="payment-summary-new">
                     <div className="payment-summary-main">
@@ -271,7 +317,7 @@ const PaymentCard = ({
                                     <span className="stripe-method-badge"><FaMobileAlt /> MBWay</span>
                                 </div>
                             </div>
-                            {/*
+
                             <button
                                 className="payment-btn-new primary stripe-pay-btn"
                                 onClick={onStartPayment}
@@ -281,7 +327,7 @@ const PaymentCard = ({
                                     ? <><FaSyncAlt className="icon-spin" /> A processar…</>
                                     : <><FaExternalLinkAlt /> Pagar Quota ({effectiveAmount.toFixed(2)} €)</>}
                             </button>
-                            */}
+
                             <p className="stripe-secure-note">🔒 Pagamento seguro via Stripe</p>
                         </div>
                     )}
@@ -306,45 +352,83 @@ const PaymentCard = ({
                 {/* 6. Payment History */}
                 <div className="payment-history-section">
                     <div className="discounts-divider" style={{ margin: '15px 0' }}></div>
-                    <div className="history-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                        <h4 className="discounts-title" style={{ margin: 0 }}><FaReceipt /> Histórico de Pagamentos</h4>
-                        <select
-                            value={historyYear}
-                            onChange={(e) => onHistoryYearChange(parseInt(e.target.value))}
-                            className="history-year-select"
-                            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem' }}
-                        >
-                            {[2026, 2025, 2024].map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="history-list">
-                        {mergedHistory.length === 0 ? (
-                            <p className="no-history" style={{ textAlign: 'center', padding: '20px', color: '#666', fontSize: '0.9rem' }}>
-                                Nenhum pagamento efetuado em {historyYear}.
-                            </p>
-                        ) : (
-                            mergedHistory.map((p, idx) => (
-                                <div key={idx} className="history-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                                    <div className="history-main">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <FaCheckCircle style={{ color: '#10b981', fontSize: '0.8rem' }} />
-                                            <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                                                {p.type === 'quota' && p.periodMonth
-                                                    ? `Quota ${MONTHS_PT[p.periodMonth - 1]} ${p.periodYear}`
-                                                    : p.description}
-                                            </span>
-                                            {p.type === 'inscription' && <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '10px' }}>Inscrição</span>}
-                                        </div>
-                                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '16px' }}>
-                                            Pago em {new Date(p.paymentDate).toLocaleDateString('pt-PT')}
-                                        </span>
-                                    </div>
-                                    <strong style={{ fontSize: '0.9rem' }}>{p.amount.toFixed(2)} €</strong>
-                                </div>
-                            ))
+                    <div 
+                        className="history-header" 
+                        style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center', 
+                            marginBottom: isHistoryOpen ? '15px' : '0',
+                            cursor: 'pointer'
+                        }}
+                        onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                    >
+                        <h4 className="discounts-title" style={{ margin: 0 }}>
+                            <FaReceipt /> Histórico de Pagamentos
+                            {isHistoryOpen ? <FaChevronUp style={{ marginLeft: '8px', fontSize: '0.8rem', opacity: 0.7 }} /> : <FaChevronDown style={{ marginLeft: '8px', fontSize: '0.8rem', opacity: 0.7 }} />}
+                        </h4>
+                        
+                        {isHistoryOpen && (
+                            <select
+                                value={historyYear}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => onHistoryYearChange(parseInt(e.target.value))}
+                                className="history-year-select"
+                                style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem' }}
+                            >
+                                {[2026, 2025, 2024].map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
                         )}
                     </div>
+
+                    {isHistoryOpen && (
+                        <div className="history-list">
+                            {mergedHistory.length === 0 ? (
+                                <p className="no-history" style={{ textAlign: 'center', padding: '20px', color: '#666', fontSize: '0.9rem' }}>
+                                    Nenhum pagamento efetuado em {historyYear}.
+                                </p>
+                            ) : (
+                                mergedHistory.map((p, idx) => (
+                                    <div key={idx} className="history-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
+                                        <div className="history-main">
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                {p.displayStatus === 'Completed' ? (
+                                                    <FaCheckCircle style={{ color: '#10b981', fontSize: '0.8rem' }} />
+                                                ) : p.displayStatus === 'Pending' ? (
+                                                    <FaClock style={{ color: '#f59e0b', fontSize: '0.8rem' }} />
+                                                ) : (
+                                                    <FaExclamationCircle style={{ color: '#ef4444', fontSize: '0.8rem' }} />
+                                                )}
+                                                <span style={{ 
+                                                    fontSize: '0.9rem', 
+                                                    fontWeight: '600',
+                                                    color: p.displayStatus === 'Unpaid' ? '#ef4444' : 'inherit'
+                                                }}>
+                                                    {p.type === 'quota' && p.periodMonth
+                                                        ? `Quota ${MONTHS_PT[p.periodMonth - 1]} ${p.periodYear}`
+                                                        : p.description}
+                                                </span>
+                                                {p.type === 'inscription' && <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '10px' }}>Inscrição</span>}
+                                                {p.displayStatus === 'Pending' && <span style={{ fontSize: '0.7rem', background: '#fef3c7', color: '#92400e', padding: '1px 6px', borderRadius: '10px' }}>Pendente</span>}
+                                                {p.displayStatus === 'Unpaid' && <span style={{ fontSize: '0.7rem', background: '#fee2e2', color: '#991b1b', padding: '1px 6px', borderRadius: '10px' }}>Não Pago</span>}
+                                            </div>
+                                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '16px' }}>
+                                                {p.displayStatus === 'Completed' 
+                                                    ? `Pago em ${new Date(p.paymentDate).toLocaleDateString('pt-PT')}`
+                                                    : p.displayStatus === 'Pending' ? 'A aguardar pagamento' : 'Pagamento em falta'}
+                                            </span>
+                                        </div>
+                                        <strong style={{ 
+                                            fontSize: '0.9rem',
+                                            color: p.displayStatus === 'Unpaid' ? '#ef4444' : 'inherit'
+                                        }}>
+                                            {p.amount.toFixed(2)} €
+                                        </strong>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

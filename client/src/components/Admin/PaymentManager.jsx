@@ -39,12 +39,13 @@ const PaymentManager = () => {
     const [selectedAthlete, setSelectedAthlete] = useState(null);
     const [modalYear, setModalYear] = useState(new Date().getFullYear());
     const [selectedPeriods, setSelectedPeriods] = useState([]);
+    const [selectedInscriptions, setSelectedInscriptions] = useState([]);
+    const [monthlyQuotas, setMonthlyQuotas] = useState({});
 
     // Membership number inline editing
     const [editingMembershipId, setEditingMembershipId] = useState(null);
     const [editingMembershipValue, setEditingMembershipValue] = useState('');
     const [membershipDuplicates, setMembershipDuplicates] = useState({});
-    const [selectedInscriptions, setSelectedInscriptions] = useState([]);
 
     // Quota inline editing
     const [editingQuotaUserId, setEditingQuotaUserId] = useState(null);
@@ -112,13 +113,26 @@ const PaymentManager = () => {
             try {
                 const token = localStorage.getItem('token');
                 const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
-                const res = await fetch(`${apiUrl}/payment/history?userId=${selectedAthlete.userId}&year=${modalYear}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await res.json();
+
+                const [resHistory, resQuotas] = await Promise.all([
+                    fetch(`${apiUrl}/payment/history?userId=${selectedAthlete.userId}&year=${modalYear}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${apiUrl}/payment/admin/user-year-quotas?userId=${selectedAthlete.userId}&year=${modalYear}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+
+                const data = await resHistory.json();
+                const quotasData = await resQuotas.json();
+
+                if (quotasData && quotasData.quotas) {
+                    setMonthlyQuotas(quotasData.quotas);
+                } else {
+                    setMonthlyQuotas({});
+                }
 
                 const historyPayments = data.payments || [];
-                const historyInscriptions = data.inscriptions || [];
                 const isAnnual = selectedAthlete.paymentPreference === 'Annual';
 
                 if (isAnnual) {
@@ -140,19 +154,19 @@ const PaymentManager = () => {
                             amount: p.amount
                         }));
 
-                    // If no payments for this year yet and it's the current year, pre-fill current month
                     if (preFilled.length === 0 && modalYear === currentYear) {
+                        const currentMonthQuota = (quotasData.quotas && quotasData.quotas[currentMonth - 1]) || selectedAthlete.amount || 0;
                         preFilled.push({
                             month: currentMonth,
                             year: currentYear,
-                            amount: selectedAthlete.amount || 0
+                            amount: currentMonthQuota
                         });
                     }
                     setSelectedPeriods(preFilled);
                 }
 
-                const paidInsIds = historyInscriptions.filter(i => i.paid).map(i => i.athleteTeamId);
-                setSelectedInscriptions(paidInsIds);
+                const pendingIds = selectedAthlete.pendingInscriptions?.map(i => i.athleteTeamId) || [];
+                setSelectedInscriptions(pendingIds);
             } catch (error) {
                 console.error('Error fetching history for modal:', error);
             }
@@ -319,7 +333,8 @@ const PaymentManager = () => {
         setSelectedPeriods(prev => {
             const exists = prev.find(p => p.month === m && p.year === y);
             if (exists) return prev.filter(p => !(p.month === m && p.year === y));
-            return [...prev, { month: m, year: y, amount: selectedAthlete?.amount || 0 }];
+            const estimatedAmount = (monthlyQuotas && monthlyQuotas[m - 1]) || selectedAthlete?.amount || 0;
+            return [...prev, { month: m, year: y, amount: estimatedAmount }];
         });
     };
 
@@ -335,9 +350,9 @@ const PaymentManager = () => {
         );
     };
 
-    // Quick-select helpers
     const selectCurrentMonth = () => {
-        setSelectedPeriods([{ month: currentMonth, year: currentYear, amount: selectedAthlete?.amount || 0 }]);
+        const estimatedAmount = (monthlyQuotas && monthlyQuotas[currentMonth - 1]) || selectedAthlete?.amount || 0;
+        setSelectedPeriods([{ month: currentMonth, year: currentYear, amount: estimatedAmount }]);
         setModalYear(currentYear);
     };
 
@@ -346,7 +361,7 @@ const PaymentManager = () => {
             Array.from({ length: 12 }, (_, i) => ({
                 month: i + 1,
                 year: modalYear,
-                amount: selectedAthlete?.amount || 0
+                amount: (monthlyQuotas && monthlyQuotas[i]) || selectedAthlete?.amount || 0
             }))
         );
     };
@@ -361,7 +376,6 @@ const PaymentManager = () => {
             const token = localStorage.getItem('token');
             const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5285/api';
 
-            // Global export for everyone, ignoring current table filters
             let url = `${apiUrl}/payment/admin/export-all-status?year=${currentYear}`;
 
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -419,7 +433,11 @@ const PaymentManager = () => {
     const firstRecord = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
     const lastRecord = Math.min(page * pageSize, totalCount);
 
-    // Modal computed values
+    const MONTHS_PT = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
     const monthsTotal = selectedPeriods.reduce((acc, p) => acc + (p.amount || 0), 0);
     const inscriptionsTotal = selectedAthlete?.pendingInscriptions
         ?.filter(i => selectedInscriptions.includes(i.athleteTeamId))
@@ -456,14 +474,13 @@ const PaymentManager = () => {
                     </div>
                 </div>
                 <div className="header-period">
-
                     <button className="export-btn" onClick={handleExport} disabled={loading} title="Exportar para Excel">
                         <FaFileExcel /> <span>Exportar Excel</span>
                     </button>
                     <div className="period-selector">
                         <select value={currentMonth} onChange={(e) => setCurrentMonth(parseInt(e.target.value))} className="admin-select month-select">
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('pt-PT', { month: 'long' })}</option>
+                            {MONTHS_PT.map((m, i) => (
+                                <option key={i + 1} value={i + 1}>{m}</option>
                             ))}
                         </select>
                         <select value={currentYear} onChange={(e) => setCurrentYear(parseInt(e.target.value))} className="admin-select year-select">
@@ -504,7 +521,7 @@ const PaymentManager = () => {
                         <label>Equipa</label>
                         <select value={filterTeam} onChange={(e) => setFilterTeam(e.target.value)}>
                             <option value="all">Todas as Equipas</option>
-                            <option value="-1">Sem Equipa</option>
+                            <option value="-1">Sócio</option>
                             <option value="-2">Com Equipa</option>
                             {teams.map(team => (
                                 <option key={team.id} value={team.id}>{team.name} ({team.sportName})</option>
@@ -714,7 +731,7 @@ const PaymentManager = () => {
                 </div>
             )}
 
-            {/* ── Validate Payments Modal ── */}
+            {/* ── Month Selection Modal for Validation ── */}
             {isMonthModalOpen && (
                 <div className="admin-modal-overlay" onClick={() => setIsMonthModalOpen(false)}>
                     <div className="admin-modal months-modal refined" onClick={e => e.stopPropagation()}>
@@ -723,51 +740,54 @@ const PaymentManager = () => {
                         <div className="modal-header">
                             <div className="modal-header-left">
                                 <div className="modal-header-icon">
-                                    <FaCheckCircle />
+                                    <FaCalendarAlt />
                                 </div>
-                                <div className="modal-header-title">
-                                    <h3>{(selectedAthlete?.status === 'Paid' || selectedAthlete?.status === 'Regularizada' || selectedAthlete?.status === 'Completed') ? 'Editar Pagamentos' : 'Validar Pagamentos'}</h3>
+                                <div className="modal-header-left-text">
+                                    <h3>Validar Quotas</h3>
                                     <p className="modal-subtitle">
                                         {selectedAthlete?.name}
-                                        {isAthleteAnnual && <span className="annual-indicator" style={{ fontWeight: 'bold' }}> (Quota Anual)</span>}
+                                        {isAthleteAnnual && <span className="annual-indicator"> (Quota Anual)</span>}
                                     </p>
                                 </div>
                             </div>
                             <button className="close-btn" onClick={() => setIsMonthModalOpen(false)}><FaTimes /></button>
                         </div>
 
-                        {/* Modal Body */}
                         <div className="modal-body">
-
-                            {/* Year selector + Quick actions */}
+                            {/* Controls Row: Year + Quick Actions */}
                             <div className="modal-controls-row">
                                 <div className="modal-year-pill">
                                     <FaCalendarAlt />
-                                    <select value={modalYear} onChange={(e) => setModalYear(parseInt(e.target.value))} className="admin-select">
-                                        {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
-                                    </select>
+                                    <button className="year-nav-btn" onClick={() => setModalYear(y => y - 1)}><FaChevronLeft /></button>
+                                    <span className="year-display">{modalYear}</span>
+                                    <button className="year-nav-btn" onClick={() => setModalYear(y => y + 1)}><FaChevronRight /></button>
+                                    {modalYear !== currentYear && (
+                                        <button className="year-reset-mini" onClick={() => setModalYear(currentYear)} title={`Voltar a ${currentYear}`}><FaUndo /></button>
+                                    )}
                                 </div>
+
                                 <div className="modal-quick-actions">
-                                    <button className="quick-action-btn" onClick={selectCurrentMonth} title="Selecionar mês atual">
-                                        <FaBolt /> Mês atual
+                                    <button className="quick-action-btn" onClick={selectCurrentMonth}>
+                                        <FaBolt /> Mês Corrente
                                     </button>
-                                    <button className="quick-action-btn" onClick={selectAllMonths} title="Selecionar todos os meses">
-                                        <FaListUl /> Todos
-                                    </button>
-                                    <button className="quick-action-btn quick-action-btn--clear" onClick={clearSelection} title="Limpar seleção" disabled={selectedPeriods.length === 0}>
-                                        <FaTimes /> Limpar
-                                    </button>
+                                    <button className="quick-action-btn" onClick={selectAllMonths}><FaListUl /> Todos</button>
+                                    <button className="quick-action-btn quick-action-btn--clear" onClick={clearSelection} disabled={selectedPeriods.length === 0}><FaTimes /> Limpar</button>
                                 </div>
                             </div>
 
-                            {/* Months Grid — 3 columns */}
+                            {/* Month Grid */}
                             <div className="months-grid-v2">
-                                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+                                {Array.from({ length: 12 }, (_, i) => {
+                                    const m = i + 1;
                                     const period = selectedPeriods.find(p => p.month === m && p.year === modalYear);
                                     const isSelected = !!period;
-                                    const monthLabel = new Date(0, m - 1).toLocaleString('pt-PT', { month: 'short' });
+                                    const monthLabel = MONTHS_PT[i].substring(0, 3);
+
                                     return (
-                                        <div key={m} className={`month-tile ${isSelected ? 'month-tile--selected' : ''}`}>
+                                        <div
+                                            key={m}
+                                            className={`month-tile ${isSelected ? 'month-tile--selected' : ''}`}
+                                        >
                                             <button
                                                 className="month-tile-toggle"
                                                 onClick={() => togglePeriod(m, modalYear)}
@@ -778,7 +798,8 @@ const PaymentManager = () => {
                                                 </div>
                                                 <span className="month-tile-label">{monthLabel}</span>
                                             </button>
-                                            {isSelected && (
+
+                                            {isSelected ? (
                                                 <div className="month-tile-amount">
                                                     <input
                                                         type="number"
@@ -788,6 +809,13 @@ const PaymentManager = () => {
                                                         className="month-amount-input"
                                                         onClick={e => e.stopPropagation()}
                                                     />
+                                                    <span className="month-amount-currency">€</span>
+                                                </div>
+                                            ) : (
+                                                <div className="month-tile-amount month-tile-amount--estimated">
+                                                    <span className="month-amount-value">
+                                                        {((monthlyQuotas && monthlyQuotas[m - 1]) || selectedAthlete?.amount || 0).toFixed(2)}
+                                                    </span>
                                                     <span className="month-amount-currency">€</span>
                                                 </div>
                                             )}
@@ -807,16 +835,16 @@ const PaymentManager = () => {
                                     </div>
                                     <div className="inscriptions-list-v2">
                                         {selectedAthlete.pendingInscriptions.map(ins => {
-                                            const isIns = selectedInscriptions.includes(ins.athleteTeamId);
+                                            const isSelected = selectedInscriptions.includes(ins.athleteTeamId);
                                             return (
                                                 <button
                                                     key={ins.athleteTeamId}
-                                                    type="button"
-                                                    className={`inscription-tile ${isIns ? 'inscription-tile--selected' : ''}`}
+                                                    className={`inscription-tile ${isSelected ? 'inscription-tile--selected' : ''}`}
                                                     onClick={() => toggleInscription(ins.athleteTeamId)}
+                                                    type="button"
                                                 >
-                                                    <div className={`month-checkbox ${isIns ? 'month-checkbox--checked' : ''}`}>
-                                                        {isIns && <FaCheck />}
+                                                    <div className={`month-checkbox ${isSelected ? 'month-checkbox--checked' : ''}`}>
+                                                        {isSelected && <FaCheck />}
                                                     </div>
                                                     <span className="inscription-sport">{ins.sportName}</span>
                                                     <span className="inscription-amount">{ins.amount.toFixed(2)}€</span>
@@ -828,40 +856,31 @@ const PaymentManager = () => {
                             )}
                         </div>
 
-                        {/* Modal Footer with totals breakdown */}
                         <div className="modal-footer-v2">
                             <div className="modal-totals">
                                 {selectedPeriods.length > 0 && (
                                     <div className="total-row">
-                                        <span className="total-label">
-                                            {isAthleteAnnual && selectedPeriods.length === 12
-                                                ? 'Quota Anual'
-                                                : `${selectedPeriods.length} ${selectedPeriods.length === 1 ? 'mês' : 'meses'}`}
-                                        </span>
+                                        <span className="total-label">Subtotal Quotas</span>
                                         <span className="total-value">{monthsTotal.toFixed(2)}€</span>
                                     </div>
                                 )}
                                 {inscriptionsTotal > 0 && (
                                     <div className="total-row">
-                                        <span className="total-label">
-                                            {selectedInscriptions.length} {selectedInscriptions.length === 1 ? 'inscrição' : 'inscrições'}
-                                        </span>
+                                        <span className="total-label">Subtotal Inscrições</span>
                                         <span className="total-value">{inscriptionsTotal.toFixed(2)}€</span>
                                     </div>
                                 )}
-                                {(selectedPeriods.length > 0 || inscriptionsTotal > 0) && (
-                                    <div className="total-row total-row--grand">
-                                        <span className="total-label">Total</span>
-                                        <span className="total-value">{grandTotal.toFixed(2)}€</span>
-                                    </div>
-                                )}
+                                <div className="total-row total-row--grand">
+                                    <span className="total-label">Total a Validar</span>
+                                    <span className="total-value">{grandTotal.toFixed(2)}€</span>
+                                </div>
                             </div>
                             <div className="modal-footer-actions">
                                 <button className="btn-cancel" onClick={() => setIsMonthModalOpen(false)}>Cancelar</button>
                                 <button
                                     className="btn-confirm"
+                                    onClick={() => handleUpdateStatus(selectedAthlete.userId, "Completed", selectedPeriods)}
                                     disabled={selectedPeriods.length === 0 && selectedInscriptions.length === 0}
-                                    onClick={() => handleUpdateStatus(selectedAthlete.userId, 'Completed', selectedPeriods.length > 0 ? selectedPeriods : [])}
                                 >
                                     <FaCheckCircle /> {confirmButtonLabel()}
                                 </button>
@@ -875,12 +894,20 @@ const PaymentManager = () => {
             {isHistoryModalOpen && (
                 <PaymentHistorySocio
                     isOpen={isHistoryModalOpen}
-                    onClose={() => { setIsHistoryModalOpen(false); setSelectedUserId(null); }}
+                    onClose={() => {
+                        setIsHistoryModalOpen(false);
+                        setSelectedUserId(null);
+                        fetchPaymentStatuses();
+                    }}
                     userId={selectedUserId}
                     isAdmin={true}
                     onPaymentSuccess={fetchPaymentStatuses}
+                    overdueMonths={athletes.find(a => a.userId === selectedUserId)?.overdueMonths || []}
+                    quotaAmount={athletes.find(a => a.userId === selectedUserId)?.amount}
+                    paymentStatus={athletes.find(a => a.userId === selectedUserId)?.status}
                 />
             )}
+
             {/* ── Custom Quota Styles ── */}
             <style>{`
                 .quota-edit-container { display: flex; align-items: center; justify-content: center; }

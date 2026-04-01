@@ -254,6 +254,15 @@
     background: #fef2f2;
 }
 
+.phs-item--pending {
+    background: #fffaf0;
+    border-left: 3px solid #fbbf24;
+}
+
+.phs-item--pending:hover {
+    background: #fffbeb;
+}
+
 .phs-item--lifetime {
     background: #fffbf0;
     border-left: 3px solid #f59e0b;
@@ -302,6 +311,11 @@
 .phs-dot--red {
     background: #fee2e2;
     color: #dc2626;
+}
+
+.phs-dot--orange {
+    background: #fff7ed;
+    color: #f59e0b;
 }
 
 .phs-dot--gold {
@@ -364,6 +378,11 @@
     color: #dc2626;
 }
 
+.phs-badge--pending {
+    background: #fff7ed;
+    color: #9a3412;
+}
+
 .phs-badge--historic {
     background: #e0e7ff;
     color: #4338ca;
@@ -387,6 +406,10 @@
 
 .phs-amount--red {
     color: #dc2626;
+}
+
+.phs-amount--orange {
+    color: #f59e0b;
 }
 
 .phs-amount--gold {
